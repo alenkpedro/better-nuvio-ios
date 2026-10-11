@@ -503,6 +503,7 @@ private fun PlaybackSettingsSection(
             }
         }
 
+        BetterNuvioSubtitleSettings(isTablet = isTablet)
         SettingsSection(
             title = stringResource(Res.string.settings_playback_section_subtitle_audio),
             isTablet = isTablet,

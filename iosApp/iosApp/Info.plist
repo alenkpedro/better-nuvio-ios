@@ -4,6 +4,8 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>CFBundleDisplayName</key>
+	<string>Better Nuvio</string>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>
@@ -47,13 +49,6 @@
 			</array>
 		</dict>
 	</array>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Nuvio connects to media servers on your local network.</string>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>infuse</string>
@@ -61,15 +56,22 @@
 		<string>outplayer</string>
 		<string>open-vidhub</string>
 	</array>
-	<key>UILaunchScreen</key>
-	<dict/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>audio</string>
-	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Nuvio connects to media servers on your local network.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<false/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict/>
 </dict>
 </plist>

@@ -9,6 +9,9 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.filled.PlayCircleOutline
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -244,6 +247,51 @@ fun DetailActionButtons(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DetailActions(
+    playLabel: String,
+    playEnabled: Boolean,
+    isSaved: Boolean,
+    isWatched: Boolean,
+    isTablet: Boolean,
+    shuffleEnabled: Boolean,
+    onPlayClick: () -> Unit,
+    onPlayLongClick: (() -> Unit)?,
+    onShuffleClick: (() -> Unit)?,
+    onWatchedClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    onSaveLongClick: (() -> Unit)?,
+) {
+    Column {
+        DetailActionsRow(
+            playLabel, playEnabled, isSaved, isWatched, isTablet, shuffleEnabled,
+            onPlayClick, onPlayLongClick, onShuffleClick, onWatchedClick, onSaveClick, onSaveLongClick,
+        )
+        // Better Nuvio: the source Play will use, right under the buttons.
+        DetailSourcePreview.current?.takeIf { playEnabled }?.let { preview ->
+            Row(
+                modifier = Modifier.padding(top = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayCircleOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.size(15.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = preview,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailActionsRow(
     playLabel: String,
     playEnabled: Boolean,
     isSaved: Boolean,

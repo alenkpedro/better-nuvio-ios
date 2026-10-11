@@ -1,5 +1,8 @@
 package com.nuvio.app.features.details
 
+import androidx.compose.runtime.DisposableEffect
+import com.nuvio.app.features.streams.StreamLinkCacheRepository
+import com.nuvio.app.features.details.components.DetailSourcePreview
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -796,6 +799,28 @@ fun MetaDetailsScreen(
                     seasonNumber = seriesAction?.seasonNumber,
                     episodeNumber = seriesAction?.episodeNumber,
                 )
+                // Better Nuvio: show the source Play will reuse (components/DetailSourcePreview.kt).
+                val previewReuse = playerSettingsUiState.streamReuseLastLinkEnabled
+                val previewCacheHours = playerSettingsUiState.streamReuseLastLinkCacheHours
+                LaunchedEffect(meta.id, primaryVideoId, seriesAction?.seasonNumber, seriesAction?.episodeNumber, previewReuse, previewCacheHours) {
+                    DetailSourcePreview.set(
+                        if (!previewReuse) {
+                            null
+                        } else {
+                            StreamLinkCacheRepository.getValid(
+                                StreamLinkCacheRepository.contentKey(
+                                    type = meta.type,
+                                    videoId = primaryVideoId,
+                                    parentMetaId = meta.id,
+                                    season = seriesAction?.seasonNumber,
+                                    episode = seriesAction?.episodeNumber,
+                                ),
+                                previewCacheHours * 60L * 60L * 1000L,
+                            )
+                        },
+                    )
+                }
+                DisposableEffect(meta.id) { onDispose { DetailSourcePreview.set(null) } }
                 val playText = stringResource(Res.string.action_play)
                 val resumeText = stringResource(Res.string.action_resume)
                 val chooseEpisodesText = stringResource(Res.string.shuffle_change_selection)

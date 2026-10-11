@@ -36,6 +36,8 @@ import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import com.nuvio.app.features.watching.application.WatchingState
 import kotlinx.coroutines.CancellationException
+import com.nuvio.app.features.player.autosync.prepareSubtitleAutoSync
+import com.nuvio.app.features.player.autosync.runSubtitleAutoSync
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
@@ -201,8 +203,23 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         subtitleAutoSyncState = SubtitleAutoSyncUiState()
     }
 
-    LaunchedEffect(playerController, subtitleStyle) {
-        playerController?.applySubtitleStyle(subtitleStyle)
+    // Better Nuvio: subtitle AutoSync (autosync/PlayerSubtitleAutoSync.kt).
+    LaunchedEffect(activeSourceUrl) {
+        prepareSubtitleAutoSync()
+    }
+    LaunchedEffect(selectedAddonSubtitleId, activeSourceUrl) {
+        runSubtitleAutoSync()
+    }
+
+    // Better Nuvio: subtitles move up while the player controls are on screen, so
+    // the seek bar never covers a line (as in the TV app).
+    LaunchedEffect(playerController, subtitleStyle, controlsVisible) {
+        val lift = if (controlsVisible) {
+            if (com.nuvio.app.isIos) 28 else 140
+        } else {
+            0
+        }
+        playerController?.applySubtitleStyle(subtitleStyle.copy(bottomOffset = subtitleStyle.bottomOffset + lift))
     }
 
     val subtitlePreferenceKey = listOf(

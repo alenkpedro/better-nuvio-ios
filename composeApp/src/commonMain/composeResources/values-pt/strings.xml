@@ -1887,4 +1887,16 @@
     <string name="settings_mdblist_library_lists_description">Escolhe que listas do MDBList aparecem na Biblioteca e em Gerir Listas. A Watchlist aparece sempre.</string>
     <string name="settings_mdblist_library_lists_summary">%1$d de %2$d visíveis</string>
     <string name="settings_mdblist_library_lists_empty">Ainda não foram encontradas listas na tua conta MDBList. Sincroniza para as carregar.</string>
+    <string name="better_nuvio_autosync_title">Sincronização automática de legendas</string>
+    <string name="better_nuvio_autosync_description">Alinha a legenda do addon ao vídeo usando os tempos das legendas embutidas nos arquivos MKV.</string>
+    <string name="better_nuvio_autosync_working">Sincronizando legenda…</string>
+    <string name="better_nuvio_autosync_applied">Legenda sincronizada automaticamente (%1$s)</string>
+    <string name="better_nuvio_autosync_already">A legenda já está em sincronia com o vídeo</string>
+    <string name="better_nuvio_autosync_no_match">Não deu para casar essa legenda com o vídeo (melhor casamento %1$s)</string>
+    <string name="better_nuvio_autosync_other_version">Essa legenda parece ser de outra versão do vídeo</string>
+    <string name="better_nuvio_autosync_other_fps">Essa legenda é de outra taxa de quadros; a sincronização automática não corrige</string>
+    <string name="better_nuvio_autosync_no_index">Sincronização automática: o vídeo não tem índice de legendas embutidas</string>
+    <string name="better_nuvio_autosync_not_mkv">A sincronização automática funciona só com arquivos MKV</string>
+    <string name="better_nuvio_autosync_network">Sincronização automática: não deu para ler o índice do vídeo (HTTP %1$d)</string>
+    <string name="better_nuvio_autosync_too_far">A sincronização automática achou um atraso grande demais para aplicar (%1$s)</string>
 </resources>

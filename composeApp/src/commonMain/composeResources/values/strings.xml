@@ -2459,4 +2459,16 @@
     <string name="stream_info_subtitle_source_embedded">Embedded</string>
     <string name="stream_info_player_engine">Player Engine</string>
     <string name="stream_info_server">Server</string>
+    <string name="better_nuvio_autosync_title">Subtitle AutoSync</string>
+    <string name="better_nuvio_autosync_description">Aligns addon subtitles to the video using the embedded subtitle timings of MKV files.</string>
+    <string name="better_nuvio_autosync_working">Syncing subtitles…</string>
+    <string name="better_nuvio_autosync_applied">Subtitles synced automatically (%1$s)</string>
+    <string name="better_nuvio_autosync_already">Subtitles already in sync with the video</string>
+    <string name="better_nuvio_autosync_no_match">Couldn\'t match this subtitle to the video (best match %1$s)</string>
+    <string name="better_nuvio_autosync_other_version">This subtitle seems to be for another version of the video</string>
+    <string name="better_nuvio_autosync_other_fps">This subtitle is for another frame rate; AutoSync can\'t fix it</string>
+    <string name="better_nuvio_autosync_no_index">AutoSync: the video has no embedded subtitle index</string>
+    <string name="better_nuvio_autosync_not_mkv">AutoSync works with MKV files only</string>
+    <string name="better_nuvio_autosync_network">AutoSync: couldn\'t read the video index (HTTP %1$d)</string>
+    <string name="better_nuvio_autosync_too_far">AutoSync found an offset too large to apply (%1$s)</string>
 </resources>

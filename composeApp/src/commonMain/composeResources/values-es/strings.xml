@@ -2351,4 +2351,16 @@ Utilizas esta función bajo tu propia responsabilidad. P2P se puede desactivar e
     <string name="stream_info_subtitle_source_addon">Complemento</string>
     <string name="stream_info_subtitle_source_embedded">Integrado</string>
     <string name="stream_info_player_engine">Motor de reproducción</string>
+    <string name="better_nuvio_autosync_title">Sincronización automática de subtítulos</string>
+    <string name="better_nuvio_autosync_description">Alinea los subtítulos del addon con el video usando los tiempos de los subtítulos incrustados en archivos MKV.</string>
+    <string name="better_nuvio_autosync_working">Sincronizando subtítulos…</string>
+    <string name="better_nuvio_autosync_applied">Subtítulos sincronizados automáticamente (%1$s)</string>
+    <string name="better_nuvio_autosync_already">Los subtítulos ya están sincronizados con el video</string>
+    <string name="better_nuvio_autosync_no_match">No se pudo emparejar este subtítulo con el video (mejor coincidencia %1$s)</string>
+    <string name="better_nuvio_autosync_other_version">Este subtítulo parece ser de otra versión del video</string>
+    <string name="better_nuvio_autosync_other_fps">Este subtítulo es de otra tasa de fotogramas; la sincronización automática no lo corrige</string>
+    <string name="better_nuvio_autosync_no_index">Sincronización automática: el video no tiene índice de subtítulos incrustados</string>
+    <string name="better_nuvio_autosync_not_mkv">La sincronización automática solo funciona con archivos MKV</string>
+    <string name="better_nuvio_autosync_network">Sincronización automática: no se pudo leer el índice del video (HTTP %1$d)</string>
+    <string name="better_nuvio_autosync_too_far">La sincronización automática encontró un desfase demasiado grande (%1$s)</string>
 </resources>
