@@ -137,6 +137,8 @@ internal fun LazyListScope.appearanceSettingsContent(
                         onCheckedChange = onLiquidGlassNativeTabBarToggle,
                     )
                 }
+                // Better Nuvio: one icon only (the official colorways carry the Nuvio logo).
+                if (com.nuvio.app.betternuvio.BetterNuvioBranding.appIconPickerEnabled) {
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsNavigationRow(
                     title = stringResource(Res.string.settings_appearance_app_icon),
@@ -155,6 +157,7 @@ internal fun LazyListScope.appearanceSettingsContent(
                         showAppIconPicker = true
                     },
                 )
+                }
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsNavigationRow(
                     title = stringResource(Res.string.settings_appearance_app_language),
