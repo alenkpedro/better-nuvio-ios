@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.5.9.2",
+          "buildVersion": "144",
+          "date": "2026-10-12T12:38:36Z",
+          "localizedDescription": "- Better Nuvio logo on the login, loading and settings screens\n- Better Nuvio app icon\n- Subtitle AutoSync (Settings › Playback)\n- Details screen shows the source Play will reuse\n- Subtitles move up while player controls are visible\n- Based on Nuvio Mobile 0.5.9-beta",
+          "downloadURL": "https://github.com/alenkpedro/better-nuvio-ios/releases/download/0.5.9.2/better-nuvio-0.5.9.2-144.ipa",
+          "size": 68536487,
+          "sha256": "31e07319822cdb4f65a75f418261222fa341466944e101c897f5d199d10b13d5",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.5.9.1",
           "buildVersion": "143",
           "date": "2026-10-11T20:20:22Z",
