@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.nuvio.app.features.streams.StreamItem
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.better_nuvio_stream_uncached
+import nuvio.composeapp.generated.resources.better_nuvio_streams_previous_choice
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToLong
@@ -57,15 +58,17 @@ internal fun BetterStreamDetails(
         if (showSize) info.sizeBytes?.let { add(formatSize(it)) }
     }
     val uncachedLabel = if (info.uncached) stringResource(Res.string.better_nuvio_stream_uncached) else null
-    if (meta.isEmpty() && info.audioLanguages.isEmpty() && uncachedLabel == null &&
+    val previous = if (BetterStreamList.isRemembered(stream)) stringResource(Res.string.better_nuvio_streams_previous_choice) else null
+    if (previous == null && meta.isEmpty() && info.audioLanguages.isEmpty() && uncachedLabel == null &&
         (!showBadgeArt || info.badges.isEmpty())
     ) return
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (meta.isNotEmpty() || info.audioLanguages.isNotEmpty() || uncachedLabel != null) {
+        if (previous != null || meta.isNotEmpty() || info.audioLanguages.isNotEmpty() || uncachedLabel != null) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                previous?.let { AccentChip(it) }
                 if (meta.isNotEmpty()) {
                     Text(
                         text = meta.joinToString(" · "),
@@ -96,6 +99,22 @@ internal fun BetterStreamDetails(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun AccentChip(text: String) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(5.dp))
+            .background(MaterialTheme.colorScheme.primary)
+            .padding(horizontal = 6.dp, vertical = 1.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onPrimary,
+        )
     }
 }
 

@@ -13,10 +13,24 @@ import com.nuvio.app.core.storage.ProfileScopedKey
 internal expect object BetterNuvioStorage {
     fun loadBoolean(key: String): Boolean?
     fun saveBoolean(key: String, value: Boolean)
+    fun loadString(key: String): String?
+    fun saveString(key: String, value: String?)
 }
 
 object BetterNuvioPrefs {
     private const val SUBTITLE_AUTOSYNC = "better_nuvio_subtitle_autosync"
+    private const val STREAMS_BY_RESOLUTION = "better_nuvio_streams_by_resolution"
+
+    private var byResolutionCache by mutableStateOf<Boolean?>(null)
+
+    /** Source list grouped by resolution (4K / 1080p / 720p / SD), as on the TV. On by default. */
+    var streamsByResolution: Boolean
+        get() = byResolutionCache ?: (BetterNuvioStorage.loadBoolean(ProfileScopedKey.of(STREAMS_BY_RESOLUTION)) ?: true)
+            .also { byResolutionCache = it }
+        set(value) {
+            byResolutionCache = value
+            BetterNuvioStorage.saveBoolean(ProfileScopedKey.of(STREAMS_BY_RESOLUTION), value)
+        }
 
     private var autoSyncCache by mutableStateOf<Boolean?>(null)
     private var autoSyncProfileKey: String? = null

@@ -2364,4 +2364,10 @@ Utilizas esta función bajo tu propia responsabilidad. P2P se puede desactivar e
     <string name="better_nuvio_autosync_network">Sincronización automática: no se pudo leer el índice del video (HTTP %1$d)</string>
     <string name="better_nuvio_autosync_too_far">La sincronización automática encontró un desfase demasiado grande (%1$s)</string>
     <string name="better_nuvio_stream_uncached">Sin caché</string>
+    <string name="better_nuvio_streams_previous_choice">Tu elección anterior</string>
+    <string name="better_nuvio_streams_responded">%1$d de %2$d add-ons respondieron</string>
+    <string name="better_nuvio_streams_by_resolution">Por resolución</string>
+    <string name="better_nuvio_streams_direct">Directas</string>
+    <string name="better_nuvio_streams_torrent">Torrent</string>
+    <string name="better_nuvio_streams_other">Otras</string>
 </resources>

@@ -1415,4 +1415,10 @@
     <string name="better_nuvio_autosync_network">Sincronização automática: não deu para ler o índice do vídeo (HTTP %1$d)</string>
     <string name="better_nuvio_autosync_too_far">A sincronização automática achou um atraso grande demais para aplicar (%1$s)</string>
     <string name="better_nuvio_stream_uncached">Fora do cache</string>
+    <string name="better_nuvio_streams_previous_choice">Sua escolha anterior</string>
+    <string name="better_nuvio_streams_responded">%1$d de %2$d add-ons responderam</string>
+    <string name="better_nuvio_streams_by_resolution">Por resolução</string>
+    <string name="better_nuvio_streams_direct">Diretas</string>
+    <string name="better_nuvio_streams_torrent">Torrent</string>
+    <string name="better_nuvio_streams_other">Outras</string>
 </resources>

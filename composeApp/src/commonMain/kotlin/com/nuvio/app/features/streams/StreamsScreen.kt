@@ -157,6 +157,9 @@ fun StreamsScreen(
     var streamActionsTarget by remember(videoId) { mutableStateOf<StreamItem?>(null) }
     val downloadScope = rememberCoroutineScope()
     var preferredFilterApplied by remember(videoId) { mutableStateOf(false) }
+    LaunchedEffect(parentMetaId, videoId) {
+        com.nuvio.app.betternuvio.streams.BetterStreamList.open(parentMetaId.ifBlank { videoId })
+    }
     val episodeProgress = watchProgressUiState.progressForVideo(
         videoId = videoId,
         parentMetaId = parentMetaId,
@@ -737,6 +740,7 @@ internal fun StreamList(
     val fetchingText = stringResource(Res.string.streams_fetching)
     val findingStreamsText = stringResource(Res.string.streams_finding_streams)
     val checkingMoreAddonsText = stringResource(Res.string.streams_checking_more_addons)
+    val otherResolutionText = stringResource(Res.string.better_nuvio_streams_other)
     val formatStreamSize = rememberStreamSizeLabelFormat()
     val streamBadgeSettings by remember {
         StreamBadgeSettingsRepository.ensureLoaded()
@@ -766,11 +770,19 @@ internal fun StreamList(
             }
 
             else -> {
-                filteredGroups.forEachIndexed { groupIndex, group ->
+                // Better Nuvio: TV-style filters, resolution sections and progress (betternuvio/streams).
+                item(key = "better_nuvio_filters") {
+                    com.nuvio.app.betternuvio.streams.BetterStreamFilterBar(filteredGroups)
+                }
+                val betterGroups = com.nuvio.app.betternuvio.streams.BetterStreamList.arrange(filteredGroups) {
+                    com.nuvio.app.betternuvio.streams.BetterStreamList.resolutionLabel(it, otherResolutionText)
+                }
+                val byResolution = com.nuvio.app.betternuvio.BetterNuvioPrefs.streamsByResolution
+                betterGroups.forEachIndexed { groupIndex, group ->
                     streamSection(
                         sectionKey = streamSectionRenderKey(groupIndex = groupIndex, group = group),
                         group = group,
-                        showHeader = uiState.selectedFilter == null,
+                        showHeader = byResolution || uiState.selectedFilter == null,
                         debridEnabled = debridEnabled,
                         appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
                         showFileSizeBadges = streamBadgeSettings.showFileSizeBadges,
@@ -786,7 +798,7 @@ internal fun StreamList(
                 }
                 if (anyLoading) {
                     item {
-                        FooterLoadingBlock(checkingMoreAddonsText = checkingMoreAddonsText)
+                        com.nuvio.app.betternuvio.streams.BetterStreamProgress(uiState.groups)
                     }
                 }
                 item {
@@ -865,6 +877,7 @@ private fun LazyListScope.streamSection(
                 badgePlacement = badgePlacement,
                 onClick = {
                     if (isSelectable) {
+                        com.nuvio.app.betternuvio.streams.BetterStreamList.onManualPick(stream)
                         onStreamSelected(stream, resumePositionMs, resumeProgressFraction)
                     } else if (isUnsupportedTorrentStream) {
                         NuvioToastController.show(torrentNotSupportedText)

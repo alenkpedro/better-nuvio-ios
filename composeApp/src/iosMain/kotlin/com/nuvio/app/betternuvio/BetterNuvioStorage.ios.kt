@@ -11,4 +11,11 @@ internal actual object BetterNuvioStorage {
     actual fun saveBoolean(key: String, value: Boolean) {
         NSUserDefaults.standardUserDefaults.setBool(value, forKey = key)
     }
+
+    actual fun loadString(key: String): String? = NSUserDefaults.standardUserDefaults.stringForKey(key)
+
+    actual fun saveString(key: String, value: String?) {
+        if (value == null) NSUserDefaults.standardUserDefaults.removeObjectForKey(key)
+        else NSUserDefaults.standardUserDefaults.setObject(value, forKey = key)
+    }
 }

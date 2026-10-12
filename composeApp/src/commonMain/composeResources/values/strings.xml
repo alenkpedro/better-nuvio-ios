@@ -2472,4 +2472,10 @@
     <string name="better_nuvio_autosync_network">AutoSync: couldn\'t read the video index (HTTP %1$d)</string>
     <string name="better_nuvio_autosync_too_far">AutoSync found an offset too large to apply (%1$s)</string>
     <string name="better_nuvio_stream_uncached">Not cached</string>
+    <string name="better_nuvio_streams_previous_choice">Your previous choice</string>
+    <string name="better_nuvio_streams_responded">%1$d of %2$d add-ons responded</string>
+    <string name="better_nuvio_streams_by_resolution">By resolution</string>
+    <string name="better_nuvio_streams_direct">Direct</string>
+    <string name="better_nuvio_streams_torrent">Torrent</string>
+    <string name="better_nuvio_streams_other">Other</string>
 </resources>

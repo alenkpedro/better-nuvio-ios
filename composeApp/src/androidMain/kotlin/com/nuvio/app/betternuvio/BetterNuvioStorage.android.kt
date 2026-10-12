@@ -16,4 +16,10 @@ internal actual object BetterNuvioStorage {
     actual fun saveBoolean(key: String, value: Boolean) {
         preferences?.edit()?.putBoolean(key, value)?.apply()
     }
+
+    actual fun loadString(key: String): String? = preferences?.getString(key, null)
+
+    actual fun saveString(key: String, value: String?) {
+        preferences?.edit()?.apply { if (value == null) remove(key) else putString(key, value) }?.apply()
+    }
 }

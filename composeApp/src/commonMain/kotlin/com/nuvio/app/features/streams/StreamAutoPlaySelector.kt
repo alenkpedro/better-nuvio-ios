@@ -132,7 +132,9 @@ object StreamAutoPlaySelector {
             }
         } else {
             null
-        }
+        } ?: com.nuvio.app.betternuvio.streams.BetterStreamList.rememberedAutoPick(
+            candidateStreams.filter { it.isAutoPlayable(debridEnabled, activeResolverProviderId) },
+        )
         val matchingStreams = when (mode) {
             StreamAutoPlayMode.MANUAL -> emptyList()
             StreamAutoPlayMode.FIRST_STREAM -> candidateStreams
