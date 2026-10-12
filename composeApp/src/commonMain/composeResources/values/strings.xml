@@ -2471,4 +2471,5 @@
     <string name="better_nuvio_autosync_not_mkv">AutoSync works with MKV files only</string>
     <string name="better_nuvio_autosync_network">AutoSync: couldn\'t read the video index (HTTP %1$d)</string>
     <string name="better_nuvio_autosync_too_far">AutoSync found an offset too large to apply (%1$s)</string>
+    <string name="better_nuvio_stream_uncached">Not cached</string>
 </resources>

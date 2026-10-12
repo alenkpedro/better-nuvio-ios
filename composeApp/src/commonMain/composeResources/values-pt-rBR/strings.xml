@@ -1414,4 +1414,5 @@
     <string name="better_nuvio_autosync_not_mkv">A sincronização automática funciona só com arquivos MKV</string>
     <string name="better_nuvio_autosync_network">Sincronização automática: não deu para ler o índice do vídeo (HTTP %1$d)</string>
     <string name="better_nuvio_autosync_too_far">A sincronização automática achou um atraso grande demais para aplicar (%1$s)</string>
+    <string name="better_nuvio_stream_uncached">Fora do cache</string>
 </resources>

@@ -130,6 +130,14 @@ internal fun StreamCard(
                 )
             }
 
+            // Better Nuvio: meta line, audio languages and detected badges (betternuvio/streams).
+            com.nuvio.app.betternuvio.streams.BetterStreamDetails(
+                stream = stream,
+                showBadgeArt = badgeImages.isEmpty(),
+                showSize = !(showFileSizeBadges && stream.behaviorHints.videoSize != null),
+                modifier = Modifier.padding(top = 6.dp),
+            )
+
             if (hasBadges && badgePlacement == StreamBadgePlacement.BOTTOM) {
                 Spacer(modifier = Modifier.height(5.dp))
                 StreamCardBadgeRow(
