@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.5.9.4",
+          "buildVersion": "146",
+          "date": "2026-10-13T01:34:24Z",
+          "localizedDescription": "- Player shows the title logo instead of the written title, like Better Nuvio TV\n- Source list like Better Nuvio TV (badges, meta line, audio languages, resolution sections, filters, remembered source)\n- Better Nuvio logo, Subtitle AutoSync, source preview on details\n- Based on Nuvio Mobile 0.5.9-beta",
+          "downloadURL": "https://github.com/alenkpedro/better-nuvio-ios/releases/download/0.5.9.4/better-nuvio-0.5.9.4-146.ipa",
+          "size": 68867086,
+          "sha256": "256b65ca12f2702fc85a8b57f5ee410b4fad9de6d0b746d05720dae0c1a7eb8a",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.5.9.3",
           "buildVersion": "145",
           "date": "2026-10-12T14:18:05Z",
