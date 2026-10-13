@@ -271,6 +271,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
         enter = fadeIn(),
         exit = fadeOut(),
     ) {
+        androidx.compose.runtime.CompositionLocalProvider(com.nuvio.app.betternuvio.LocalPlayerTitleLogo provides logo) {
         PlayerControlsShell(
             title = title,
             streamTitle = activeStreamTitle,
@@ -389,6 +390,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
             horizontalSafePadding = horizontalSafePadding,
             modifier = Modifier.fillMaxSize(),
         )
+        }
     }
 }
 

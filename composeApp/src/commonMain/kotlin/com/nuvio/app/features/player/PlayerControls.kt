@@ -359,17 +359,19 @@ private fun PlayerHeader(
                     modifier = Modifier.graphicsLayer { alpha = metadataAlpha },
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text(
-                        text = title,
-                        style = typeScale.titleLg.copy(
-                            fontSize = metrics.titleSize,
-                            lineHeight = metrics.titleSize * 1.16f,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                        color = Color.White,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    com.nuvio.app.betternuvio.BetterPlayerTitle(maxHeight = metrics.titleSize.value.times(2.6f).dp) {
+                        Text(
+                            text = title,
+                            style = typeScale.titleLg.copy(
+                                fontSize = metrics.titleSize,
+                                lineHeight = metrics.titleSize * 1.16f,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            color = Color.White,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                     if (seasonNumber != null && episodeNumber != null && !episodeTitle.isNullOrBlank()) {
                         Text(
                             text = stringResource(

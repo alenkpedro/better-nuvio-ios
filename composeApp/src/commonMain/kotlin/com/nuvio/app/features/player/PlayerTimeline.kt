@@ -58,17 +58,19 @@ internal fun PlayerTimelineDetails(
 ) {
     val typeScale = MaterialTheme.nuvioTypeScale
     Column(Modifier.padding(horizontal = PlayerTimelineContentInset)) {
-        Text(
-            text = title,
-            style = typeScale.titleLg.copy(
-                fontSize = metrics.titleSize,
-                lineHeight = metrics.titleSize * 1.16f,
-                fontWeight = FontWeight.SemiBold,
-            ),
-            color = Color.White,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        com.nuvio.app.betternuvio.BetterPlayerTitle(maxHeight = metrics.titleSize.value.times(2.6f).dp) {
+            Text(
+                text = title,
+                style = typeScale.titleLg.copy(
+                    fontSize = metrics.titleSize,
+                    lineHeight = metrics.titleSize * 1.16f,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         if (seasonNumber != null && episodeNumber != null) {
             val episodeCode = stringResource(Res.string.compose_player_episode_code_full, seasonNumber, episodeNumber)
             Text(
