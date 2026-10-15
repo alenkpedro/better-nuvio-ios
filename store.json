@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.7.1",
+          "buildVersion": "150",
+          "date": "2026-10-15T00:47:41Z",
+          "localizedDescription": "- Original Nuvio look, polished\n- Hero: Play starts a movie directly (series open their page), library button and the source Play will reuse\n- Continue Watching shows title and time left under the image\n- A faint light from the title's colours on the hero, details, Library and Profile\n- Clear recent searches; system font; about 110 pt-BR strings completed\n- Optional Sala and Marquise palettes (default stays White)",
+          "downloadURL": "https://github.com/alenkpedro/better-nuvio-ios/releases/download/0.7.1/better-nuvio-0.7.1-150.ipa",
+          "size": 68945884,
+          "sha256": "65e228808fa16c54933da4e9b39fbbc48ac4b70e15526b26935ba4f0e96b2258",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.5.9.4",
           "buildVersion": "146",
           "date": "2026-10-13T01:34:24Z",
