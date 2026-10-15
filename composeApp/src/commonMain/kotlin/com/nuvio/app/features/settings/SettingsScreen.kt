@@ -658,9 +658,19 @@ private fun MobileSettingsScreen(
             }
         }
 
+        // Better Nuvio "Marquise": Profile's top shows the backdrop of what this profile watched last.
+        val watchProgressUiState by com.nuvio.app.features.watchprogress.WatchProgressRepository.uiState
+            .collectAsStateWithLifecycle()
+        val profileBackdrop = remember(watchProgressUiState.entries) {
+            watchProgressUiState.entries
+                .filter { !it.background.isNullOrBlank() }
+                .maxByOrNull { it.lastUpdatedEpochMs }
+                ?.background
+        }
         NuvioScreen(
             modifier = Modifier.nestedScroll(rootSearchRevealConnection),
             listState = listState,
+            backdropUrl = profileBackdrop.takeIf { page == SettingsPage.Root && showInternalHeader },
         ) {
             if (showInternalHeader) {
                 stickyHeader {

@@ -1302,6 +1302,17 @@ internal fun MainAppContent(
                                 onPosterLongClick = { meta ->
                                     openPosterActions(PosterActionTarget(preview = meta))
                                 },
+                                onHeroPlay = { meta ->
+                                    // Better Nuvio: the hero's Play starts a movie directly; a series opens its page.
+                                    if (meta.type.equals("movie", ignoreCase = true)) {
+                                        onPlay(
+                                            meta.type, meta.id, meta.id, meta.type, meta.name, meta.logo,
+                                            meta.poster, meta.banner, null, null, null, null, meta.description, null,
+                                        )
+                                    } else {
+                                        navController.openPreview(meta)
+                                    }
+                                },
                                 onLibraryPosterClick = { item ->
                                     navController.navigate(
                                         DetailRoute(type = item.type, id = item.id, title = item.name),

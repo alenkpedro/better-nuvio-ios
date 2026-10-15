@@ -120,6 +120,7 @@ fun HomeScreen(
     onCatalogClick: ((HomeCatalogSection) -> Unit)? = null,
     onPosterClick: ((MetaPreview) -> Unit)? = null,
     onPosterLongClick: ((MetaPreview) -> Unit)? = null,
+    onHeroPlay: ((MetaPreview) -> Unit)? = null,
     onContinueWatchingClick: ((ContinueWatchingItem) -> Unit)? = null,
     onContinueWatchingLongPress: ((ContinueWatchingItem) -> Unit)? = null,
     continueWatchingDisintegrationRequest: DisintegrationRequest<String>? = null,
@@ -1009,6 +1010,7 @@ fun HomeScreen(
                                 listState = homeListState,
                                 stretchPx = { heroStretchState.stretchPx },
                                 onItemClick = onPosterClick,
+                                onItemPlay = onHeroPlay,
                             )
 
                             else -> HomeHeroReservedSpace(

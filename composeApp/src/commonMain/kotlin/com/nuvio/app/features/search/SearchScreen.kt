@@ -83,6 +83,7 @@ import nuvio.composeapp.generated.resources.compose_search_empty_no_search_catal
 import nuvio.composeapp.generated.resources.compose_search_empty_no_search_catalogs_title
 import nuvio.composeapp.generated.resources.compose_search_placeholder
 import nuvio.composeapp.generated.resources.compose_search_recent_searches
+import nuvio.composeapp.generated.resources.better_nuvio_search_clear_recent
 import nuvio.composeapp.generated.resources.compose_search_remove_recent_search
 import org.jetbrains.compose.resources.stringResource
 
@@ -471,11 +472,26 @@ private fun SearchRecentSection(
             .padding(horizontal = 16.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(
-            text = stringResource(Res.string.compose_search_recent_searches),
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(Res.string.compose_search_recent_searches),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            // Better Nuvio: clear every recent search at once.
+            Text(
+                text = stringResource(Res.string.better_nuvio_search_clear_recent),
+                modifier = Modifier
+                    .clickable(onClick = SearchHistoryRepository::clearAll)
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Spacer(modifier = Modifier.height(4.dp))
         recentSearches.forEach { recentQuery ->
             SearchRecentRow(

@@ -1,6 +1,8 @@
 package com.nuvio.app.core.ui
 
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.better_nuvio_theme_marquise
+import nuvio.composeapp.generated.resources.better_nuvio_theme_sala
 import nuvio.composeapp.generated.resources.theme_amber
 import nuvio.composeapp.generated.resources.theme_crimson
 import nuvio.composeapp.generated.resources.theme_emerald
@@ -30,10 +32,15 @@ enum class AppTheme {
     AMBER,
     ROSE,
     WHITE,
+    // Better Nuvio palettes (optional; the default stays WHITE like the original Nuvio).
+    SALA,
+    MARQUISE,
 }
 
 val AppTheme.labelRes: StringResource
     get() = when (this) {
+        AppTheme.SALA -> Res.string.better_nuvio_theme_sala
+        AppTheme.MARQUISE -> Res.string.better_nuvio_theme_marquise
         AppTheme.GOLD -> Res.string.theme_gold
         AppTheme.JADE -> Res.string.theme_jade
         AppTheme.ROSE_GOLD -> Res.string.theme_rose_gold

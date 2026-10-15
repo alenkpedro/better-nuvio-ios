@@ -19,11 +19,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
-import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.jetbrains_sans_bold
-import nuvio.composeapp.generated.resources.jetbrains_sans_regular
-import nuvio.composeapp.generated.resources.jetbrains_sans_semibold
-import org.jetbrains.compose.resources.Font
 
 val LocalAppTheme = staticCompositionLocalOf { AppTheme.WHITE }
 val LocalThemePalette = staticCompositionLocalOf { ThemeColors.White }
@@ -38,34 +33,30 @@ val MaterialTheme.appTheme: AppTheme
     @ReadOnlyComposable
     get() = LocalAppTheme.current
 
-private fun contentColorFor(background: Color): Color =
-    if (background.luminance() > 0.5f) Color(0xFF111111) else Color(0xFFF5F7F8)
+private fun contentColorFor(background: Color, light: Color): Color =
+    if (background.luminance() > 0.5f) Color(0xFF111111) else light
 
 private fun buildColorScheme(palette: ThemeColorPalette, amoled: Boolean = false) = darkColorScheme(
     primary = palette.secondary,
     onPrimary = palette.onSecondary,
     primaryContainer = palette.focusBackground,
-    onPrimaryContainer = contentColorFor(palette.focusBackground),
+    onPrimaryContainer = contentColorFor(palette.focusBackground, palette.textPrimary),
     secondary = palette.secondaryVariant,
     onSecondary = palette.onSecondaryVariant,
     background = if (amoled) Color.Black else palette.background,
-    onBackground = Color(0xFFF5F7F8),
+    onBackground = palette.textPrimary,
     surface = palette.backgroundElevated,
-    onSurface = Color(0xFFF5F7F8),
+    onSurface = palette.textPrimary,
     surfaceVariant = palette.backgroundCard,
-    onSurfaceVariant = Color(0xFF969CA3),
-    outline = Color(0xFF252A2A),
+    onSurfaceVariant = palette.textMuted,
+    outline = palette.border,
     error = Color(0xFFE36A8A),
     onError = Color(0xFFFCE5EC),
 )
 
-private val JetBrainsSans: FontFamily
-    @Composable
-    get() = FontFamily(
-        Font(Res.font.jetbrains_sans_bold, FontWeight.Bold, FontStyle.Normal),
-        Font(Res.font.jetbrains_sans_semibold, FontWeight.SemiBold, FontStyle.Normal),
-        Font(Res.font.jetbrains_sans_regular, FontWeight.Normal, FontStyle.Normal),
-    )
+// Better Nuvio: the original Nuvio type scale, set in the platform font (SF Pro on iOS)
+// instead of the bundled JetBrains Sans.
+private val JetBrainsSans: FontFamily = FontFamily.Default
 
 private val NuvioTypography: Typography
     @Composable

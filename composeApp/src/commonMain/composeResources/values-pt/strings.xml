@@ -1906,4 +1906,8 @@
     <string name="better_nuvio_streams_direct">Diretas</string>
     <string name="better_nuvio_streams_torrent">Torrent</string>
     <string name="better_nuvio_streams_other">Outras</string>
+    <string name="better_nuvio_theme_marquise">Marquise</string>
+    <string name="better_nuvio_hero_play">Assistir</string>
+    <string name="better_nuvio_search_clear_recent">Limpar</string>
+    <string name="better_nuvio_theme_sala">Sala</string>
 </resources>

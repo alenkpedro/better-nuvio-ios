@@ -54,6 +54,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.nuvio.app.betternuvio.BetterHeroActions
+import com.nuvio.app.betternuvio.rememberRoomLight
+import com.nuvio.app.betternuvio.roomLight
 import com.nuvio.app.core.format.formatReleaseDateForDisplay
 import com.nuvio.app.core.ui.heroStretchHeight
 import com.nuvio.app.core.ui.ScreenActivityEffect
@@ -100,6 +103,7 @@ fun HomeHeroSection(
     listState: LazyListState? = null,
     stretchPx: () -> Float = { 0f },
     onItemClick: ((MetaPreview) -> Unit)? = null,
+    onItemPlay: ((MetaPreview) -> Unit)? = null,
 ) {
     if (items.isEmpty()) return
 
@@ -189,6 +193,7 @@ fun HomeHeroSection(
             ?.itemIndex
             ?.let(items::get)
             ?: items[currentPage % items.size]
+        val heroLight = rememberRoomLight(currentItem.banner ?: currentItem.poster)
 
         Box(
             modifier = Modifier
@@ -262,7 +267,9 @@ fun HomeHeroSection(
                                     MaterialTheme.colorScheme.background,
                                 ),
                             ),
-                        ),
+                        )
+                        // Better Nuvio: a faint wash of the title's colours where the hero meets the page.
+                        .roomLight(heroLight, centerYFraction = 0.92f, intensity = { 0.45f }),
                 )
 
                 Column(
@@ -298,23 +305,14 @@ fun HomeHeroSection(
                     }
 
                     if (!layout.isTablet) {
+                        // Better Nuvio: play straight from the hero (movies; a series opens its page),
+                        // add to library, and the source Play will reuse, in the original centred layout.
                         Spacer(modifier = Modifier.height(14.dp))
-                        Surface(
-                            modifier = Modifier
-                                .clickable(enabled = onItemClick != null) {
-                                    onItemClick?.invoke(currentItem)
-                                },
-                            color = MaterialTheme.colorScheme.onBackground,
-                            contentColor = MaterialTheme.colorScheme.background,
-                            shape = RoundedCornerShape(40.dp),
-                        ) {
-                            Text(
-                                text = stringResource(Res.string.home_view_details),
-                                modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
+                        BetterHeroActions(
+                            item = currentItem,
+                            onPlay = { (onItemPlay ?: onItemClick)?.invoke(currentItem) },
+                            centered = true,
+                        )
                     }
 
                     if (items.size > 1) {

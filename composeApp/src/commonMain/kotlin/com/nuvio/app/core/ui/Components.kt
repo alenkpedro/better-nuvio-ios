@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -79,6 +80,41 @@ fun NuvioScreen(
     horizontalPadding: Dp = MaterialTheme.nuvio.spacing.screenHorizontal,
     topPadding: Dp? = null,
     listState: LazyListState = rememberLazyListState(),
+    backdropUrl: String? = null,
+    content: LazyListScope.() -> Unit,
+) {
+    val tokens = MaterialTheme.nuvio
+    if (backdropUrl != null) {
+        // Better Nuvio "Marquise": the tab's backdrop shows through its large title.
+        val fadePx = with(androidx.compose.ui.platform.LocalDensity.current) { 120.dp.toPx() }
+        Box(modifier = modifier.fillMaxSize().background(tokens.colors.background)) {
+            com.nuvio.app.betternuvio.MarqueeScreenBackdrop(imageUrl = backdropUrl, listState = listState)
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.nuvio.app.betternuvio.LocalMarqueeHeaderOpacity provides
+                    com.nuvio.app.betternuvio.marqueeHeaderOpacity(listState, fadePx),
+            ) {
+                NuvioScreenList(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalPadding = horizontalPadding,
+                    topPadding = topPadding,
+                    listState = listState,
+                    transparent = true,
+                    content = content,
+                )
+            }
+        }
+        return
+    }
+    NuvioScreenList(modifier, horizontalPadding, topPadding, listState, transparent = false, content = content)
+}
+
+@Composable
+private fun NuvioScreenList(
+    modifier: Modifier,
+    horizontalPadding: Dp,
+    topPadding: Dp?,
+    listState: LazyListState,
+    transparent: Boolean,
     content: LazyListScope.() -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
@@ -87,7 +123,7 @@ fun NuvioScreen(
         state = listState,
         modifier = modifier
             .fillMaxSize()
-            .background(tokens.colors.background),
+            .background(if (transparent) androidx.compose.ui.graphics.Color.Transparent else tokens.colors.background),
         contentPadding = PaddingValues(
             start = horizontalPadding,
             top = topPadding ?: tokens.spacing.screenTop + statusBarTop + nuvioPlatformExtraTopPadding,
@@ -160,10 +196,17 @@ fun NuvioScreenHeader(
     Box(
         modifier = modifier.fillMaxWidth(),
     ) {
+        val headerOpacity = com.nuvio.app.betternuvio.LocalMarqueeHeaderOpacity.current
         Row(
             modifier = Modifier
                 .matchParentSize()
-                .background(tokens.colors.background)
+                .then(
+                    if (headerOpacity != null) {
+                        Modifier.drawBehind { drawRect(tokens.colors.background.copy(alpha = headerOpacity())) }
+                    } else {
+                        Modifier.background(tokens.colors.background)
+                    },
+                )
                 .nuvioConsumePointerEvents(),
         ) {}
         Row(

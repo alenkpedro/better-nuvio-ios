@@ -295,10 +295,18 @@ fun LibraryScreen(
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val gridColumns = remember(maxWidth) { posterGridColumnCountForWidth(maxWidth) }
 
+        // Better Nuvio "Marquise": the most recently saved title's backdrop behind the large title.
+        val libraryBackdrop = remember(uiState.items) {
+            uiState.items
+                .filter { !it.banner.isNullOrBlank() }
+                .maxByOrNull { it.savedAtEpochMs }
+                ?.banner
+        }
         NuvioScreen(
             modifier = Modifier.fillMaxSize(),
             horizontalPadding = 0.dp,
             listState = listState,
+            backdropUrl = libraryBackdrop,
         ) {
             stickyHeader {
                 Box(modifier = Modifier.fillMaxWidth()) {

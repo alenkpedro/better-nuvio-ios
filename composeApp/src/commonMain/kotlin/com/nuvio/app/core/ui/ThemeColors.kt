@@ -14,9 +14,50 @@ data class ThemeColorPalette(
     val background: Color = Color(0xFF0D0D0D),
     val backgroundElevated: Color = Color(0xFF1A1A1A),
     val backgroundCard: Color = Color(0xFF242424),
+    val textPrimary: Color = Color(0xFFF5F7F8),
+    val textSecondary: Color = Color(0xFFB8BEC5),
+    val textMuted: Color = Color(0xFF969CA3),
+    val border: Color = Color(0xFF252A2A),
 )
 
 object ThemeColors {
+
+    // Better Nuvio "Sala": a dark, slightly blue room lit by what's on (design-ios-pro/DIRECTION.md).
+    // The accent is the brand mark's cyan, kept for "where you are" (progress, current, chosen source).
+    val Sala = ThemeColorPalette(
+        secondary = Color(0xFF55C8F2),
+        secondaryVariant = Color(0xFF3FB6E6),
+        nativeAccentHex = "#55C8F2",
+        onSecondary = Color(0xFF04121A),
+        onSecondaryVariant = Color(0xFF04121A),
+        focusRing = Color(0xFF7AD6F6),
+        focusBackground = Color(0xFF1B1F27),
+        background = Color(0xFF07080B),
+        backgroundElevated = Color(0xFF12151B),
+        backgroundCard = Color(0xFF1B1F27),
+        textPrimary = Color(0xFFEEF3F8),
+        textSecondary = Color(0xFFC2C9D1),
+        textMuted = Color(0xFF9AA2AC),
+        border = Color(0xFF232833),
+    )
+
+    // Better Nuvio "Marquise": tungsten amber on warm black (design-ios/DIRECTION.md).
+    val Marquise = ThemeColorPalette(
+        secondary = Color(0xFFF2A13B),
+        secondaryVariant = Color(0xFFF6B65F),
+        nativeAccentHex = "#F2A13B",
+        onSecondary = Color(0xFF1A0F05),
+        onSecondaryVariant = Color(0xFF1A0F05),
+        focusRing = Color(0xFFF6B65F),
+        focusBackground = Color(0xFF251E18),
+        background = Color(0xFF0C0907),
+        backgroundElevated = Color(0xFF1A1511),
+        backgroundCard = Color(0xFF251E18),
+        textPrimary = Color(0xFFF6EEE4),
+        textSecondary = Color(0xFFC9C0B5),
+        textMuted = Color(0xFFA39A8F),
+        border = Color(0xFF2E2620),
+    )
 
     val Gold = ThemeColorPalette(
         secondary = Color(0xFFE8A91C),
@@ -178,6 +219,8 @@ object ThemeColors {
         customColors: CustomThemeColors = CustomThemeColors.Default,
     ): ThemeColorPalette = when (theme) {
         AppTheme.CUSTOM -> customColors.toColorPalette()
+        AppTheme.SALA -> Sala
+        AppTheme.MARQUISE -> Marquise
         AppTheme.GOLD -> Gold
         AppTheme.JADE -> Jade
         AppTheme.ROSE_GOLD -> RoseGold

@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.graphicsLayer
 import coil3.compose.AsyncImage
+import com.nuvio.app.betternuvio.roomLight
 import com.nuvio.app.core.ui.heroStretchHeight
 import com.nuvio.app.core.ui.heroStretchZoom
 import com.nuvio.app.features.details.MetaDetails
@@ -204,6 +205,8 @@ fun DetailHero(
                     }
                 }
 
+                // Better Nuvio: a faint wash of the backdrop's colours under the title.
+                val heroLight = com.nuvio.app.betternuvio.rememberRoomLight(meta.background ?: meta.poster)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -221,7 +224,8 @@ fun DetailHero(
                                     1.00f to bottomGradientColor,
                                 ),
                             ),
-                        ),
+                        )
+                        .roomLight(heroLight, centerYFraction = 0.88f, intensity = { 0.45f }),
                 )
 
                 Column(

@@ -80,6 +80,9 @@ private val ContinueWatchingNewSeasonBadgeColor = Color(0xFFB45309)
 private const val ContinueWatchingLandscapeCardScale = 1.2f
 internal val HomeContinueWatchingSectionBottomPadding = 12.dp
 
+/** Better Nuvio: Card style shows its title and time left under the still (title 20 + meta 18 + gap 8). */
+internal val ContinueWatchingCardCaptionHeight = 46.dp
+
 internal fun continueWatchingLandscapeCardWidth(basePosterWidthDp: Int): Dp =
     (landscapePosterWidth(basePosterWidthDp).value * ContinueWatchingLandscapeCardScale).dp
 
@@ -94,7 +97,7 @@ internal fun continueWatchingSectionHeightEstimate(
     val headerHeight = NuvioTokens.Space.s40
     val headerToRowGap = NuvioTokens.Space.s8 + NuvioTokens.Space.s2
     val rowHeight = when (style) {
-        ContinueWatchingSectionStyle.Card -> continueWatchingLandscapeCardHeight(basePosterWidthDp)
+        ContinueWatchingSectionStyle.Card -> continueWatchingLandscapeCardHeight(basePosterWidthDp) + ContinueWatchingCardCaptionHeight
         ContinueWatchingSectionStyle.Wide -> layout.wideCardHeight
         ContinueWatchingSectionStyle.Poster -> layout.posterCardHeight + layout.posterTitleBlockHeight
     }
@@ -708,6 +711,8 @@ private fun ContinueWatchingCard(
     val backgroundColor = MaterialTheme.colorScheme.background
     val badgeBackground = continueWatchingBadgeBackground(item)
 
+    val timeLeftText = if (item.progressFraction > 0f) badgeText else null
+    Column(modifier = Modifier.width(cardMetrics.width)) {
     Box(
         modifier = Modifier
             .width(cardMetrics.width)
@@ -739,20 +744,14 @@ private fun ContinueWatchingCard(
                     .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier)
                     .drawWithContent {
                         drawContent()
-
-                        val startY = size.height * 0.45f
-                        val gradient = Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0.0f to Color.Transparent,
-                                0.60f to backgroundColor.copy(alpha = 0.70f),
-                                1.0f to backgroundColor.copy(alpha = 0.95f),
-                            ),
-                            startY = startY,
-                            endY = size.height,
-                        )
-
+                        // Light scrim only behind the progress line.
+                        val startY = size.height * 0.62f
                         drawRect(
-                            brush = gradient,
+                            brush = Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.38f)),
+                                startY = startY,
+                                endY = size.height,
+                            ),
                             topLeft = Offset(-2f, startY),
                             size = Size(size.width + 4f, (size.height - startY) + 4f),
                         )
@@ -761,80 +760,38 @@ private fun ContinueWatchingCard(
             )
         }
         if (item.shufflePlayback) ShuffleBadge(Modifier.align(Alignment.TopStart).padding(8.dp))
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(cardMetrics.contentPadding),
-            verticalArrangement = Arrangement.spacedBy(cardMetrics.textGap),
-        ) {
-            if (episodeCode != null) {
+        if (timeLeftText == null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(cardMetrics.badgeInset)
+                    .clip(ContinueWatchingStatusBadgeShape)
+                    .background(badgeBackground)
+                    .padding(
+                        horizontal = cardMetrics.badgeHorizontalPadding,
+                        vertical = cardMetrics.badgeVerticalPadding,
+                    ),
+            ) {
                 Text(
-                    text = episodeCode,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontSize = cardMetrics.metaTextSize,
+                    text = badgeText,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = cardMetrics.badgeTextSize,
                         fontWeight = FontWeight.SemiBold,
                     ),
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = Color.White,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.titleSmall.copy(
-                    fontSize = cardMetrics.titleTextSize,
-                    fontWeight = FontWeight.SemiBold,
-                ),
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (episodeTitle != null) {
-                Text(
-                    text = episodeTitle,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = cardMetrics.metaTextSize,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(cardMetrics.badgeInset)
-                .clip(ContinueWatchingStatusBadgeShape)
-                .background(badgeBackground)
-                .padding(
-                    horizontal = cardMetrics.badgeHorizontalPadding,
-                    vertical = cardMetrics.badgeVerticalPadding,
-                ),
-        ) {
-            Text(
-                text = badgeText,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = cardMetrics.badgeTextSize,
-                    fontWeight = FontWeight.SemiBold,
-                ),
-                color = Color.White,
-                maxLines = 1,
-            )
         }
         if (item.progressFraction > 0f) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(
-                        horizontal = cardMetrics.progressHorizontalPadding,
-                        vertical = cardMetrics.progressBottomPadding,
-                    )
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(999.dp))
-                    .height(cardMetrics.progressHeight)
-                    .background(Color.Black.copy(alpha = 0.30f)),
+                    .height(3.dp)
+                    .background(Color.White.copy(alpha = 0.28f)),
             ) {
                 Box(
                     modifier = Modifier
@@ -845,6 +802,22 @@ private fun ContinueWatchingCard(
                 )
             }
         }
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text = item.title,
+        style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
+        color = MaterialTheme.colorScheme.onBackground,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+    Text(
+        text = listOfNotNull(episodeCode, episodeTitle, timeLeftText).joinToString(" · "),
+        style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
     }
 }
 

@@ -2478,4 +2478,8 @@
     <string name="better_nuvio_streams_direct">Direct</string>
     <string name="better_nuvio_streams_torrent">Torrent</string>
     <string name="better_nuvio_streams_other">Other</string>
+    <string name="better_nuvio_theme_marquise">Marquise</string>
+    <string name="better_nuvio_hero_play">Play</string>
+    <string name="better_nuvio_search_clear_recent">Clear</string>
+    <string name="better_nuvio_theme_sala">Room</string>
 </resources>
