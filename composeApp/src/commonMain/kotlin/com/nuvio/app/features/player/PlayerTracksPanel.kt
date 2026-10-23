@@ -68,6 +68,7 @@ import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.addon_title
 import nuvio.composeapp.generated.resources.bn_back
 import nuvio.composeapp.generated.resources.bn_decimal_separator
+import nuvio.composeapp.generated.resources.bn_player_subtitle_synced
 import nuvio.composeapp.generated.resources.bn_subtitle_background
 import nuvio.composeapp.generated.resources.bn_subtitle_background_full
 import nuvio.composeapp.generated.resources.bn_subtitle_background_half
@@ -1267,5 +1268,42 @@ private fun SubtitleFontGrid(
                 Text(text = stringResource(it), color = Color(0xFFFF8A80), fontSize = 11.sp)
             }
         }
+    }
+}
+
+/**
+ * Better Nuvio: pílula verde "Legenda sincronizada · +1,2 s" no canto do player.
+ * Só aparece quando a legenda de addon escolhida foi sincronizada sozinha.
+ */
+@Composable
+internal fun PlayerSubtitleSyncedPill(
+    selectedAddonSubtitle: AddonSubtitle?,
+    subtitleDelayMs: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val syncedUrl by AutoSyncSyncedSubtitle.url.collectAsState()
+    if (selectedAddonSubtitle == null || syncedUrl == null || selectedAddonSubtitle.url != syncedUrl) return
+    val decimal = stringResource(Res.string.bn_decimal_separator)
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(percent = 50))
+            .background(SyncedGreen)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+        Text(
+            text = stringResource(
+                Res.string.bn_player_subtitle_synced,
+                formatSubtitleDelaySeconds(subtitleDelayMs, decimal),
+            ),
+            color = Color.White,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+        )
     }
 }

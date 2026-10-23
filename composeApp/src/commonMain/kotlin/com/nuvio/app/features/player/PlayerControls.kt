@@ -176,6 +176,7 @@ internal fun PlayerControlsShell(
     onTimelineTouchChange: (Boolean) -> Unit = {},
     skipIntervals: List<com.nuvio.app.features.player.skip.SkipInterval> = emptyList(),
     logoUrl: String? = null,
+    topEndBadge: @Composable () -> Unit = {},
 ) {
     val density = LocalDensity.current
     var timelineHeight by remember { mutableStateOf(0.dp) }
@@ -295,6 +296,17 @@ internal fun PlayerControlsShell(
                             .windowInsetsPadding(playerToolbarTopInsets(metrics))
                             .padding(horizontal = metrics.horizontalPadding),
                     )
+                }
+                if (showPlaybackControls) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .windowInsetsPadding(playerToolbarTopInsets(metrics))
+                            .padding(horizontal = metrics.horizontalPadding)
+                            .padding(top = 58.dp),
+                    ) {
+                        topEndBadge()
+                    }
                 }
                 ParentalGuideOverlay(
                     warnings = parentalWarnings,

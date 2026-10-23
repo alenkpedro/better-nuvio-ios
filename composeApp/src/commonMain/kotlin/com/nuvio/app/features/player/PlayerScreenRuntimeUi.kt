@@ -669,6 +669,16 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
             onTimelineTouchChange = { touching -> isTouchingTimeline = touching },
             skipIntervals = skipIntervals,
             logoUrl = if (isLiveTvPlayback) activeLogo else logo,
+            topEndBadge = {
+                PlayerSubtitleSyncedPill(
+                    selectedAddonSubtitle = selectedAddonSubtitle,
+                    subtitleDelayMs = subtitleDelayMs,
+                    onClick = {
+                        refreshTracks()
+                        showSubtitleModal = true
+                    },
+                )
+            },
         )
     }
 }
