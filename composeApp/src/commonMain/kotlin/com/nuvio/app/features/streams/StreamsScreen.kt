@@ -99,6 +99,7 @@ import com.nuvio.app.core.ui.glass.LocalLiquidGlassBackdrop
 import com.nuvio.app.core.ui.glass.ambientLiquidGlass
 import com.nuvio.app.core.ui.glass.isAmbientLiquidGlassActive
 import com.nuvio.app.core.ui.NuvioTokens
+import com.nuvio.app.core.ui.ProvideCorViva
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.ui.graphics.compositeOver
@@ -175,6 +176,7 @@ fun StreamsScreen(
     val noDirectStreamLinkText = stringResource(Res.string.streams_no_direct_link)
     var streamActionsTarget by remember(videoId) { mutableStateOf<StreamItem?>(null) }
     var streamSearchQuery by rememberSaveable(videoId) { mutableStateOf("") }
+    var resolutionFilter by rememberSaveable(videoId) { mutableStateOf<String?>(null) }
     val downloadScope = rememberCoroutineScope()
     var preferredFilterApplied by remember(videoId) { mutableStateOf(false) }
     val episodeProgress = watchProgressUiState.progressForVideo(
@@ -215,6 +217,33 @@ fun StreamsScreen(
             StreamsRepository.selectFilter(preferredAddonId)
             preferredFilterApplied = true
         }
+    }
+
+    // Better Nuvio: a recomendada ("a de sempre" = mesmo bingeGroup da última vez
+    // neste título; senão a escolha do auto-play), calculada sobre a lista inteira.
+    val pinnedSourceIdsForPick by rememberPinnedStreamSourceIds()
+    val usualBingeGroup = remember(parentMetaId, uiState.groups) { BingeGroupCacheRepository.get(parentMetaId) }
+    val usualFilename = remember(parentMetaId, usualBingeGroup) { usualBingeGroup?.let { BingeGroupCacheRepository.getFilename(parentMetaId) } }
+    val usualInfoHash = remember(parentMetaId, usualBingeGroup) { usualBingeGroup?.let { BingeGroupCacheRepository.getInfoHash(parentMetaId) } }
+    val recommendedStream = remember(
+        uiState.groups,
+        uiState.autoPlayStream,
+        pinnedSourceIdsForPick,
+        playerSettings,
+        debridSettings,
+        usualBingeGroup,
+    ) {
+        val ordered = splitPinnedSources(uiState.groups, pinnedSourceIdsForPick)
+        pickRecommendedStream(
+            orderedStreams = (ordered.pinnedGroups + ordered.remainingGroups).flatMap { it.streams }.distinct(),
+            autoPlayStream = uiState.autoPlayStream,
+            playerSettings = playerSettings,
+            debridEnabled = debridSettings.canResolvePlayableLinks,
+            activeResolverProviderId = debridSettings.activeResolverProviderId,
+            usualBingeGroup = usualBingeGroup,
+            usualFilename = usualFilename,
+            usualInfoHash = usualInfoHash,
+        )
     }
 
     val heroArtwork = if (isEpisode) {
@@ -301,6 +330,7 @@ fun StreamsScreen(
 
     if (showLoadingScreen) return
 
+    ProvideCorViva(artUrl = background ?: poster) {
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
@@ -365,6 +395,9 @@ fun StreamsScreen(
                 },
                 onStreamLongPress = { stream -> streamActionsTarget = stream },
                 onRefresh = reloadStreams,
+                resolutionFilter = resolutionFilter,
+                onResolutionFilterChange = { resolutionFilter = it },
+                recommended = recommendedStream,
             )
         }
 
@@ -437,6 +470,7 @@ fun StreamsScreen(
             },
         )
     }
+    }
 }
 
 @Composable
@@ -461,6 +495,9 @@ private fun MobileStreamsLayout(
     onStreamSelected: (stream: StreamItem, resumePositionMs: Long?, resumeProgressFraction: Float?) -> Unit,
     onStreamLongPress: (StreamItem) -> Unit,
     onRefresh: () -> Unit,
+    resolutionFilter: String?,
+    onResolutionFilterChange: (String?) -> Unit,
+    recommended: RecommendedStream?,
     modifier: Modifier = Modifier,
 ) {
     val streamsGlassBackdrop = rememberNuvioBackdrop()
@@ -536,11 +573,13 @@ private fun MobileStreamsLayout(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                             )
                         }
-                        ProviderFilterRow(
-                            groups = uiState.groups,
-                            selectedFilter = uiState.selectedFilter,
-                            onFilterSelected = { addonId -> StreamsRepository.selectFilter(addonId) },
-                            onRefresh = onRefresh,
+                        // Better Nuvio: "Fontes · 26 encontradas · 3 addons", busca,
+                        // resolução e abas por addon, como na proposta da Função 3.
+                        val streamsWithContent = uiState.groups.filter { it.streams.isNotEmpty() }
+                        FontesHeader(
+                            streamCount = streamsWithContent.sumOf { it.streams.size },
+                            addonCount = streamsWithContent.size,
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 2.dp),
                         )
 
                         if (showSearchField) {
@@ -551,7 +590,22 @@ private fun MobileStreamsLayout(
                             )
                         }
 
-                        val listUiState = rememberStreamSearchResult(uiState, searchQuery, showSearchField)
+                        if (uiState.hasAnyStreams) {
+                            ResolutionFilterRow(
+                                selected = resolutionFilter,
+                                onSelected = onResolutionFilterChange,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            )
+                        }
+
+                        ProviderFilterRow(
+                            groups = uiState.groups,
+                            selectedFilter = uiState.selectedFilter,
+                            onFilterSelected = { addonId -> StreamsRepository.selectFilter(addonId) },
+                            onRefresh = onRefresh,
+                        )
+
+                        val listUiState = rememberStreamSearchResult(uiState, searchQuery, showSearchField, resolutionFilter)
                         if (listUiState.isEmptyBecauseOfSearch) {
                             StreamSearchEmptyBlock(modifier = Modifier.weight(1f))
                             return@Column
@@ -566,6 +620,7 @@ private fun MobileStreamsLayout(
                             resumePositionMs = resumePositionMs,
                             resumeProgressFraction = resumeProgressFraction,
                             modifier = Modifier.weight(1f),
+                            recommended = recommended,
                         )
                     }
                 }
@@ -796,8 +851,20 @@ internal fun StreamList(
     resumePositionMs: Long?,
     resumeProgressFraction: Float?,
     modifier: Modifier = Modifier,
+    recommended: RecommendedStream? = null,
 ) {
-    val filteredGroups = uiState.filteredGroups
+    // A recomendada sobe para o topo só quando ela passa pelos filtros em vigor,
+    // e sai da lista de baixo para não aparecer duas vezes.
+    val visibleRecommended = recommended?.takeIf { rec ->
+        uiState.filteredGroups.any { group -> rec.stream in group.streams }
+    }
+    val filteredGroups = if (visibleRecommended == null) {
+        uiState.filteredGroups
+    } else {
+        uiState.filteredGroups.map { group ->
+            group.copy(streams = group.streams.filterNot { it == visibleRecommended.stream })
+        }
+    }
     val hasGroups = filteredGroups.isNotEmpty()
     val hasAnyStreams = filteredGroups.any { it.streams.isNotEmpty() }
     val anyLoading = filteredGroups.any { it.isLoading }
@@ -866,6 +933,23 @@ internal fun StreamList(
             }
 
             else -> {
+                visibleRecommended?.let { rec ->
+                    item(key = "bn_recommended") {
+                        Column {
+                            RecommendedStreamCard(
+                                recommended = rec,
+                                onClick = { onStreamSelected(rec.stream, resumePositionMs, resumeProgressFraction) },
+                                onLongClick = {
+                                    val stream = rec.stream
+                                    if (stream.playableDirectUrl != null || stream.shouldOpenExternally || stream.isAddonDebridCandidate) {
+                                        onStreamLongPress(stream)
+                                    }
+                                },
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
+                    }
+                }
                 pinnedFirst.pinnedGroups.forEachIndexed { pinnedIndex, group ->
                     streamSection(
                         sectionKey = "pinned:" + streamSectionRenderKey(groupIndex = pinnedIndex, group = group),
@@ -902,9 +986,10 @@ internal fun StreamList(
                         resumeProgressFraction = resumeProgressFraction,
                     )
                 }
-                if (anyLoading) {
-                    item {
-                        FooterLoadingBlock(checkingMoreAddonsText = checkingMoreAddonsText)
+                // Better Nuvio: o carregamento por addon no fim ("Comet · buscando").
+                filteredGroups.filter { it.isLoading }.forEachIndexed { index, group ->
+                    item(key = "bn_loading_${index}_${group.addonId}") {
+                        AddonLoadingRow(addonName = group.addonName)
                     }
                 }
                 item {
@@ -932,7 +1017,8 @@ private fun LazyListScope.streamSection(
     resumePositionMs: Long?,
     resumeProgressFraction: Float?,
 ) {
-    if (group.streams.isEmpty() && !group.isLoading) return
+    // Addon ainda sem fontes: aparece só na linha "· buscando" do fim da lista.
+    if (group.streams.isEmpty()) return
 
     if (showHeader) {
         item(key = "header_$sectionKey") {
@@ -1005,6 +1091,7 @@ private fun LazyListScope.streamSection(
                         onStreamLongPress(stream)
                     }
                 },
+                bnLayout = true,
             )
             Spacer(modifier = Modifier.height(10.dp))
         }
@@ -1463,10 +1550,11 @@ internal fun rememberStreamSearchResult(
     uiState: StreamsUiState,
     query: String,
     enabled: Boolean,
-): StreamSearchResult = remember(uiState, query, enabled) {
+    resolution: String? = null,
+): StreamSearchResult = remember(uiState, query, enabled, resolution) {
     val terms = if (enabled) query.trim().lowercase().split(' ').filter { it.isNotEmpty() } else emptyList()
-    if (terms.isEmpty()) return@remember StreamSearchResult(uiState, isEmptyBecauseOfSearch = false)
-    val groups = uiState.groups.map { group ->
+    if (terms.isEmpty() && resolution == null) return@remember StreamSearchResult(uiState, isEmptyBecauseOfSearch = false)
+    val groups = uiState.withResolutionFilter(resolution).groups.map { group ->
         group.copy(streams = group.streams.filter { it.matchesSearchTerms(terms) })
     }
     val filtered = uiState.copy(groups = groups)

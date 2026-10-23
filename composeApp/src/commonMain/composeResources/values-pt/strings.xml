@@ -1285,6 +1285,19 @@
     <string name="streams_episode_fallback_title">Episódio</string>
     <string name="streams_episode_title_with_name">T%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">A obter…</string>
+    <string name="bn_streams_title">Fontes</string>
+    <string name="bn_streams_recommended">Recomendada</string>
+    <string name="bn_streams_recommended_usual">Recomendada · a do costume</string>
+    <string name="bn_streams_resolution_all">Todas</string>
+    <string name="bn_streams_addon_loading">%1$s · a procurar</string>
+    <plurals name="bn_streams_found_count">
+        <item quantity="one">%1$d encontrada</item>
+        <item quantity="other">%1$d encontradas</item>
+    </plurals>
+    <plurals name="bn_streams_addons_count">
+        <item quantity="one">%1$d addon</item>
+        <item quantity="other">%1$d addons</item>
+    </plurals>
     <string name="streams_finding_source">A procurar fonte…</string>
     <string name="streams_loading_subtitles">A carregar legendas dos addons…</string>
     <string name="streams_finding_streams">A procurar streams…</string>
