@@ -51,6 +51,29 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.ThumbDown
+import androidx.compose.material.icons.rounded.ThumbUp
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.text.style.TextAlign
+import com.nuvio.app.core.ui.corViva
+import com.nuvio.app.core.ui.onCorViva
+import kotlin.math.roundToInt
+import nuvio.composeapp.generated.resources.bn_action_download
+import nuvio.composeapp.generated.resources.bn_action_external
+import nuvio.composeapp.generated.resources.bn_action_from_start
+import nuvio.composeapp.generated.resources.bn_action_my_list
+import nuvio.composeapp.generated.resources.bn_action_shuffle
+import nuvio.composeapp.generated.resources.bn_action_sources
+import nuvio.composeapp.generated.resources.bn_action_watched
+import nuvio.composeapp.generated.resources.bn_rating_disliked
+import nuvio.composeapp.generated.resources.bn_rating_liked
+import nuvio.composeapp.generated.resources.bn_rating_long_press_hint
+import nuvio.composeapp.generated.resources.bn_rating_loved
+import nuvio.composeapp.generated.resources.bn_resume_available
 import com.nuvio.app.core.ui.AppIconResource
 import com.nuvio.app.core.ui.accentBrush
 import com.nuvio.app.core.ui.nuvio
@@ -87,6 +110,8 @@ data class DetailSecondaryAction(
     val isActive: Boolean = false,
     val onClick: () -> Unit = {},
     val onLongClick: (() -> Unit)? = null,
+    // Better Nuvio: short name shown under the round button ("Minha lista", "Visto").
+    val shortLabel: String = label,
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -106,6 +131,8 @@ fun DetailActionButtons(
     iconActions: List<DetailSecondaryAction> = emptyList(),
     userRating: Int? = null,
     onRateClick: (() -> Unit)? = null,
+    resumeProgress: Float? = null,
+    onQuickRate: ((Int?) -> Unit)? = null,
 ) {
     val playPainter = appIconPainter(AppIconResource.PlayerPlay)
     val buttonHeight = if (isTablet) 56.dp else 52.dp
@@ -126,6 +153,7 @@ fun DetailActionButtons(
             .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        resumeProgress?.let { ResumeAvailableLine(it) }
         if (iconActionRow) {
             PlayButton(
                 playLabel = playLabel,
@@ -147,9 +175,10 @@ fun DetailActionButtons(
                 )
             }
             onRateClick?.let { rate ->
-                UserRatingStars(
+                TitleRatingControl(
                     rating = userRating,
-                    onClick = rate,
+                    onRateClick = rate,
+                    onQuickRate = onQuickRate,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 )
             }
@@ -339,9 +368,10 @@ fun DetailActionButtons(
             }
         }
         onRateClick?.let { rate ->
-            UserRatingStars(
+            TitleRatingControl(
                 rating = userRating,
-                onClick = rate,
+                onRateClick = rate,
+                onQuickRate = onQuickRate,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             )
         }
@@ -371,6 +401,9 @@ fun DetailActions(
     iconActionRow: Boolean = false,
     userRating: Int? = null,
     onRateClick: (() -> Unit)? = null,
+    resumeProgress: Float? = null,
+    onSourcesClick: (() -> Unit)? = null,
+    onQuickRate: ((Int?) -> Unit)? = null,
 ) {
     val actionSet = detailActionSet(
         isSaved = isSaved,
@@ -383,6 +416,7 @@ fun DetailActions(
         onDownloadClick = onDownloadClick,
         onPlayFromStartClick = onPlayFromStartClick,
         onPlayExternallyClick = onPlayExternallyClick,
+        onSourcesClick = onSourcesClick,
     )
     val shuffleAction = actionSet.shuffle
     val watchedAction = actionSet.watched
@@ -405,6 +439,8 @@ fun DetailActions(
         onPlayLongClick = onPlayLongClick,
         userRating = userRating,
         onRateClick = onRateClick,
+        resumeProgress = resumeProgress,
+        onQuickRate = onQuickRate,
     )
 }
 
@@ -427,6 +463,7 @@ private fun detailActionSet(
     onDownloadClick: (() -> Unit)?,
     onPlayFromStartClick: (() -> Unit)?,
     onPlayExternallyClick: (() -> Unit)?,
+    onSourcesClick: (() -> Unit)? = null,
 ): DetailActionSet {
     val shuffleAction = onShuffleClick?.let { onClick ->
         DetailSecondaryAction(
@@ -434,6 +471,7 @@ private fun detailActionSet(
             icon = Icons.Default.Shuffle,
             isActive = shuffleEnabled,
             onClick = onClick,
+            shortLabel = stringResource(Res.string.bn_action_shuffle),
         )
     }
     val watchedAction = DetailSecondaryAction(
@@ -441,6 +479,7 @@ private fun detailActionSet(
         icon = if (isWatched) Icons.Default.Visibility else Icons.Default.VisibilityOff,
         isActive = isWatched,
         onClick = onWatchedClick,
+        shortLabel = stringResource(Res.string.bn_action_watched),
     )
     val saveAction = DetailSecondaryAction(
         label = stringResource(if (isSaved) Res.string.hero_remove_from_library else Res.string.hero_add_to_library),
@@ -449,16 +488,41 @@ private fun detailActionSet(
         isActive = isSaved,
         onClick = onSaveClick,
         onLongClick = onSaveLongClick,
+        shortLabel = stringResource(Res.string.bn_action_my_list),
     )
     val downloadLabel = stringResource(Res.string.details_download_action)
     val playFromStartLabel = stringResource(Res.string.details_action_start_from_beginning)
     val externalLabel = stringResource(Res.string.streams_open_external_player)
+    val sourcesLabel = stringResource(Res.string.bn_action_sources)
+    val fromStartShort = stringResource(Res.string.bn_action_from_start)
+    val downloadShort = stringResource(Res.string.bn_action_download)
+    val externalShort = stringResource(Res.string.bn_action_external)
+    // Better Nuvio: same order as the TV page (Do comeco, Minha lista, Fontes, Visto, Baixar).
     val iconActions = buildList {
-        onDownloadClick?.let { download ->
-            add(DetailSecondaryAction(label = downloadLabel, icon = Icons.Rounded.Download, onClick = download))
-        }
         onPlayFromStartClick?.let { playFromStart ->
-            add(DetailSecondaryAction(label = playFromStartLabel, icon = Icons.Rounded.Replay, onClick = playFromStart))
+            add(
+                DetailSecondaryAction(
+                    label = playFromStartLabel,
+                    icon = Icons.Rounded.Replay,
+                    onClick = playFromStart,
+                    shortLabel = fromStartShort,
+                ),
+            )
+        }
+        add(saveAction)
+        onSourcesClick?.let { sources ->
+            add(DetailSecondaryAction(label = sourcesLabel, icon = Icons.Rounded.Layers, onClick = sources))
+        }
+        add(watchedAction)
+        onDownloadClick?.let { download ->
+            add(
+                DetailSecondaryAction(
+                    label = downloadLabel,
+                    icon = Icons.Rounded.Download,
+                    onClick = download,
+                    shortLabel = downloadShort,
+                ),
+            )
         }
         shuffleAction?.let(::add)
         onPlayExternallyClick?.let { playExternally ->
@@ -467,11 +531,10 @@ private fun detailActionSet(
                     label = externalLabel,
                     icon = Icons.AutoMirrored.Rounded.OpenInNew,
                     onClick = playExternally,
+                    shortLabel = externalShort,
                 ),
             )
         }
-        add(watchedAction)
-        add(saveAction)
     }
     return DetailActionSet(shuffleAction, watchedAction, saveAction, iconActions)
 }
@@ -496,6 +559,9 @@ fun TabletDetailHeroActions(
     onPlayExternallyClick: (() -> Unit)? = null,
     userRating: Int? = null,
     onRateClick: (() -> Unit)? = null,
+    resumeProgress: Float? = null,
+    onSourcesClick: (() -> Unit)? = null,
+    onQuickRate: ((Int?) -> Unit)? = null,
 ) {
     val actionSet = detailActionSet(
         isSaved = isSaved,
@@ -508,6 +574,7 @@ fun TabletDetailHeroActions(
         onDownloadClick = onDownloadClick,
         onPlayFromStartClick = onPlayFromStartClick,
         onPlayExternallyClick = onPlayExternallyClick,
+        onSourcesClick = onSourcesClick,
     )
     val playPainter = appIconPainter(AppIconResource.PlayerPlay)
     val buttonHeight = 56.dp
@@ -515,8 +582,10 @@ fun TabletDetailHeroActions(
     val resolvedPlayLabel = if (playEnabled) playLabel else stringResource(Res.string.playback_unavailable)
 
     if (landscape) {
+        Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        resumeProgress?.let { ResumeAvailableLine(it) }
         Row(
-            modifier = modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(TabletHeroActionGap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -536,7 +605,7 @@ fun TabletDetailHeroActions(
                     modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center,
                 ) {
-                    UserRatingStars(rating = userRating, onClick = onRateClick, starSize = TabletRatingStarSize)
+                    TitleRatingControl(rating = userRating, onRateClick = onRateClick, onQuickRate = onQuickRate)
                 }
                 DetailIconActionRow(
                     actions = actionSet.icons,
@@ -554,12 +623,16 @@ fun TabletDetailHeroActions(
                 )
             }
         }
+        }
     } else {
         Column(
             modifier = modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            resumeProgress?.let { progress ->
+                Box(Modifier.widthIn(max = TabletPortraitActionsMaxWidth).fillMaxWidth()) { ResumeAvailableLine(progress) }
+            }
             PlayButton(
                 playLabel = resolvedPlayLabel,
                 playEnabled = playEnabled,
@@ -582,7 +655,7 @@ fun TabletDetailHeroActions(
                     .fillMaxWidth(),
             )
             onRateClick?.let { rate ->
-                UserRatingStars(rating = userRating, onClick = rate, starSize = TabletRatingStarSize)
+                TitleRatingControl(rating = userRating, onRateClick = rate, onQuickRate = onQuickRate)
             }
         }
     }
@@ -604,6 +677,7 @@ private fun DetailIconActionRow(
         Spacer(modifier = modifier)
         return
     }
+    // Better Nuvio: round glass buttons with their name underneath, like the TV page.
     BoxWithConstraints(modifier = modifier) {
         val layout = fitIconActionRow(
             count = actions.size,
@@ -616,26 +690,159 @@ private fun DetailIconActionRow(
                 .fillMaxWidth()
                 .then(if (layout.fits) Modifier else Modifier.horizontalScroll(rememberScrollState())),
             horizontalArrangement = Arrangement.spacedBy(
-                space = layout.spacing,
+                space = 0.dp,
                 alignment = horizontalAlignment,
             ),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
         ) {
             actions.forEach { action ->
-                DetailIconAction(
-                    label = action.label,
-                    icon = action.icon,
-                    drawable = action.drawable,
-                    active = action.isActive,
-                    progress = 1f,
-                    size = layout.size,
-                    onClick = action.onClick,
-                    onLongClick = action.onLongClick,
+                Column(
+                    modifier = Modifier.width(layout.cellWidth),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    DetailIconAction(
+                        label = action.label,
+                        icon = action.icon,
+                        drawable = action.drawable,
+                        active = action.isActive,
+                        progress = 1f,
+                        size = layout.size,
+                        onClick = action.onClick,
+                        onLongClick = action.onLongClick,
+                    )
+                    Text(
+                        text = action.shortLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (action.isActive) {
+                            MaterialTheme.colorScheme.onBackground
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** "Retomada disponível · 38%" above the main button, as on the TV page. */
+@Composable
+private fun ResumeAvailableLine(progress: Float) {
+    Text(
+        text = stringResource(Res.string.bn_resume_available, (progress * 100f).roundToInt().coerceIn(1, 99)),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+private val QuickRatingValues = listOf(3, 7, 10)
+
+private fun quickRatingIndex(rating: Int?): Int? = when {
+    rating == null -> null
+    rating <= 4 -> 0
+    rating <= 8 -> 1
+    else -> 2
+}
+
+/**
+ * Better Nuvio: "Não curti / Curti / Amei" (TV v4). Each segment writes a 1–10 rating
+ * (3 / 7 / 10) to the connected services; the same segment again removes it. A long press
+ * on Curti opens the full 1–10 sheet. Without [onQuickRate] it falls back to the stars.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun TitleRatingControl(
+    rating: Int?,
+    onRateClick: () -> Unit,
+    onQuickRate: ((Int?) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    if (onQuickRate == null) {
+        UserRatingStars(rating = rating, onClick = onRateClick, modifier = modifier)
+        return
+    }
+    val hapticFeedback = LocalHapticFeedback.current
+    val selected = quickRatingIndex(rating)
+    val accent = corViva()
+    val shape = RoundedCornerShape(40.dp)
+    val labels = listOf(
+        stringResource(Res.string.bn_rating_disliked),
+        stringResource(Res.string.bn_rating_liked),
+        stringResource(Res.string.bn_rating_loved),
+    )
+    val icons = listOf(Icons.Rounded.ThumbDown, Icons.Rounded.ThumbUp, Icons.Rounded.Favorite)
+    val hint = stringResource(Res.string.bn_rating_long_press_hint)
+    Row(
+        modifier = modifier
+            .widthIn(max = 420.dp)
+            .fillMaxWidth()
+            .height(44.dp)
+            .clip(shape)
+            .ambientLiquidGlass(
+                shape = shape,
+                tint = BetterNuvioGlass,
+                fallback = BetterNuvioGlass,
+            )
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        labels.forEachIndexed { index, label ->
+            val isSelected = selected == index
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clip(shape)
+                    .background(if (isSelected) accent else Color.Transparent)
+                    .combinedClickable(
+                        role = Role.Button,
+                        onClickLabel = if (index == 1) hint else null,
+                        onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onQuickRate(if (isSelected) null else QuickRatingValues[index])
+                        },
+                        onLongClick = if (index == 1) {
+                            {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onRateClick()
+                            }
+                        } else {
+                            null
+                        },
+                    ),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val contentColor = if (isSelected) accent.onCorViva() else MaterialTheme.colorScheme.onSurface
+                Icon(
+                    imageVector = icons[index],
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = contentColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
     }
 }
+
+/** Glass of the TV (38, 38, 44 at 50%). */
+private val BetterNuvioGlass = Color(red = 38, green = 38, blue = 44, alpha = 128)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -650,7 +857,8 @@ internal fun DetailIconAction(
     drawable: DrawableResource? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
-    val glassActive = !active && isAmbientLiquidGlassActive()
+    val glassActive = isAmbientLiquidGlassActive()
+    val ring = corViva()
     Surface(
         modifier = modifier
             .graphicsLayer {
@@ -668,20 +876,15 @@ internal fun DetailIconAction(
                 } else {
                     Modifier
                 },
-            ),
+            )
+            .then(if (active) Modifier.border(2.dp, ring, CircleShape) else Modifier),
         shape = CircleShape,
-        color = if (active) {
-            MaterialTheme.colorScheme.onBackground
-        } else if (glassActive) {
+        color = if (glassActive) {
             Color.Transparent
         } else {
             MaterialTheme.colorScheme.surfaceVariant
         },
-        contentColor = if (active) {
-            MaterialTheme.colorScheme.background
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        },
+        contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 6.dp,
     ) {
         Box(
@@ -724,22 +927,15 @@ private fun PlayButton(
     onPlayLongClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
+        // Better Nuvio: the main button is filled with the title's cor viva.
+        val playColor = corViva()
         Surface(
             modifier = modifier
-                .height(buttonHeight)
-                .then(
-                    if (playEnabled) {
-                        Modifier
-                            .clip(playShape)
-                            .background(MaterialTheme.themePalette.accentBrush())
-                    } else {
-                        Modifier
-                    },
-                ),
+                .height(buttonHeight),
             shape = playShape,
-            color = if (playEnabled) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant,
+            color = if (playEnabled) playColor else MaterialTheme.colorScheme.surfaceVariant,
             contentColor = if (playEnabled) {
-                MaterialTheme.nuvio.colors.onAccent
+                playColor.onCorViva()
             } else {
                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             },
@@ -779,7 +975,7 @@ private fun PlayButton(
         }
 }
 
-private data class IconActionRowLayout(val size: Dp, val spacing: Dp, val fits: Boolean)
+private data class IconActionRowLayout(val size: Dp, val cellWidth: Dp, val fits: Boolean)
 
 private fun fitIconActionRow(
     count: Int,
@@ -787,21 +983,15 @@ private fun fitIconActionRow(
     preferredSize: Dp,
     preferredSpacing: Dp,
 ): IconActionRowLayout {
-    if (count <= 1) return IconActionRowLayout(preferredSize, preferredSpacing, true)
-    val gaps = count - 1
-    val minSpacing = 8.dp
-    val minSize = 44.dp
-    if (preferredSize * count + preferredSpacing * gaps <= availableWidth) {
-        return IconActionRowLayout(preferredSize, preferredSpacing, true)
-    }
-    val spacingAtPreferredSize = (availableWidth - preferredSize * count) / gaps
-    if (spacingAtPreferredSize >= minSpacing) {
-        return IconActionRowLayout(preferredSize, spacingAtPreferredSize, true)
-    }
-    val shrunkSize = (availableWidth - minSpacing * gaps) / count
-    return if (shrunkSize >= minSize) {
-        IconActionRowLayout(shrunkSize, minSpacing, true)
+    val minCell = 62.dp
+    val maxCell = preferredSize + preferredSpacing + 24.dp
+    if (count <= 0) return IconActionRowLayout(preferredSize, maxCell, true)
+    val evenCell = availableWidth / count
+    return if (evenCell >= minCell) {
+        val cell = if (evenCell < maxCell) evenCell else maxCell
+        val size = if (cell - 12.dp < preferredSize) cell - 12.dp else preferredSize
+        IconActionRowLayout(if (size < 44.dp) 44.dp else size, cell, true)
     } else {
-        IconActionRowLayout(minSize, minSpacing, false)
+        IconActionRowLayout(48.dp, 68.dp, false)
     }
 }

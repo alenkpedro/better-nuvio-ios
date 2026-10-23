@@ -26,6 +26,10 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.VolumeOff
+import androidx.compose.material.icons.rounded.Theaters
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import com.nuvio.app.core.ui.glass.ambientLiquidGlass
 import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -75,6 +79,7 @@ fun DetailHero(
     onHeroTrailerReady: () -> Unit = {},
     onHeroTrailerEnded: () -> Unit = {},
     onHeroTrailerError: () -> Unit = {},
+    onTrailerButtonClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(
@@ -201,6 +206,36 @@ fun DetailHero(
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(muteIconSize),
+                        )
+                    }
+                }
+
+                // Better Nuvio: the trailer lives in a glass button at the top (the mute icon takes
+                // this corner while the hero trailer is playing).
+                if (onTrailerButtonClick != null && !heroTrailerReady) {
+                    val trailerShape = CircleShape
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(
+                                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp,
+                                end = if (isTablet) 22.dp else 12.dp,
+                            )
+                            .size(40.dp)
+                            .clip(trailerShape)
+                            .ambientLiquidGlass(
+                                shape = trailerShape,
+                                tint = Color(red = 38, green = 38, blue = 44, alpha = 128),
+                                fallback = Color(red = 38, green = 38, blue = 44, alpha = 200),
+                            )
+                            .clickable(onClick = onTrailerButtonClick),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Theaters,
+                            contentDescription = stringResource(Res.string.bn_action_trailer),
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }
