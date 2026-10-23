@@ -322,6 +322,7 @@
     <string name="collections_pinned">مثبّتة</string>
     <string name="collections_tab_all">الكل</string>
     <string name="collections_your_collections">مجموعاتك</string>
+    <string name="compose_about_made_with">صنع بكل ❤️ بواسطة Tapframe والأصدقاء</string>
     <string name="compose_about_version_format">الإصدار %1$s (%2$s)</string>
     <string name="compose_action_off">معطل</string>
     <string name="compose_action_on">مفعل</string>
