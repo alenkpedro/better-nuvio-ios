@@ -42,6 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -1260,11 +1261,12 @@ private fun SettingsSearchField(
             )
         },
         textStyle = MaterialTheme.typography.bodyLarge.copy(color = tokens.colors.textPrimary),
+        // Better Nuvio: o mesmo vidro dos grupos dos Ajustes (rgba(255,255,255,.055), borda .05).
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = tokens.colors.borderFocus,
-            unfocusedBorderColor = tokens.colors.borderDefault,
-            focusedContainerColor = tokens.colors.surfaceCard,
-            unfocusedContainerColor = tokens.colors.surfaceCard,
+            focusedBorderColor = Color.White.copy(alpha = 0.18f),
+            unfocusedBorderColor = Color.White.copy(alpha = 0.05f),
+            focusedContainerColor = Color.White.copy(alpha = 0.055f),
+            unfocusedContainerColor = Color.White.copy(alpha = 0.055f),
             cursorColor = tokens.colors.accent,
         ),
     )

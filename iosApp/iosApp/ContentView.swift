@@ -1904,6 +1904,9 @@ struct NativeNavContentView: View {
                     appCoordinator: appCoordinator
                 )
                 .ignoresSafeArea(.all)
+                // Better Nuvio: fundo da folha dos Ajustes = #0A0A0B (sem o material azulado do sistema).
+                .background(Color(red: 10 / 255, green: 10 / 255, blue: 11 / 255).ignoresSafeArea())
+                .modifier(BetterNuvioSheetBackground())
             }
 
             AppGateComposeView(appCoordinator: appCoordinator)
@@ -2000,5 +2003,16 @@ private extension UIColor {
             blue: CGFloat(rgb & 0xFF) / 255,
             alpha: 1
         )
+    }
+}
+
+/// Fundo da folha dos Ajustes sem o material do sistema (iOS 16.4+).
+private struct BetterNuvioSheetBackground: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.4, *) {
+            content.presentationBackground(Color(red: 10 / 255, green: 10 / 255, blue: 11 / 255))
+        } else {
+            content
+        }
     }
 }

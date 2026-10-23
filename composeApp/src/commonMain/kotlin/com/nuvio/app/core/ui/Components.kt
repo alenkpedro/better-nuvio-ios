@@ -80,12 +80,15 @@ fun NuvioScreen(
     topPadding: Dp? = null,
     listState: LazyListState = rememberLazyListState(),
     autoHidesNativeTabBar: Boolean = false,
+    background: Color? = null,
     content: LazyListScope.() -> Unit,
 ) {
     NativeTabBarScrollEffect(listState = listState, enabled = autoHidesNativeTabBar)
     val tokens = MaterialTheme.nuvio
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val screenBackground = if (LocalDynamicArtworkBackgroundActive.current) {
+    val screenBackground = if (background != null) {
+        background
+    } else if (LocalDynamicArtworkBackgroundActive.current) {
         Color.Transparent
     } else {
         tokens.colors.background

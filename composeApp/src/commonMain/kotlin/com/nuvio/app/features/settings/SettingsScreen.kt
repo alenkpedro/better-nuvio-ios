@@ -39,6 +39,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -747,9 +748,11 @@ private fun MobileSettingsScreen(
             autoHidesNativeTabBar = true,
             topPadding = when {
                 page == SettingsPage.Profile -> 0.dp
-                rootInSheet -> 24.dp
+                rootInSheet -> 20.dp
                 else -> null
             },
+            // Na folha, o fundo da spec dos Ajustes (#0A0A0B), não o da paleta.
+            background = if (rootInSheet) Color(0xFF0A0A0B) else null,
         ) {
             if (profileDrawsOwnChrome) {
             } else if (showInternalHeader) {
