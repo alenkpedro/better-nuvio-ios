@@ -454,7 +454,6 @@ internal fun TabletFloatingTopBar(
                     )
                 }
                 // Better Nuvio: Perfil/Ajustes moved to the avatar on Home (TV layout).
-                }
             }
         }
     }

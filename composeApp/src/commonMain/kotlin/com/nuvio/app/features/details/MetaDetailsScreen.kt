@@ -1347,6 +1347,7 @@ fun MetaDetailsScreen(
                                                             resumeProgress = resumeProgress,
                                                             onSourcesClick = onPrimaryPlayLongClick,
                                                             onQuickRate = onQuickRate,
+                                                            usualSourceMetaId = meta.id,
                                                         )
                                                     }
                                                 } else {
@@ -2562,6 +2563,7 @@ private fun ConfiguredMetaSections(
                     resumeProgress = resumeProgress,
                     onSourcesClick = onPrimaryPlayLongClick,
                     onQuickRate = onQuickRate,
+                    usualSourceMetaId = meta.id,
                 )
             }
             MetaScreenSectionKey.OVERVIEW -> {

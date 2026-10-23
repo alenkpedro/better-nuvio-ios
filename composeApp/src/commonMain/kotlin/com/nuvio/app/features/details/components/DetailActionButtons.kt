@@ -42,6 +42,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.Dp
@@ -74,6 +75,11 @@ import nuvio.composeapp.generated.resources.bn_rating_liked
 import nuvio.composeapp.generated.resources.bn_rating_long_press_hint
 import nuvio.composeapp.generated.resources.bn_rating_loved
 import nuvio.composeapp.generated.resources.bn_resume_available
+import nuvio.composeapp.generated.resources.bn_details_usual_source
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.features.streams.LastUsedSource
+import com.nuvio.app.features.streams.lastUsedSourceFor
+import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.core.ui.AppIconResource
 import com.nuvio.app.core.ui.accentBrush
 import com.nuvio.app.core.ui.nuvio
@@ -133,6 +139,7 @@ fun DetailActionButtons(
     onRateClick: (() -> Unit)? = null,
     resumeProgress: Float? = null,
     onQuickRate: ((Int?) -> Unit)? = null,
+    usualSource: LastUsedSource? = null,
 ) {
     val playPainter = appIconPainter(AppIconResource.PlayerPlay)
     val buttonHeight = if (isTablet) 56.dp else 52.dp
@@ -166,6 +173,7 @@ fun DetailActionButtons(
                 onPlayLongClick = onPlayLongClick,
                 modifier = Modifier.fillMaxWidth(),
             )
+            usualSource?.let { UsualSourceLine(it) }
             if (iconActions.isNotEmpty()) {
                 DetailIconActionRow(
                     actions = iconActions,
@@ -367,6 +375,7 @@ fun DetailActionButtons(
                 }
             }
         }
+        usualSource?.let { UsualSourceLine(it) }
         onRateClick?.let { rate ->
             TitleRatingControl(
                 rating = userRating,
@@ -375,6 +384,55 @@ fun DetailActionButtons(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             )
         }
+    }
+}
+
+/**
+ * Better Nuvio: the source the Play button is going to use, under it — "1080p" badge plus
+ * "BestCine · a de sempre". It is the last source used for this title (saved progress), so it
+ * is hidden when the title was never played with a known source.
+ */
+@Composable
+private fun UsualSourceLine(source: LastUsedSource) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        source.resolution?.let { resolution ->
+            Box(
+                modifier = Modifier
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(6.dp),
+                    )
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    text = resolution,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                )
+            }
+        }
+        Text(
+            text = stringResource(Res.string.bn_details_usual_source, source.addonName),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun rememberUsualSource(metaId: String?): LastUsedSource? {
+    val progressState by WatchProgressRepository.uiState.collectAsStateWithLifecycle()
+    return remember(metaId, progressState.entries) {
+        lastUsedSourceFor(metaId, progressState.entries)
     }
 }
 
@@ -404,6 +462,7 @@ fun DetailActions(
     resumeProgress: Float? = null,
     onSourcesClick: (() -> Unit)? = null,
     onQuickRate: ((Int?) -> Unit)? = null,
+    usualSourceMetaId: String? = null,
 ) {
     val actionSet = detailActionSet(
         isSaved = isSaved,
@@ -441,6 +500,7 @@ fun DetailActions(
         onRateClick = onRateClick,
         resumeProgress = resumeProgress,
         onQuickRate = onQuickRate,
+        usualSource = rememberUsualSource(usualSourceMetaId),
     )
 }
 
@@ -562,6 +622,7 @@ fun TabletDetailHeroActions(
     resumeProgress: Float? = null,
     onSourcesClick: (() -> Unit)? = null,
     onQuickRate: ((Int?) -> Unit)? = null,
+    usualSourceMetaId: String? = null,
 ) {
     val actionSet = detailActionSet(
         isSaved = isSaved,
@@ -580,10 +641,12 @@ fun TabletDetailHeroActions(
     val buttonHeight = 56.dp
     val playShape = RoundedCornerShape(40.dp)
     val resolvedPlayLabel = if (playEnabled) playLabel else stringResource(Res.string.playback_unavailable)
+    val usualSource = rememberUsualSource(usualSourceMetaId)
 
     if (landscape) {
         Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         resumeProgress?.let { ResumeAvailableLine(it) }
+        usualSource?.let { UsualSourceLine(it) }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(TabletHeroActionGap),
@@ -646,6 +709,9 @@ fun TabletDetailHeroActions(
                     .widthIn(max = TabletPortraitActionsMaxWidth)
                     .fillMaxWidth(),
             )
+            usualSource?.let { source ->
+                Box(Modifier.widthIn(max = TabletPortraitActionsMaxWidth).fillMaxWidth()) { UsualSourceLine(source) }
+            }
             DetailIconActionRow(
                 actions = actionSet.icons,
                 preferredSize = buttonHeight,

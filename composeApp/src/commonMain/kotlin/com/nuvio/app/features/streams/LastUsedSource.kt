@@ -7,7 +7,7 @@ import com.nuvio.app.features.watchprogress.WatchProgressEntry
  * resolução, tirados do progresso salvo pelo player (providerName e o nome da
  * fonte). Sem progresso local com fonte, não há o que mostrar.
  */
-internal data class LastUsedSource(
+data class LastUsedSource(
     val addonName: String,
     val resolution: String?,
 ) {

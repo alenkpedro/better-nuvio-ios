@@ -422,6 +422,7 @@
     <string name="compose_catalog_subtitle_simkl_library">Lista de interesses do Simkl</string>
     <string name="compose_nav_calendar">Agenda</string>
     <string name="compose_nav_discover">Explorar</string>
+    <string name="bn_details_usual_source">%1$s · a de sempre</string>
     <string name="compose_nav_home">Início</string>
     <string name="compose_nav_library">Biblioteca</string>
     <string name="compose_nav_live_tv">TV ao vivo</string>
