@@ -308,6 +308,7 @@
     <string name="collections_tab_all">Tudo</string>
     <string name="collections_your_collections">As tuas coleções</string>
     <string name="compose_about_made_with">Feito com ❤️ pela Tapframe e amigos</string>
+    <string name="bn_about_fork_by">Fork por Pedro Alencar</string>
     <string name="compose_about_version_format">Versão %1$s (%2$s)</string>
     <string name="compose_action_off">Desativado</string>
     <string name="compose_action_on">Ativado</string>

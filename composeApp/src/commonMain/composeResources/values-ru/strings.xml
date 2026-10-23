@@ -335,6 +335,7 @@
     <string name="collections_tab_all">Все</string>
     <string name="collections_your_collections">Ваши коллекции</string>
     <string name="compose_about_made_with">Сделано с ❤️ Tapframe и друзьями</string>
+    <string name="bn_about_fork_by">Форк от Pedro Alencar</string>
     <string name="compose_about_version_format">Версия %1$s (%2$s)</string>
     <string name="compose_action_off">Выкл.</string>
     <string name="compose_action_on">Вкл.</string>

@@ -309,6 +309,7 @@
     <string name="collections_tab_all">Toate</string>
     <string name="collections_your_collections">Colecțiile tale</string>
     <string name="compose_about_made_with">Creat cu ❤️ de Tapframe și prieteni</string>
+    <string name="bn_about_fork_by">Fork de Pedro Alencar</string>
     <string name="compose_about_version_format">Versiunea %1$s (%2$s)</string>
     <string name="compose_action_off">Oprit</string>
     <string name="compose_action_on">Pornit</string>

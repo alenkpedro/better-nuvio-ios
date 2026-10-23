@@ -337,6 +337,7 @@
     <string name="collections_tab_all">Sve</string>
     <string name="collections_your_collections">Vaše zbirke</string>
     <string name="compose_about_made_with">Napravljeno s ❤️ od strane Tapframe i prijatelja</string>
+    <string name="bn_about_fork_by">Fork izradio Pedro Alencar</string>
     <string name="compose_about_version_format">Verzija %1$s (%2$s)</string>
     <string name="compose_action_off">Isključeno</string>
     <string name="compose_action_on">Uključeno</string>

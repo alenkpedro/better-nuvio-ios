@@ -337,6 +337,7 @@
     <string name="collections_tab_all">Tất cả</string>
     <string name="collections_your_collections">Bộ sưu tập của bạn</string>
     <string name="compose_about_made_with">Được tạo bằng ❤️ bởi Tapframe và bạn bè</string>
+    <string name="bn_about_fork_by">Bản fork bởi Pedro Alencar</string>
     <string name="compose_about_version_format">Phiên bản %1$s (%2$s)</string>
     <string name="compose_action_off">Tắt</string>
     <string name="compose_action_on">Bật</string>
