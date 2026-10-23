@@ -48,7 +48,8 @@ object ThemeSettingsRepository {
     private val _liquidGlassNativeTabBarEnabled = MutableStateFlow(NuvioTabBarBehavior.Default.isEnabled)
     val liquidGlassNativeTabBarEnabled: StateFlow<Boolean> = _liquidGlassNativeTabBarEnabled.asStateFlow()
 
-    private val _dynamicArtworkBackgroundEnabled = MutableStateFlow(false)
+    // Better Nuvio: Imersiva (cor viva from the artwork) is the default, as on the TV.
+    private val _dynamicArtworkBackgroundEnabled = MutableStateFlow(true)
     val dynamicArtworkBackgroundEnabled: StateFlow<Boolean> = _dynamicArtworkBackgroundEnabled.asStateFlow()
 
     private val _showCatalogAccentEnabled = MutableStateFlow(false)
@@ -113,7 +114,7 @@ object ThemeSettingsRepository {
         _amoledEnabled.value = false
         _tabBarBehavior.value = NuvioTabBarBehavior.Default
         _liquidGlassNativeTabBarEnabled.value = NuvioTabBarBehavior.Default.isEnabled
-        _dynamicArtworkBackgroundEnabled.value = false
+        _dynamicArtworkBackgroundEnabled.value = true
         _showCatalogAccentEnabled.value = false
         NativeTabBridge.publishAccentColor(
             hexColor = AppTheme.WHITE.nativeTabAccentHex(),
@@ -156,7 +157,7 @@ object ThemeSettingsRepository {
             )
         applyTabBarBehavior(behavior)
         _dynamicArtworkBackgroundEnabled.value =
-            ThemeSettingsStorage.loadDynamicArtworkBackgroundEnabled() ?: false
+            ThemeSettingsStorage.loadDynamicArtworkBackgroundEnabled() ?: true
         _showCatalogAccentEnabled.value =
             ThemeSettingsStorage.loadShowCatalogAccentEnabled() ?: false
         val appLanguage = AppLanguage.fromCode(ThemeSettingsStorage.loadSelectedAppLanguage())
