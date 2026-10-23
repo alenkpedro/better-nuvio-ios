@@ -131,7 +131,10 @@ import kotlin.math.roundToLong
  * matches the video file name and fps) first and the rest behind "See all N".
  */
 
-private val PanelBackground = Color(0xE018181C)
+// Iago (r5): #18181C a 94% (o Compose não desfoca o vídeo do mpv por trás) e
+// borda interna de 1 px branca a 10%.
+private val PanelBackground = Color(0xF018181C)
+private val PanelBorder = Color.White.copy(alpha = 0.10f)
 private val Ink2 = Color.White.copy(alpha = 0.72f)
 private val Ink3 = Color.White.copy(alpha = 0.5f)
 private val SyncedGreen = Color(0xFF2FA84F)
@@ -221,6 +224,7 @@ internal fun PlayerTracksPanel(
                         .height(panelHeight)
                         .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
                         .background(PanelBackground)
+                        .border(1.dp, PanelBorder, RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
                         .swipeDownToDismiss(onDismiss)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -248,7 +252,7 @@ internal fun PlayerTracksPanel(
                                 )
                                 SubtitleGroupsColumn(
                                     visible = visible,
-                                    subtitleTracks = subtitleTracks,
+                                    allSubtitleTracks = subtitleTracks,
                                     selectedSubtitleIndex = selectedSubtitleIndex,
                                     addonSubtitles = addonSubtitles,
                                     selectedAddonSubtitleId = selectedAddonSubtitleId,
@@ -510,7 +514,7 @@ private sealed interface SubtitleListRow {
 @Composable
 private fun SubtitleGroupsColumn(
     visible: Boolean,
-    subtitleTracks: List<SubtitleTrack>,
+    allSubtitleTracks: List<SubtitleTrack>,
     selectedSubtitleIndex: Int,
     addonSubtitles: List<AddonSubtitle>,
     selectedAddonSubtitleId: String?,
@@ -526,7 +530,16 @@ private fun SubtitleGroupsColumn(
     onFetchAddonSubtitles: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val effectiveSelectedAddon = selectedAddonSubtitle ?: addonSubtitles.findSelectedAddon(selectedAddonSubtitleId)
+    // Better Nuvio: Embutidas é só o que vem dentro do arquivo, como na TV. As legendas do
+    // stream e dos addons o player carrega como faixas externas (com o nome do link, às vezes
+    // em base64); elas já aparecem no grupo do idioma, e a tocando é marcada lá.
+    val playingExternal = allSubtitleTracks.firstOrNull {
+        it.externalUrl != null && (it.index == selectedSubtitleIndex || (selectedSubtitleIndex < 0 && it.isSelected))
+    }
+    val subtitleTracks = allSubtitleTracks.filter { it.externalUrl == null }
+    val effectiveSelectedAddon = selectedAddonSubtitle
+        ?: addonSubtitles.findSelectedAddon(selectedAddonSubtitleId)
+        ?: playingExternal?.let { track -> addonSubtitles.firstOrNull { it.url == track.externalUrl } }
     val playbackLanguageKey = tvSelectedSubtitleGroupKey(subtitleTracks, selectedSubtitleIndex, effectiveSelectedAddon)
     val playbackOptionId = selectedSubtitleOptionId(subtitleTracks, selectedSubtitleIndex, effectiveSelectedAddon)
     val subtitleStructureKey = subtitleTracksStructureKey(subtitleTracks)
@@ -796,7 +809,9 @@ private fun SubtitleFileRow(
     val sourceParts = mutableListOf<String>()
     when (option) {
         is SubtitleSelectionOption.BuiltIn -> {
-            title = localizedTrackDisplayName(option.track.label, option.track.language, option.track.index)
+            // Um nome em base64 (link de addon) não se lê: sem ele, fica "Faixa N" no idioma da faixa.
+            val label = option.track.label.takeUnless { looksEncodedName(it.substringAfterLast('/')) }.orEmpty()
+            title = localizedTrackDisplayName(label, option.track.language, option.track.index)
             sourceParts += stringResource(Res.string.compose_player_built_in)
             if (option.track.isForced) sourceParts += stringResource(Res.string.settings_playback_option_forced)
         }

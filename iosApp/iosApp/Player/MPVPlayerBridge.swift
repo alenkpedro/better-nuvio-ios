@@ -190,6 +190,11 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
         guard let t = playerVC?.subtitleTracks, Int(at) < t.count else { return false }
         return t[Int(at)].selected
     }
+    /// Endereço da faixa carregada de fora (legenda do stream ou do addon); vazio nas do arquivo.
+    func getSubtitleTrackExternalUrl(at: Int32) -> String {
+        guard let t = playerVC?.subtitleTracks, Int(at) < t.count else { return "" }
+        return t[Int(at)].externalUrl
+    }
 
     func selectAudioTrack(trackId: Int32) { playerVC?.selectAudio(Int(trackId)) }
     func selectSubtitleTrack(trackId: Int32) { playerVC?.selectSubtitle(Int(trackId)) }
@@ -278,6 +283,7 @@ struct TrackInfo {
     let title: String
     let lang: String
     let selected: Bool
+    var externalUrl: String = ""
 }
 
 private struct PendingLoadRequest {
@@ -1598,20 +1604,20 @@ final class MPVPlayerViewController: UIViewController {
         // Better Nuvio: a sombra da TV (text.c, sombraLegenda) é macia, três camadas
         // desfocadas embaixo da letra, sem contorno. O libass tem uma sombra só e o
         // desfoque vale para contorno e sombra; sem contorno ele desfocaria a própria
-        // letra. Então, sem contorno, a sombra vira um halo preto translúcido bem
-        // desfocado em volta da letra (a camada de 1 px da TV), mais uma sombra curta
-        // e desfocada embaixo (as camadas de 3 e 6 px). O libass não separa x e y no
-        // deslocamento, por isso ele fica pequeno: assim a diagonal não aparece.
+        // letra. Então, sem contorno, vai um contorno transparente de 1 px só para o
+        // desfoque cair na sombra; nada de halo, que a TV não tem (r5, Iago e Mila).
+        // O libass não separa x e y no deslocamento, por isso ele fica curto e o
+        // desfoque largo: a sombra se espalha embaixo da letra, sem a diagonal.
         let softShadow = hasShadow && outlineSize <= 0
-        let effectiveOutlineColor = hasBackground ? backgroundColor : (softShadow ? "#66000000" : outlineColor)
-        let effectiveBackColor = hasShadow ? (softShadow ? "#CC000000" : "#B3000000") : backgroundColor
+        let effectiveOutlineColor = hasBackground ? backgroundColor : (softShadow ? "#00000000" : outlineColor)
+        let effectiveBackColor = hasShadow ? (softShadow ? "#E6000000" : "#B3000000") : backgroundColor
         let effectiveOutlineSize = hasBackground
             ? max(Double(outlineSize), 1.0)
-            : (softShadow ? 1.6 : Double(outlineSize))
+            : (softShadow ? 1.0 : Double(outlineSize))
         let effectiveShadowOffset = hasShadow
             ? (softShadow ? min(Double(shadowOffset) * 0.4, 1.4) : Double(shadowOffset))
             : 0
-        let blur = softShadow ? 3.0 + Double(shadowOffset) * 0.4 : 0
+        let blur = softShadow ? 3.5 + Double(shadowOffset) * 0.4 : 0
 
         subtitleFonts.reapplyFont()
         // Como na TV (assrender.c): tamanho, peso, sombra, cor e fonte da pessoa valem
@@ -2035,7 +2041,8 @@ final class MPVPlayerViewController: UIViewController {
                 audio.append(TrackInfo(index: audioIdx, id: id, type: type, title: displayTitle, lang: lang, selected: selected))
                 audioIdx += 1
             } else if type == "sub" {
-                subs.append(TrackInfo(index: subIdx, id: id, type: type, title: displayTitle, lang: lang, selected: selected))
+                let externalUrl = getFlag("track-list/\(i)/external") ? getTrackString(i, "external-filename") : ""
+                subs.append(TrackInfo(index: subIdx, id: id, type: type, title: displayTitle, lang: lang, selected: selected, externalUrl: externalUrl))
                 subIdx += 1
             }
         }

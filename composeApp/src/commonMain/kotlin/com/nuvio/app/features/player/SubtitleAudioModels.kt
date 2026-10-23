@@ -23,6 +23,8 @@ data class SubtitleTrack(
     val language: String? = null,
     val isSelected: Boolean = false,
     val isForced: Boolean = false,
+    /** Better Nuvio: endereço da faixa que o player carregou de fora (stream ou addon); null nas do arquivo. */
+    val externalUrl: String? = null,
 )
 
 data class AddonSubtitle(

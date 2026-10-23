@@ -117,7 +117,7 @@ private fun JsonObject.subtitleFileName(url: String): String? {
 // .srt"). Isso não é nome de arquivo; mostrado na lista, vira uma linha ilegível.
 private val EncodedNameRegex = Regex("^[A-Za-z0-9+/_=-]{24,}$")
 
-private fun looksEncodedName(name: String): Boolean {
+internal fun looksEncodedName(name: String): Boolean {
     val stem = name.substringBeforeLast('.')
     return stem.startsWith("eyJ") || (EncodedNameRegex.matches(stem) && stem.none { it == ' ' } &&
         stem.count { it.isDigit() } + stem.count { it.isUpperCase() } > stem.length / 3)

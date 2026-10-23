@@ -232,6 +232,7 @@ actual fun PlatformPlayerSurface(
                             language = trackLanguage,
                             trackId = trackId,
                         ),
+                        externalUrl = bridge.getSubtitleTrackExternalUrl(i).takeIf { it.isNotBlank() },
                     )
                 }
                 Logger.d(TAG) { "getSubtitleTracks: found ${tracks.size} tracks" }
