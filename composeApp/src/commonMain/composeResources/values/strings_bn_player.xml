@@ -35,4 +35,23 @@
     <string name="bn_subtitle_color">Colour</string>
     <string name="bn_subtitle_restore">Restore default</string>
     <string name="bn_subtitle_more_options">More options</string>
+    <!-- Better Nuvio: controles do player -->
+    <string name="bn_player_more">More</string>
+    <string name="bn_more_rate">Rate</string>
+    <string name="bn_more_rate_sub">Give this title your rating</string>
+    <string name="bn_more_party">Watch together</string>
+    <string name="bn_more_party_sub">Watch in sync with friends</string>
+    <string name="bn_more_external">Open in another player</string>
+    <string name="bn_more_external_sub">VLC, Infuse, Outplayer and more</string>
+    <string name="bn_more_engine">Switch engine</string>
+    <string name="bn_more_engine_sub">Switch between the built-in players</string>
+    <string name="bn_more_video">Video settings</string>
+    <string name="bn_more_video_sub">Picture, colours and decoding</string>
+    <string name="bn_more_info">Technical info</string>
+    <string name="bn_more_info_sub">Codec, resolution and bitrate</string>
+    <string name="bn_more_intro">Mark intro</string>
+    <string name="bn_more_intro_sub">Share the intro timing with everyone</string>
+    <string name="bn_player_ends_at">ends at %1$s</string>
+    <string name="bn_player_subtitle_synced">Subtitle synced · %1$s</string>
+    <string name="bn_player_tracks_hint">Audio and subtitles</string>
 </resources>

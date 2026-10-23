@@ -276,6 +276,18 @@ internal fun PlayerControlsShell(
                         onOrientationToggleClick = onOrientationToggleClick,
                         isPortraitPlayback = isPortraitPlayback,
                         onPictureInPictureClick = onPictureInPictureClick,
+                        moreActions = playerMoreActions(
+                            onRateClick = onRateClick,
+                            userRating = userRating,
+                            onPartyClick = onPartyClick,
+                            partyActive = partyActive,
+                            onOpenInExternalPlayer = onOpenInExternalPlayer,
+                            onSwitchEngineClick = onSwitchEngineClick,
+                            onVideoSettingsClick = onVideoSettingsClick,
+                            onInfoClick = onInfoClick,
+                            onSubmitIntroClick = onSubmitIntroClick,
+                        ),
+                        onInteraction = onInteraction,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .windowInsetsPadding(playerToolbarTopInsets(metrics))
@@ -415,15 +427,16 @@ internal fun PlayerControlsShell(
                         onSpeedSelected = onSpeedSelected,
                         onSpeedPickerDismiss = onSpeedPickerDismiss,
                         onResizeModeClick = onResizeModeClick,
-                        onVideoSettingsClick = onVideoSettingsClick,
-                        onOpenInExternalPlayer = onOpenInExternalPlayer,
+                        // Better Nuvio: estas ficam no menu Mais do topo.
+                        onVideoSettingsClick = null,
+                        onOpenInExternalPlayer = null,
                         onStreamInfoClick = onStreamInfoClick,
-                        onSubmitIntroClick = onSubmitIntroClick,
+                        onSubmitIntroClick = null,
                         qualityLabel = qualityLabel,
                         onQualityClick = onQualityClick,
-                        onSwitchEngineClick = onSwitchEngineClick,
-                        onInfoClick = onInfoClick,
-                        onRateClick = onRateClick,
+                        onSwitchEngineClick = null,
+                        onInfoClick = null,
+                        onRateClick = null,
                         userRating = userRating,
                         onInteraction = onInteraction,
                     )

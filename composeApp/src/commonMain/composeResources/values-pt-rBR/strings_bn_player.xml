@@ -35,4 +35,23 @@
     <string name="bn_subtitle_color">Cor</string>
     <string name="bn_subtitle_restore">Restaurar padrão</string>
     <string name="bn_subtitle_more_options">Mais ajustes</string>
+    <!-- Better Nuvio: controles do player -->
+    <string name="bn_player_more">Mais</string>
+    <string name="bn_more_rate">Avaliar</string>
+    <string name="bn_more_rate_sub">Dê sua nota para este título</string>
+    <string name="bn_more_party">Assistir junto</string>
+    <string name="bn_more_party_sub">Assista em sincronia com amigos</string>
+    <string name="bn_more_external">Abrir em outro player</string>
+    <string name="bn_more_external_sub">VLC, Infuse, Outplayer e outros</string>
+    <string name="bn_more_engine">Trocar motor</string>
+    <string name="bn_more_engine_sub">Alterna entre os players internos</string>
+    <string name="bn_more_video">Ajustes de vídeo</string>
+    <string name="bn_more_video_sub">Imagem, cores e decodificação</string>
+    <string name="bn_more_info">Info técnica</string>
+    <string name="bn_more_info_sub">Codec, resolução e taxa de bits</string>
+    <string name="bn_more_intro">Marcar abertura</string>
+    <string name="bn_more_intro_sub">Envie o tempo da abertura para todos</string>
+    <string name="bn_player_ends_at">termina às %1$s</string>
+    <string name="bn_player_subtitle_synced">Legenda sincronizada · %1$s</string>
+    <string name="bn_player_tracks_hint">Áudio e legendas</string>
 </resources>
