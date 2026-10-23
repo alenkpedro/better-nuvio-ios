@@ -8,6 +8,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.rememberCoroutineScope
+import com.nuvio.app.features.autosync.AutoSyncIosCoordinator
+import com.nuvio.app.features.autosync.AutoSyncIosIo
+import com.nuvio.app.features.autosync.AutoSyncIosPlayerEngineController
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -388,8 +392,37 @@ actual fun PlatformPlayerSurface(
         }
     }
 
-    LaunchedEffect(controller, sourceUrl, sourceAudioUrl, sourceHeaders, sourceResponseHeaders) {
-        latestOnControllerReady.value(controller)
+    // AutoSync (Sincronia > Automática): aligns the add-on subtitle with the embedded subtitle
+    // timeline read from the Matroska Cues index, the TV's way. Wraps the MPV controller.
+    val autoSyncScope = rememberCoroutineScope()
+    val latestExternalSubtitles = rememberUpdatedState(externalSubtitles)
+    val autoSync = remember(bridge) {
+        AutoSyncIosCoordinator(
+            scope = autoSyncScope,
+            attachSubtitle = { url -> bridge.setSubtitleUrl(url) },
+            applySubtitleDelayMs = { ms -> bridge.setSubtitleDelayMs(ms) },
+            rangeReaderFor = AutoSyncIosIo::rangeReaderFor,
+            downloadSubtitle = AutoSyncIosIo::downloadSubtitle,
+            writeRetimedSubtitle = AutoSyncIosIo::writeRetimedSubtitle,
+        )
+    }
+    val autoSyncController = remember(controller, autoSync) {
+        AutoSyncIosPlayerEngineController(controller, autoSync)
+    }
+    LaunchedEffect(autoSync, sourceUrl, sourceHeaders) {
+        autoSync.setSource(
+            url = sourceUrl,
+            headers = sanitizePlaybackHeaders(sourceHeaders),
+        ) { subtitleUrl ->
+            sanitizePlaybackHeaders(latestExternalSubtitles.value.firstOrNull { it.url == subtitleUrl }?.headers)
+        }
+    }
+    DisposableEffect(autoSync) {
+        onDispose { autoSync.dispose() }
+    }
+
+    LaunchedEffect(autoSyncController, sourceUrl, sourceAudioUrl, sourceHeaders, sourceResponseHeaders) {
+        latestOnControllerReady.value(autoSyncController)
     }
 
     // Load file and set initial state

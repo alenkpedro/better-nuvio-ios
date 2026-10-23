@@ -607,14 +607,14 @@ private fun PlaybackSettingsSection(
                     isTablet = isTablet,
                     onClick = { showSecondarySubtitleDialog = true },
                 )
-                if (!isIos) {
-                    SettingsGroupDivider(isTablet = isTablet)
-                    AutoSyncPlaybackSettingsRows( // AutoSync hook
-                        isTablet = isTablet,
-                        enabled = otherSubtitleOptionsEnabled && androidPlaybackEngine != AndroidPlaybackEngine.Libmpv,
-                        preferredSubtitleLanguage = preferredSubtitleLanguage,
-                    )
-                }
+                SettingsGroupDivider(isTablet = isTablet)
+                AutoSyncPlaybackSettingsRows( // AutoSync hook
+                    isTablet = isTablet,
+                    // iOS always plays through MPV, which has its own AutoSync path.
+                    enabled = otherSubtitleOptionsEnabled &&
+                        (isIos || androidPlaybackEngine != AndroidPlaybackEngine.Libmpv),
+                    preferredSubtitleLanguage = preferredSubtitleLanguage,
+                )
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
                     title = stringResource(Res.string.settings_playback_subtitle_strip_sdh),
