@@ -34,6 +34,7 @@ import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.labelRes
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.bn_accent_title
 import nuvio.composeapp.generated.resources.cd_selected
 import nuvio.composeapp.generated.resources.collections_header
 import nuvio.composeapp.generated.resources.compose_settings_page_continue_watching
@@ -79,8 +80,12 @@ import com.nuvio.app.core.ui.glass.isLiquidGlassAvailable
 import nuvio.composeapp.generated.resources.settings_appearance_liquid_glass_effects
 import nuvio.composeapp.generated.resources.settings_appearance_liquid_glass_effects_description
 
+// Better Nuvio splits this page in two: Look (theme, icon, language) and Layout (home, streams, details).
+internal enum class AppearancePart { All, Look, Layout }
+
 internal fun LazyListScope.appearanceSettingsContent(
     isTablet: Boolean,
+    part: AppearancePart = AppearancePart.All,
     selectedTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
     amoledEnabled: Boolean,
@@ -106,17 +111,28 @@ internal fun LazyListScope.appearanceSettingsContent(
     onContinueWatchingClick: () -> Unit,
     onPosterCustomizationClick: () -> Unit,
 ) {
+    if (part != AppearancePart.Layout) {
     item {
         SettingsSection(
-            title = stringResource(Res.string.settings_appearance_section_theme),
+            title = stringResource(
+                if (part == AppearancePart.Look) Res.string.bn_accent_title else Res.string.settings_appearance_section_theme,
+            ),
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
-                AppearanceThemeSelector(
-                    isTablet = isTablet,
-                    selectedTheme = selectedTheme,
-                    onThemeSelected = onThemeSelected,
-                )
+                if (part == AppearancePart.Look) {
+                    BetterNuvioAccentPicker(
+                        isTablet = isTablet,
+                        selectedTheme = selectedTheme,
+                        onThemeSelected = onThemeSelected,
+                    )
+                } else {
+                    AppearanceThemeSelector(
+                        isTablet = isTablet,
+                        selectedTheme = selectedTheme,
+                        onThemeSelected = onThemeSelected,
+                    )
+                }
             }
         }
     }
@@ -303,7 +319,9 @@ internal fun LazyListScope.appearanceSettingsContent(
             }
         }
     }
+    }
 
+    if (part == AppearancePart.Look) return
     item {
         SettingsSection(
             title = stringResource(Res.string.settings_appearance_section_home),

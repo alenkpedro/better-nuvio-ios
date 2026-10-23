@@ -1362,7 +1362,7 @@
     <string name="settings_playback_reuse_last_link_description">Auto-play your last working stream for this same movie/episode when cache is still valid</string>
     <string name="settings_playback_secondary_audio_language">Secondary Audio Language</string>
     <string name="settings_playback_secondary_subtitle_language">Secondary Preferred Language</string>
-    <string name="settings_playback_section_decoder">DECODER</string>
+    <string name="settings_playback_section_decoder">VIDEO</string>
     <string name="settings_playback_engine">Playback Engine</string>
     <string name="settings_playback_engine_auto_description">Use ExoPlayer first and fall back to libmpv if playback fails.</string>
     <string name="settings_playback_engine_exoplayer_description">Use ExoPlayer and Android Media3 decoders.</string>
@@ -1376,10 +1376,10 @@
     <string name="settings_playback_section_next_episode">NEXT EPISODE</string>
     <string name="settings_playback_section_player">PLAYER</string>
     <string name="settings_playback_section_skip_segments">SKIP SEGMENTS</string>
-    <string name="settings_playback_section_stream_auto_play">STREAM AUTO-PLAY</string>
-    <string name="settings_playback_section_stream_selection">STREAM SELECTION</string>
-    <string name="settings_playback_section_subtitle_audio">SUBTITLE AND AUDIO</string>
-    <string name="settings_playback_section_subtitle_rendering">SUBTITLE RENDERING</string>
+    <string name="settings_playback_section_stream_auto_play">AUTOMATIC SOURCE</string>
+    <string name="settings_playback_section_stream_selection">SOURCES</string>
+    <string name="settings_playback_section_subtitle_audio">AUDIO AND SUBTITLES</string>
+    <string name="settings_playback_section_subtitle_rendering">SUBTITLE STYLE</string>
     <string name="settings_playback_selected_count">%1$d selected</string>
     <string name="settings_playback_show_loading_overlay">Loading Overlay</string>
     <string name="settings_playback_show_loading_overlay_description">Show loading screen until first video frame appears.</string>
@@ -2913,4 +2913,23 @@
     <string name="settings_advanced_dns_system">System default</string>
     <string name="settings_advanced_dns_doh_format">%1$s (DNS over HTTPS)</string>
     <string name="settings_advanced_dns_note">Used for all of Nuvio\'s connections on this device: addons, metadata, images, sync, trackers and the ExoPlayer engine. Your phone\'s DNS stays the same for other apps. The libmpv engine and web sign-in pages still use the system DNS.</string>
+    <!-- Better Nuvio -->
+    <string name="bn_settings_page_look">Appearance</string>
+    <string name="bn_settings_section_app">APP</string>
+    <string name="bn_settings_profiles">Profiles</string>
+    <string name="bn_settings_trakt_simkl">Trakt &amp; Simkl</string>
+    <string name="bn_settings_content">Content</string>
+    <string name="bn_settings_switch_profile">Switch profile</string>
+    <string name="bn_settings_synced_now">Synced just now</string>
+    <string name="bn_settings_synced_min">Synced %1$d min ago</string>
+    <string name="bn_settings_synced_hours">Synced %1$d h ago</string>
+    <string name="bn_settings_not_synced">Not synced yet</string>
+    <string name="bn_settings_look_description">Theme, app icon and language</string>
+    <string name="bn_accent_title">Accent colour</string>
+    <string name="bn_accent_description">A fixed colour, or Immersive, which changes with each title.</string>
+    <string name="bn_accent_immersive">Immersive</string>
+    <string name="bn_accent_preview_button">Resume</string>
+    <string name="bn_accent_preview_immersive">Preview: the colour comes from the artwork</string>
+    <string name="bn_accent_preview_fixed">Preview of the main button</string>
+    <string name="bn_accent_more_colors">More colours</string>
 </resources>

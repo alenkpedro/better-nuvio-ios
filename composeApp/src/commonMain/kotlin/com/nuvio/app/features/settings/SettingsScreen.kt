@@ -784,6 +784,7 @@ private fun MobileSettingsScreen(
                             isTablet = false,
                             onPlaybackClick = { onPageChange(SettingsPage.Playback) },
                             onAppearanceClick = { onPageChange(SettingsPage.Appearance) },
+                            onLookClick = { onPageChange(SettingsPage.Look) },
                             onAdvancedClick = { onPageChange(SettingsPage.Advanced) },
                             onNotificationsClick = { onPageChange(SettingsPage.Notifications) },
                             onContentDiscoveryClick = { onPageChange(SettingsPage.ContentDiscovery) },
@@ -801,6 +802,7 @@ private fun MobileSettingsScreen(
                                 null
                             },
                             onWatchPartyClick = watchPartyRowClick,
+                            onSwitchProfileNow = onSwitchProfile,
                             showSupportersContributorsPage = AppFeaturePolicy.supportersContributorsPageEnabled,
                         )
                     }
@@ -849,8 +851,9 @@ private fun MobileSettingsScreen(
                 SettingsPage.Streams -> streamsSettingsContent(
                     isTablet = false,
                 )
-                SettingsPage.Appearance -> appearanceSettingsContent(
+                SettingsPage.Appearance, SettingsPage.Look -> appearanceSettingsContent(
                     isTablet = false,
+                    part = if (page == SettingsPage.Look) AppearancePart.Look else AppearancePart.Layout,
                     selectedTheme = selectedTheme,
                     onThemeSelected = onThemeSelected,
                     amoledEnabled = amoledEnabled,
@@ -1278,6 +1281,7 @@ private fun TabletSettingsScreen(
                                 isTablet = true,
                                 onPlaybackClick = { openInlinePage(SettingsPage.Playback) },
                                 onAppearanceClick = { openInlinePage(SettingsPage.Appearance) },
+                                onLookClick = { openInlinePage(SettingsPage.Look) },
                                 onAdvancedClick = { openInlinePage(SettingsPage.Advanced) },
                                 onNotificationsClick = { openInlinePage(SettingsPage.Notifications) },
                                 onContentDiscoveryClick = { openInlinePage(SettingsPage.ContentDiscovery) },
@@ -1295,6 +1299,7 @@ private fun TabletSettingsScreen(
                                     null
                                 },
                                 onWatchPartyClick = watchPartyRowClick,
+                                onSwitchProfileNow = onSwitchProfile,
                                 showAccountSection = activeCategory == SettingsCategory.Account,
                                 showGeneralSection = activeCategory == SettingsCategory.General,
                                 showAboutSection = activeCategory == SettingsCategory.About,
@@ -1346,8 +1351,9 @@ private fun TabletSettingsScreen(
                     SettingsPage.Streams -> streamsSettingsContent(
                         isTablet = true,
                     )
-                    SettingsPage.Appearance -> appearanceSettingsContent(
+                    SettingsPage.Appearance, SettingsPage.Look -> appearanceSettingsContent(
                         isTablet = true,
+                        part = if (page == SettingsPage.Look) AppearancePart.Look else AppearancePart.Layout,
                         selectedTheme = selectedTheme,
                         onThemeSelected = onThemeSelected,
                         amoledEnabled = amoledEnabled,

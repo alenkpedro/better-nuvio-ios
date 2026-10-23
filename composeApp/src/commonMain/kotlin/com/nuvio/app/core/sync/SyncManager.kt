@@ -30,6 +30,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 private const val FOREGROUND_PULL_DELAY_MS = 2500L
 private const val FOREGROUND_ACTIVITY_PULL_MIN_INTERVAL_MS = 2 * 60_000L
@@ -281,6 +284,16 @@ object SyncManager {
     private var activityPullFreshness = ProfilePullFreshness()
     private var fullPullFreshness = ProfilePullFreshness()
 
+    // Better Nuvio: last successful pull, shown on the Settings profile card.
+    private val _lastSyncedAtEpochMs = MutableStateFlow<Long?>(null)
+    val lastSyncedAtEpochMs: StateFlow<Long?> = _lastSyncedAtEpochMs.asStateFlow()
+
+    private fun recordSyncTime(profileId: Int, result: ProfileSyncResult) {
+        if (result.succeeded && ProfileRepository.activeProfileId == profileId) {
+            _lastSyncedAtEpochMs.value = EpisodeReleaseDatePlatform.nowEpochMs()
+        }
+    }
+
     private val profileSyncOperations = ProfileSyncOperations(
         pullAddons = { profileId -> AddonRepository.pullFromServer(profileId) },
         pullPlugins = { profileId -> PluginRepository.pullFromServer(profileId) },
@@ -434,6 +447,7 @@ object SyncManager {
                     result = syncResult,
                 )
             }
+            recordSyncTime(profileId, syncResult)
             if (!syncResult.succeeded) {
                 log.w {
                     "Full profile sync incomplete profile=$profileId reason=$reason " +
@@ -499,6 +513,7 @@ object SyncManager {
                     result = syncResult,
                 )
             }
+            recordSyncTime(profileId, syncResult)
             if (!syncResult.succeeded) {
                 log.w {
                     "Activity sync incomplete profile=$profileId reason=$reason failedSteps=${syncResult.failedSteps}"

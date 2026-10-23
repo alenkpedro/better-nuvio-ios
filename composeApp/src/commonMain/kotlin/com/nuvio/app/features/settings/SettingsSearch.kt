@@ -50,6 +50,8 @@ import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.isIos
 import com.nuvio.app.supportsPosterNavigationMotion
 import nuvio.composeapp.generated.resources.*
+import nuvio.composeapp.generated.resources.bn_settings_look_description
+import nuvio.composeapp.generated.resources.bn_settings_page_look
 import org.jetbrains.compose.resources.stringResource
 
 internal sealed class SettingsSearchTarget {
@@ -220,6 +222,13 @@ internal fun settingsSearchEntries(
         icon = Icons.Rounded.Palette,
     )
     addPage(
+        page = SettingsPage.Look,
+        key = "look",
+        title = stringResource(Res.string.bn_settings_page_look),
+        description = stringResource(Res.string.bn_settings_look_description),
+        icon = Icons.Rounded.Palette,
+    )
+    addPage(
         page = SettingsPage.Advanced,
         key = "advanced",
         title = advancedPage,
@@ -386,47 +395,47 @@ internal fun settingsSearchEntries(
     }
 
     addRow(
-        page = SettingsPage.Appearance,
+        page = SettingsPage.Look,
         key = "theme",
         title = stringResource(Res.string.settings_appearance_section_theme),
-        pageLabel = layoutPage,
+        pageLabel = stringResource(Res.string.bn_settings_page_look),
         section = stringResource(Res.string.settings_appearance_section_theme),
         icon = Icons.Rounded.Palette,
     )
     addRow(
-        page = SettingsPage.Appearance,
+        page = SettingsPage.Look,
         key = "amoled",
         title = stringResource(Res.string.settings_appearance_amoled_black),
         description = stringResource(Res.string.settings_appearance_amoled_description),
-        pageLabel = layoutPage,
+        pageLabel = stringResource(Res.string.bn_settings_page_look),
         section = stringResource(Res.string.settings_appearance_section_display),
         icon = Icons.Rounded.Palette,
     )
     addRow(
-        page = SettingsPage.Appearance,
+        page = SettingsPage.Look,
         key = "dynamic-artwork-background",
         title = stringResource(Res.string.settings_appearance_dynamic_artwork_background),
         description = stringResource(Res.string.settings_appearance_dynamic_artwork_background_description),
-        pageLabel = layoutPage,
+        pageLabel = stringResource(Res.string.bn_settings_page_look),
         section = stringResource(Res.string.settings_appearance_section_display),
         icon = Icons.Rounded.Palette,
     )
     if (liquidGlassNativeTabBarSupported) {
         addRow(
-            page = SettingsPage.Appearance,
+            page = SettingsPage.Look,
             key = "liquid-glass",
             title = stringResource(Res.string.settings_appearance_tab_bar_behavior),
             description = stringResource(NuvioTabBarBehavior.Default.descriptionRes),
-            pageLabel = layoutPage,
+            pageLabel = stringResource(Res.string.bn_settings_page_look),
             section = stringResource(Res.string.settings_appearance_section_display),
             icon = Icons.Rounded.Palette,
         )
     }
     addRow(
-        page = SettingsPage.Appearance,
+        page = SettingsPage.Look,
         key = "app-language",
         title = stringResource(Res.string.settings_appearance_app_language),
-        pageLabel = layoutPage,
+        pageLabel = stringResource(Res.string.bn_settings_page_look),
         section = stringResource(Res.string.settings_appearance_section_display),
         icon = Icons.Rounded.Language,
     )

@@ -1,6 +1,28 @@
 package com.nuvio.app.features.settings
 
 import androidx.compose.foundation.border
+import com.nuvio.app.core.time.EpisodeReleaseDatePlatform
+import androidx.compose.material.icons.rounded.Dashboard
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
+import com.nuvio.app.core.sync.SyncManager
+import nuvio.composeapp.generated.resources.bn_settings_switch_profile
+import nuvio.composeapp.generated.resources.bn_settings_synced_now
+import nuvio.composeapp.generated.resources.bn_settings_synced_min
+import nuvio.composeapp.generated.resources.bn_settings_synced_hours
+import nuvio.composeapp.generated.resources.bn_settings_not_synced
+import nuvio.composeapp.generated.resources.bn_settings_page_look
+import nuvio.composeapp.generated.resources.bn_settings_section_app
+import nuvio.composeapp.generated.resources.bn_settings_profiles
+import nuvio.composeapp.generated.resources.bn_settings_trakt_simkl
+import nuvio.composeapp.generated.resources.bn_settings_content
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -113,15 +135,22 @@ internal fun LazyListScope.settingsRootContent(
     onAccountClick: () -> Unit,
     onSwitchProfileClick: (() -> Unit)? = null,
     onWatchPartyClick: (() -> Unit)? = null,
+    onLookClick: () -> Unit = onAppearanceClick,
+    onSwitchProfileNow: (() -> Unit)? = null,
     showAccountSection: Boolean = true,
     showGeneralSection: Boolean = true,
     showAboutSection: Boolean = true,
     showAdvancedSection: Boolean = true,
     showSupportersContributorsPage: Boolean = true,
 ) {
+    // Better Nuvio layout (Iago, 22/10/2026): profile card, then Conta, App and Sobre.
     if (showAccountSection && onSwitchProfileClick != null) {
         item {
-            SettingsProfileCard(isTablet = isTablet, onClick = onSwitchProfileClick)
+            SettingsProfileCard(
+                isTablet = isTablet,
+                onClick = onSwitchProfileClick,
+                onSwitchProfile = onSwitchProfileNow,
+            )
         }
     }
     if (showAccountSection) {
@@ -133,51 +162,70 @@ internal fun LazyListScope.settingsRootContent(
                 SettingsGroup(isTablet = isTablet) {
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_account),
-                        description = stringResource(Res.string.compose_settings_root_account_description),
+                        description = null,
                         icon = Icons.Rounded.AccountCircle,
                         isTablet = isTablet,
                         onClick = onAccountClick,
+                    )
+                    if (onSwitchProfileNow != null) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsNavigationRow(
+                            title = stringResource(Res.string.bn_settings_profiles),
+                            description = null,
+                            icon = Icons.Rounded.People,
+                            isTablet = isTablet,
+                            onClick = onSwitchProfileNow,
+                        )
+                    }
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsNavigationRow(
+                        title = stringResource(Res.string.bn_settings_trakt_simkl),
+                        description = null,
+                        icon = Icons.Default.Sync,
+                        isTablet = isTablet,
+                        onClick = onTrackingClick,
                     )
                     if (onWatchPartyClick != null) {
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsNavigationRow(
                             title = stringResource(Res.string.party_title),
-                            description = stringResource(Res.string.party_settings_description),
+                            description = null,
                             icon = Icons.Rounded.Groups,
                             isTablet = isTablet,
                             onClick = onWatchPartyClick,
                         )
                     }
-                    SettingsGroupDivider(isTablet = isTablet)
-                    SettingsNavigationRow(
-                        title = stringResource(Res.string.compose_settings_page_tracking),
-                        description = stringResource(Res.string.compose_settings_root_tracking_description),
-                        icon = Icons.Default.Sync,
-                        isTablet = isTablet,
-                        onClick = onTrackingClick,
-                    )
                 }
             }
         }
     }
+    val advancedInsideApp = showGeneralSection && showAdvancedSection
     if (showGeneralSection) {
         item {
             SettingsSection(
-                title = stringResource(Res.string.compose_settings_root_general_section),
+                title = stringResource(Res.string.bn_settings_section_app),
                 isTablet = isTablet,
             ) {
                 SettingsGroup(isTablet = isTablet) {
                     SettingsNavigationRow(
-                        title = stringResource(Res.string.compose_settings_page_appearance),
-                        description = stringResource(Res.string.compose_settings_root_appearance_description),
+                        title = stringResource(Res.string.bn_settings_page_look),
+                        description = null,
                         icon = Icons.Rounded.Palette,
+                        isTablet = isTablet,
+                        onClick = onLookClick,
+                    )
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsNavigationRow(
+                        title = stringResource(Res.string.compose_settings_page_appearance),
+                        description = null,
+                        icon = Icons.Rounded.Dashboard,
                         isTablet = isTablet,
                         onClick = onAppearanceClick,
                     )
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
-                        title = stringResource(Res.string.compose_settings_page_content_discovery),
-                        description = stringResource(Res.string.compose_settings_root_content_discovery_description),
+                        title = stringResource(Res.string.bn_settings_content),
+                        description = null,
                         icon = Icons.Rounded.Extension,
                         isTablet = isTablet,
                         onClick = onContentDiscoveryClick,
@@ -185,7 +233,7 @@ internal fun LazyListScope.settingsRootContent(
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_playback),
-                        description = stringResource(Res.string.settings_playback_subtitle),
+                        description = null,
                         icon = Icons.Rounded.PlayArrow,
                         isTablet = isTablet,
                         onClick = onPlaybackClick,
@@ -193,7 +241,7 @@ internal fun LazyListScope.settingsRootContent(
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_integrations),
-                        description = stringResource(Res.string.compose_settings_root_integrations_description),
+                        description = null,
                         icon = Icons.Rounded.Link,
                         isTablet = isTablet,
                         onClick = onIntegrationsClick,
@@ -201,11 +249,21 @@ internal fun LazyListScope.settingsRootContent(
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_notifications),
-                        description = stringResource(Res.string.compose_settings_root_notifications_description),
+                        description = null,
                         icon = Icons.Rounded.Notifications,
                         isTablet = isTablet,
                         onClick = onNotificationsClick,
                     )
+                    if (advancedInsideApp) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsNavigationRow(
+                            title = stringResource(Res.string.compose_settings_page_advanced),
+                            description = null,
+                            icon = Icons.Rounded.Tune,
+                            isTablet = isTablet,
+                            onClick = onAdvancedClick,
+                        )
+                    }
                 }
             }
         }
@@ -277,7 +335,7 @@ internal fun LazyListScope.settingsRootContent(
             }
         }
     }
-    if (showAdvancedSection) {
+    if (showAdvancedSection && !advancedInsideApp) {
         item {
             SettingsSection(
                 title = stringResource(Res.string.compose_settings_root_advanced_section),
@@ -336,7 +394,9 @@ internal fun LazyListScope.settingsRootContent(
 private fun SettingsProfileCard(
     isTablet: Boolean,
     onClick: () -> Unit,
+    onSwitchProfile: (() -> Unit)? = null,
 ) {
+    val lastSyncedAt by SyncManager.lastSyncedAtEpochMs.collectAsStateWithLifecycle()
     val tokens = MaterialTheme.nuvio
     val profileState by ProfileRepository.state.collectAsStateWithLifecycle()
     val profile = profileState.activeProfile
@@ -382,17 +442,51 @@ private fun SettingsProfileCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = stringResource(Res.string.compose_settings_root_profile_description),
+                    text = syncStatusText(lastSyncedAt),
                     style = MaterialTheme.typography.bodyMedium,
                     color = tokens.colors.textMuted,
                 )
             }
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                contentDescription = null,
-                tint = tokens.colors.textMuted,
-                modifier = Modifier.padding(start = 8.dp),
-            )
+            if (onSwitchProfile != null) {
+                Text(
+                    text = stringResource(Res.string.bn_settings_switch_profile),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = tokens.colors.textPrimary,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(Color.White.copy(alpha = 0.08f))
+                        .clickable(onClick = onSwitchProfile)
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = tokens.colors.textMuted,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun syncStatusText(lastSyncedAt: Long?): String {
+    if (lastSyncedAt == null) return stringResource(Res.string.bn_settings_not_synced)
+    // Recompute once a minute so "há N min" stays true while the page is open.
+    var now by remember { mutableLongStateOf(EpisodeReleaseDatePlatform.nowEpochMs()) }
+    LaunchedEffect(lastSyncedAt) {
+        while (true) {
+            now = EpisodeReleaseDatePlatform.nowEpochMs()
+            delay(60_000)
+        }
+    }
+    val minutes = ((now - lastSyncedAt) / 60_000L).coerceAtLeast(0L).toInt()
+    return when {
+        minutes < 1 -> stringResource(Res.string.bn_settings_synced_now)
+        minutes < 60 -> stringResource(Res.string.bn_settings_synced_min, minutes)
+        else -> stringResource(Res.string.bn_settings_synced_hours, minutes / 60)
     }
 }

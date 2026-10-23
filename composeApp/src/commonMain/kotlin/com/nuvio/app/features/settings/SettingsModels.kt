@@ -41,6 +41,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_trakt
 import nuvio.composeapp.generated.resources.compose_settings_page_tracking
 import nuvio.composeapp.generated.resources.compose_settings_root_downloads_title
 import nuvio.composeapp.generated.resources.settings_account
+import nuvio.composeapp.generated.resources.bn_settings_page_look
 import org.jetbrains.compose.resources.StringResource
 
 internal enum class SettingsCategory(
@@ -95,6 +96,12 @@ internal enum class SettingsPage(
     ),
     Appearance(
         titleRes = Res.string.compose_settings_page_appearance,
+        category = SettingsCategory.General,
+        parentPage = Root,
+    ),
+    // Better Nuvio: theme, icon and language, split from the Enhanced "Layout" page.
+    Look(
+        titleRes = Res.string.bn_settings_page_look,
         category = SettingsCategory.General,
         parentPage = Root,
     ),
