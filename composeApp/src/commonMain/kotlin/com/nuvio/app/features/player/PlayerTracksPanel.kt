@@ -1,5 +1,12 @@
 package com.nuvio.app.features.player
 
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -209,6 +216,7 @@ internal fun PlayerTracksPanel(
                         .height(panelHeight)
                         .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
                         .background(PanelBackground)
+                        .swipeDownToDismiss(onDismiss)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -313,6 +321,52 @@ internal fun PlayerTracksPanel(
             }
         }
     }
+}
+
+/**
+ * Arrastar para baixo em qualquer ponto do painel fecha. Nas listas, só conta o que sobra
+ * depois de a lista chegar ao topo, para não brigar com a rolagem.
+ */
+@Composable
+private fun Modifier.swipeDownToDismiss(onDismiss: () -> Unit): Modifier {
+    val latestOnDismiss by rememberUpdatedState(onDismiss)
+    val density = LocalDensity.current
+    val thresholdPx = with(density) { 60.dp.toPx() }
+    val connection = remember(thresholdPx) {
+        object : NestedScrollConnection {
+            var pulled = 0f
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if (source == NestedScrollSource.UserInput && available.y > 0f) {
+                    pulled += available.y
+                    if (pulled > thresholdPx) {
+                        pulled = 0f
+                        latestOnDismiss()
+                    }
+                } else if (consumed.y != 0f) {
+                    pulled = 0f
+                }
+                return Offset.Zero
+            }
+
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                pulled = 0f
+                return Velocity.Zero
+            }
+        }
+    }
+    var dragged by remember { mutableStateOf(0f) }
+    return this
+        .nestedScroll(connection)
+        .pointerInput(thresholdPx) {
+            detectVerticalDragGestures(
+                onDragStart = { dragged = 0f },
+                onDragEnd = { if (dragged > thresholdPx) latestOnDismiss() },
+                onDragCancel = { dragged = 0f },
+            ) { change, amount ->
+                change.consume()
+                dragged += amount
+            }
+        }
 }
 
 @Composable
