@@ -44,6 +44,7 @@ import com.nuvio.app.core.ui.rememberArtworkTint
 import com.nuvio.app.core.ui.rememberDynamicArtworkBackgroundEnabled
 import com.nuvio.app.features.player.PlayerSettingsUiState
 import com.nuvio.app.features.settings.ThemeSettingsRepository
+import kotlinx.coroutines.delay
 import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import com.nuvio.app.features.streams.lastUsedSourceFor
 import com.nuvio.app.features.streams.toLastUsedSource
@@ -88,7 +89,8 @@ internal fun rememberTitleCorViva(logoUrl: String?, artUrl: String?): Color {
 
 /**
  * A aba ativa da barra Liquid Glass nativa pega a cor viva do destaque enquanto a Home está
- * na frente. Só mexe na barra com a Imersiva ligada; ao sair, volta para a cor do tema.
+ * na frente. Só mexe na barra com a Imersiva ligada; ao sair, volta para a cor viva guardada
+ * (a do último destaque parado, como na TV), que também vira a cor de destaque do app.
  */
 @Composable
 internal fun HeroTabAccentEffect(color: Color, active: Boolean) {
@@ -102,6 +104,9 @@ internal fun HeroTabAccentEffect(color: Color, active: Boolean) {
                 state.publishedHex = hex
                 NativeTabBridge.publishAccentColor(hex, listOf(hex))
             }
+            // Só guarda depois que o destaque fica parado, para não piscar ao rolar a Home.
+            delay(450)
+            ThemeSettingsRepository.setLastCorViva(color.toArgb())
         } else if (state.publishedHex != null) {
             state.publishedHex = null
             restoreThemeTabAccent()
@@ -122,6 +127,12 @@ private class HeroTabAccentState {
 }
 
 private fun restoreThemeTabAccent() {
+    val last = ThemeSettingsRepository.lastCorViva.value
+    if (ThemeSettingsRepository.dynamicArtworkBackgroundEnabled.value) {
+        val hex = last?.let { formatHexColor(it and 0xFFFFFF) } ?: "#FFFFFF"
+        NativeTabBridge.publishAccentColor(hex, listOf(hex))
+        return
+    }
     val palette = ThemeColors.getColorPalette(
         ThemeSettingsRepository.selectedTheme.value,
         ThemeSettingsRepository.customThemeColors.value,

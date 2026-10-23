@@ -1,6 +1,12 @@
 package com.nuvio.app.core.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.nuvio.app.features.settings.ThemeSettingsRepository
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RippleConfiguration
@@ -270,7 +276,7 @@ fun NuvioTheme(
     val palette = remember(appTheme, customThemeColors) {
         ThemeColors.getColorPalette(appTheme, customThemeColors)
     }
-    val colorScheme = buildColorScheme(palette, amoled = amoled)
+    val colorScheme = buildColorScheme(palette, amoled = amoled).withBetterNuvioAccent()
     val tokens = defaultNuvioThemeTokens(palette, amoled = amoled, colorScheme = colorScheme)
 
     val density = LocalDensity.current
@@ -292,4 +298,25 @@ fun NuvioTheme(
             SkeletonAnimationProvider(content = content)
         }
     }
+}
+
+/**
+ * Better Nuvio: com a Imersiva ligada, a cor de destaque do app é a cor viva do último
+ * título (corviva.h na TV), também na Biblioteca, na Agenda e nos Ajustes. Antes do
+ * primeiro título, branco com texto escuro (ajustes_cor_destaque). Com uma cor fixa
+ * escolhida, fica a cor do tema.
+ */
+@Composable
+private fun ColorScheme.withBetterNuvioAccent(): ColorScheme {
+    val immersive by ThemeSettingsRepository.dynamicArtworkBackgroundEnabled.collectAsState()
+    val last by ThemeSettingsRepository.lastCorViva.collectAsState()
+    val target = when {
+        !immersive -> primary
+        last != null -> Color(last!!)
+        else -> Color.White
+    }
+    val accent by animateColorAsState(target, animationSpec = tween(450), label = "bnAccent")
+    if (!immersive) return this
+    val onAccent = accent.onCorViva()
+    return copy(primary = accent, onPrimary = onAccent)
 }

@@ -20,6 +20,7 @@ actual object ThemeSettingsStorage {
     private const val amoledEnabledKey = "amoled_enabled"
     private const val liquidGlassNativeTabBarEnabledKey = "liquid_glass_native_tab_bar_enabled"
     private const val dynamicArtworkBackgroundEnabledKey = "dynamic_artwork_background_enabled"
+    private const val lastCorVivaKey = "bn_last_cor_viva"
     private const val showCatalogAccentEnabledKey = "show_catalog_accent_enabled"
     private const val tabBarBehaviorKey = "tab_bar_behavior"
     private const val selectedAppLanguageKey = "selected_app_language"
@@ -166,6 +167,19 @@ actual object ThemeSettingsStorage {
         preferences
             ?.edit()
             ?.putBoolean(ProfileScopedKey.of(dynamicArtworkBackgroundEnabledKey), enabled)
+            ?.apply()
+    }
+
+    actual fun loadLastCorViva(): Int? =
+        preferences?.let { prefs ->
+            val key = ProfileScopedKey.of(lastCorVivaKey)
+            if (prefs.contains(key)) prefs.getInt(key, 0) else null
+        }
+
+    actual fun saveLastCorViva(argb: Int) {
+        preferences
+            ?.edit()
+            ?.putInt(ProfileScopedKey.of(lastCorVivaKey), argb)
             ?.apply()
     }
 

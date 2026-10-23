@@ -52,6 +52,11 @@ object ThemeSettingsRepository {
     private val _dynamicArtworkBackgroundEnabled = MutableStateFlow(true)
     val dynamicArtworkBackgroundEnabled: StateFlow<Boolean> = _dynamicArtworkBackgroundEnabled.asStateFlow()
 
+    // Better Nuvio: a cor viva do último título (corviva.txt na TV). Fora da Home, do título e do
+    // player ela continua valendo, e o app já abre com ela. Null antes do primeiro título.
+    private val _lastCorViva = MutableStateFlow<Int?>(null)
+    val lastCorViva: StateFlow<Int?> = _lastCorViva.asStateFlow()
+
     private val _showCatalogAccentEnabled = MutableStateFlow(false)
     val showCatalogAccentEnabled: StateFlow<Boolean> = _showCatalogAccentEnabled.asStateFlow()
 
@@ -116,6 +121,7 @@ object ThemeSettingsRepository {
         _liquidGlassNativeTabBarEnabled.value = NuvioTabBarBehavior.Default.isEnabled
         _dynamicArtworkBackgroundEnabled.value = true
         _showCatalogAccentEnabled.value = false
+        _lastCorViva.value = null
         NativeTabBridge.publishAccentColor(
             hexColor = AppTheme.WHITE.nativeTabAccentHex(),
             gradientHexColors = ThemeColors.getColorPalette(AppTheme.WHITE).nativeAccentGradientHex(),
@@ -158,6 +164,7 @@ object ThemeSettingsRepository {
         applyTabBarBehavior(behavior)
         _dynamicArtworkBackgroundEnabled.value =
             ThemeSettingsStorage.loadDynamicArtworkBackgroundEnabled() ?: true
+        _lastCorViva.value = ThemeSettingsStorage.loadLastCorViva()
         _showCatalogAccentEnabled.value =
             ThemeSettingsStorage.loadShowCatalogAccentEnabled() ?: false
         val appLanguage = AppLanguage.fromCode(ThemeSettingsStorage.loadSelectedAppLanguage())
@@ -236,6 +243,13 @@ object ThemeSettingsRepository {
         if (_dynamicArtworkBackgroundEnabled.value == enabled) return
         _dynamicArtworkBackgroundEnabled.value = enabled
         ThemeSettingsStorage.saveDynamicArtworkBackgroundEnabled(enabled)
+    }
+
+    fun setLastCorViva(argb: Int) {
+        ensureLoaded()
+        if (_lastCorViva.value == argb) return
+        _lastCorViva.value = argb
+        ThemeSettingsStorage.saveLastCorViva(argb)
     }
 
     fun setShowCatalogAccent(enabled: Boolean) {
