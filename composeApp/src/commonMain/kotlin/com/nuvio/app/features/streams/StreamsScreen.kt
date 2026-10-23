@@ -1,5 +1,6 @@
 package com.nuvio.app.features.streams
 
+import com.nuvio.app.features.home.components.rememberTitleCorViva
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -330,7 +331,7 @@ fun StreamsScreen(
 
     if (showLoadingScreen) return
 
-    ProvideCorViva(artUrl = background ?: poster) {
+    ProvideCorViva(rememberTitleCorViva(logo, background ?: poster)) {
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()

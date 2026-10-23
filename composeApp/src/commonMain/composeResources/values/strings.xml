@@ -2983,4 +2983,5 @@
     <string name="bn_episode_date_short">%2$s %1$d</string>
     <string name="bn_episode_date_short_year">%2$s %1$d, %3$d</string>
     <string name="bn_months_short">JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC</string>
+    <string name="bn_date_long">%1$s %2$d, %3$d</string>
 </resources>

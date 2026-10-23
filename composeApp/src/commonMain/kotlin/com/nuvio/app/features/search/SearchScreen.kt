@@ -297,8 +297,11 @@ fun SearchScreen(
                 modifier = Modifier.weight(1f),
             ) {
                 if (query.isBlank() && showDiscover) {
-                    item {
-                        DiscoverSectionHeader(modifier = Modifier.padding(horizontal = 16.dp))
+                    // Na aba Explorar o cabeçalho da tela já diz "Explorar"; sem repetir o título.
+                    if (showSearchField) {
+                        item {
+                            DiscoverSectionHeader(modifier = Modifier.padding(horizontal = 16.dp))
+                        }
                     }
                     stickyHeader {
                         Box(modifier = Modifier.fillMaxWidth()) {

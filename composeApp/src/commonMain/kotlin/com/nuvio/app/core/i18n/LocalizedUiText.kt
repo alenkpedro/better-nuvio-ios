@@ -25,6 +25,7 @@ import nuvio.composeapp.generated.resources.date_month_march
 import nuvio.composeapp.generated.resources.date_month_may
 import nuvio.composeapp.generated.resources.date_month_november
 import nuvio.composeapp.generated.resources.date_month_october
+import nuvio.composeapp.generated.resources.bn_date_long
 import nuvio.composeapp.generated.resources.date_month_september
 import nuvio.composeapp.generated.resources.date_month_short_apr
 import nuvio.composeapp.generated.resources.date_month_short_aug
@@ -204,6 +205,16 @@ fun localizedByteUnit(unit: String): String =
 
 fun localizedPlayerPictureInPicture(): String =
     resourceString("Nuvio is playing in Picture in Picture mode") { getString(Res.string.player_picture_in_picture) }
+
+// Data por extenso no formato do idioma (pt: "23 de outubro de 2026"; en: "October 23, 2026").
+fun localizedLongDate(day: Int, month: Int, year: Int): String {
+    val monthName = localizedMonthName(month)
+    return resourceString("$monthName $day, $year") {
+        // No meio da frase o mês vai em minúscula ("23 de outubro"); no começo, como está.
+        val monthFirst = getString(Res.string.bn_date_long).startsWith("%1")
+        getString(Res.string.bn_date_long, if (monthFirst) monthName else monthName.lowercase(), day, year)
+    }
+}
 
 private fun resourceString(
     fallback: String,

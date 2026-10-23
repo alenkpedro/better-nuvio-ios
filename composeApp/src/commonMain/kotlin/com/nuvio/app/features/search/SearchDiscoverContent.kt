@@ -151,11 +151,11 @@ internal fun DiscoverFilterRow(
             if (selectedCatalog?.genreRequired != true) {
                 add(NuvioDropdownOption(key = "", label = stringResource(Res.string.discover_all_genres)))
             }
-            addAll(state.genreOptions.map { genre -> NuvioDropdownOption(key = genre, label = genre) })
+            addAll(state.genreOptions.map { genre -> NuvioDropdownOption(key = genre, label = discoverGenreLabel(genre)) })
         }
         NuvioDropdownChip(
             title = stringResource(Res.string.discover_select_genre),
-            label = state.selectedGenre ?: stringResource(Res.string.discover_all_genres),
+            label = state.selectedGenre?.let { discoverGenreLabel(it) } ?: stringResource(Res.string.discover_all_genres),
             selectedKey = state.selectedGenre ?: "",
             options = genreOptions,
             enabled = genreOptions.size > 1 || selectedCatalog?.genreRequired == true,
@@ -165,6 +165,11 @@ internal fun DiscoverFilterRow(
         )
     }
 }
+
+// Alguns addons mandam "None" como a opção sem filtro de gênero; mostra "Todos os gêneros".
+@Composable
+private fun discoverGenreLabel(genre: String): String =
+    if (genre.equals("None", ignoreCase = true)) stringResource(Res.string.discover_all_genres) else genre
 
 @Composable
 private fun CatalogLoadingFooter(modifier: Modifier = Modifier) {

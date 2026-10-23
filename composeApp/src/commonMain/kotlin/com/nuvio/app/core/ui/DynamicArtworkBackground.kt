@@ -28,6 +28,8 @@ private const val DOMINANT_BLEND_FRACTION = 0.42f
 
 private const val COLOR_TRANSITION_MS = 600
 
+private const val BETTER_NUVIO_ARTWORK_WASH = false
+
 @Composable
 fun rememberDynamicArtworkBackgroundEnabled(): Boolean {
     val enabled by ThemeSettingsRepository.dynamicArtworkBackgroundEnabled.collectAsState()
@@ -40,7 +42,9 @@ fun DynamicArtworkBackground(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    val active = rememberDynamicArtworkBackgroundEnabled()
+    // Better Nuvio: a Imersiva só dá a cor viva (botão, aba ativa, luz do canto); o fundo
+    // da página continua #0A0A0B, como na TV. O fundo de arte do Enhanced fica desligado.
+    val active = BETTER_NUVIO_ARTWORK_WASH && rememberDynamicArtworkBackgroundEnabled()
     if (!active) {
         CompositionLocalProvider(LocalDynamicArtworkBackgroundActive provides false) {
             content()

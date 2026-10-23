@@ -505,7 +505,7 @@
     <string name="compose_player_youre_watching">Você está assistindo</string>
     <string name="compose_profile_add_profile">Adicionar perfil</string>
     <string name="compose_search_clear">Limpar busca</string>
-    <string name="compose_search_discover_title">Descobrir</string>
+    <string name="compose_search_discover_title">Explorar</string>
     <string name="compose_search_empty_failed_message">Os addons instalados não conseguiram retornar resultados de busca válidos.</string>
     <string name="compose_search_empty_failed_title">Busca falhou</string>
     <string name="compose_search_empty_no_active_addons_message">Ative ou adicione um addon antes de buscar.</string>
@@ -540,7 +540,7 @@
     <string name="compose_settings_page_plugins">Plugins</string>
     <string name="compose_settings_page_poster_customization">Estilo do card de pôster</string>
     <string name="compose_settings_page_privacy_policy">Política de privacidade</string>
-    <string name="compose_settings_page_root">Configurações</string>
+    <string name="compose_settings_page_root">Ajustes</string>
     <string name="compose_settings_page_streams">Streams</string>
     <string name="settings_appearance_section_streams">STREAMS</string>
     <string name="compose_settings_page_supporters_contributors">Apoiadores e colaboradores</string>
@@ -1801,12 +1801,12 @@
     <string name="discover_catalog">Catálogo</string>
     <string name="discover_catalog_context">%1$s • %2$s</string>
     <string name="discover_empty_load_failed_message">O catálogo selecionado falhou ao retornar itens de descoberta.</string>
-    <string name="discover_empty_load_failed_title">Não foi possível carregar Descobrir</string>
-    <string name="discover_empty_no_catalogs_message">Seus addons ativados não fornecem catálogos que possam ser exibidos em Descobrir.</string>
+    <string name="discover_empty_load_failed_title">Não foi possível carregar o Explorar</string>
+    <string name="discover_empty_no_catalogs_message">Seus addons ativados não fornecem catálogos que possam ser exibidos no Explorar.</string>
     <string name="discover_empty_no_catalogs_title">Nenhum catálogo de descoberta</string>
     <string name="discover_empty_no_results_message">O catálogo e filtros selecionados não retornaram nenhum item.</string>
     <string name="discover_empty_no_results_title">Nenhum título encontrado</string>
-    <string name="discover_empty_no_active_addons_message">Ative ou adicione um addon antes de navegar em Descobrir.</string>
+    <string name="discover_empty_no_active_addons_message">Ative ou adicione um addon antes de navegar no Explorar.</string>
     <string name="discover_select_catalog">Selecionar Catálogo</string>
     <string name="discover_select_genre">Selecionar Gênero</string>
     <string name="discover_select_type">Selecionar Tipo</string>
@@ -2929,4 +2929,5 @@
     <string name="bn_episode_date_short">%1$d %2$s</string>
     <string name="bn_episode_date_short_year">%1$d %2$s %3$d</string>
     <string name="bn_months_short">JAN,FEV,MAR,ABR,MAI,JUN,JUL,AGO,SET,OUT,NOV,DEZ</string>
+    <string name="bn_date_long">%2$d de %1$s de %3$d</string>
 </resources>

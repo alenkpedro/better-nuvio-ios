@@ -95,6 +95,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.i18n.localizedLongDate
 import com.nuvio.app.core.i18n.localizedMonthName
 import com.nuvio.app.core.i18n.localizedShortMonthName
 import com.nuvio.app.core.ui.ScreenActivityEffect
@@ -3171,7 +3172,7 @@ private fun defaultLibraryCalendarSelection(
 }
 
 private fun displayLibraryCalendarEventDate(date: LibraryCalendarDate): String =
-    "${localizedMonthName(date.month)} ${date.day}, ${date.year}"
+    localizedLongDate(date.day, date.month, date.year)
 
 private fun libraryCalendarCells(month: LibraryCalendarMonth): List<LibraryCalendarDate?> {
     val firstDayOffset = firstLibraryCalendarWeekdayOffset(month.year, month.month)
