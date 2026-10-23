@@ -1,5 +1,6 @@
 package com.nuvio.app.features.home.components
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -33,7 +34,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.Icon
@@ -54,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -63,6 +64,7 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -84,7 +86,6 @@ import com.nuvio.app.core.ui.heroStretchZoom
 import com.nuvio.app.features.details.HeroTrailerAudioState
 import com.nuvio.app.features.details.HeroTrailerSurface
 import com.nuvio.app.features.details.MetaDetailsRepository
-import com.nuvio.app.features.details.components.DetailHeroMetaBadge
 import com.nuvio.app.features.details.components.HeroTrailerPlayerSurface
 import com.nuvio.app.features.details.selectHeroTrailer
 import com.nuvio.app.features.details.youtubePlaybackUrl
@@ -92,8 +93,10 @@ import com.nuvio.app.features.home.HomeHeroArtworkSource
 import com.nuvio.app.features.home.HomeHeroStyle
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.player.MiniPlayerController
+import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.trailer.TrailerPlaybackResolver
 import com.nuvio.app.features.trailer.TrailerPlaybackSource
+import com.nuvio.app.features.watchprogress.ContinueWatchingItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -203,6 +206,9 @@ internal fun HomeHeroSection(
     trailerStartUnmuted: Boolean = false,
     onItemClick: ((MetaPreview) -> Unit)? = null,
     onActiveArtworkChange: ((String?) -> Unit)? = null,
+    resumeItems: Map<String, ContinueWatchingItem> = emptyMap(),
+    onPlayClick: ((MetaPreview, ContinueWatchingItem?) -> Unit)? = null,
+    tabAccentActive: Boolean = false,
 ) {
     if (items.isEmpty()) return
 
@@ -330,12 +336,35 @@ internal fun HomeHeroSection(
             LaunchedEffect(onActiveArtworkChange, activeArtworkUrl) {
                 onActiveArtworkChange?.invoke(activeArtworkUrl)
             }
-            if (onActiveArtworkChange != null && rememberDynamicArtworkBackgroundEnabled()) {
+            if (rememberDynamicArtworkBackgroundEnabled()) {
                 val heroArtworkUrls = remember(items, effectiveArtworkSource) {
-                    items.mapNotNull { item -> heroArtworkUrl(item, effectiveArtworkSource) }
+                    items.flatMap { item ->
+                        listOfNotNull(
+                            item.logo?.takeIf { it.isNotBlank() },
+                            heroArtworkUrl(item, effectiveArtworkSource),
+                        )
+                    }
                 }
                 PrefetchArtworkDominantColors(heroArtworkUrls)
             }
+
+            // Cor viva do destaque em cena: botão principal, luz do canto e aba ativa.
+            val targetItem = items[pagerState.targetPage % items.size]
+            val heroCorVivaTarget = rememberTitleCorVivaTarget(
+                logoUrl = targetItem.logo,
+                artUrl = heroArtworkUrl(targetItem, effectiveArtworkSource),
+            )
+            val heroCorViva by animateColorAsState(
+                targetValue = heroCorVivaTarget,
+                animationSpec = tween(durationMillis = 420),
+                label = "home_hero_cor_viva",
+            )
+            HeroTabAccentEffect(color = heroCorVivaTarget, active = tabAccentActive)
+            val heroGlowEnabled = rememberDynamicArtworkBackgroundEnabled()
+            val playerSettings by remember {
+                PlayerSettingsRepository.ensureLoaded()
+                PlayerSettingsRepository.uiState
+            }.collectAsStateWithLifecycle()
 
             val platformContext = LocalPlatformContext.current
             LaunchedEffect(pagerState.settledPage, items, effectiveArtworkSource) {
@@ -549,6 +578,27 @@ internal fun HomeHeroSection(
                                     drawRect(Brush.verticalGradient(colors = listOf(fade.copy(alpha = 0f), fade)))
                                 },
                         )
+
+                        // Luz do canto na cor viva do destaque (a luz ambiente da TV).
+                        if (heroGlowEnabled) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .drawBehind {
+                                        drawRect(
+                                            Brush.radialGradient(
+                                                colors = listOf(
+                                                    heroCorViva.copy(alpha = 0.30f),
+                                                    heroCorViva.copy(alpha = 0.10f),
+                                                    Color.Transparent,
+                                                ),
+                                                center = Offset(0f, size.height * 0.62f),
+                                                radius = size.width * 1.05f,
+                                            ),
+                                        )
+                                    },
+                            )
+                        }
                     }
 
                     if (isCardStyle) {
@@ -575,7 +625,7 @@ internal fun HomeHeroSection(
                                     horizontal = layout.contentHorizontalPadding,
                                     vertical = layout.contentVerticalPadding,
                                 ),
-                            horizontalAlignment = if (layout.isTablet) Alignment.Start else Alignment.CenterHorizontally,
+                            horizontalAlignment = Alignment.Start,
                         ) {
                             Box(
                                 modifier = Modifier
@@ -597,20 +647,67 @@ internal fun HomeHeroSection(
                                         HeroContentBlock(
                                             item = layerItem,
                                             layout = layout,
+                                            resume = resumeItems[layerItem.id],
+                                            buttonColor = heroCorViva,
                                             onItemClick = onItemClick,
+                                            onPlayClick = onPlayClick,
                                         )
                                     }
                                     }
                                 }
                             }
 
-                            if (items.size > 1) {
-                                Spacer(modifier = Modifier.height(if (layout.isTablet) 16.dp else 18.dp))
-                                HeroPageIndicator(
-                                    itemCount = items.size,
-                                    pagerState = pagerState,
-                                    coroutineScope = coroutineScope,
-                                )
+                            // A fonte que o Play vai usar (se houver) e o contador "2 / 10".
+                            val currentResume = resumeItems[currentItem.id]
+                            val sourceLabel = remember(currentItem.type, currentItem.id, currentResume, playerSettings) {
+                                if (currentResume != null) {
+                                    heroPlaySourceLabel(
+                                        type = currentResume.parentMetaType,
+                                        videoId = currentResume.videoId,
+                                        parentMetaId = currentResume.parentMetaId,
+                                        season = currentResume.seasonNumber,
+                                        episode = currentResume.episodeNumber,
+                                        settings = playerSettings,
+                                    )
+                                } else if (currentItem.type.equals("movie", ignoreCase = true)) {
+                                    heroPlaySourceLabel(
+                                        type = currentItem.type,
+                                        videoId = currentItem.id,
+                                        parentMetaId = null,
+                                        season = null,
+                                        episode = null,
+                                        settings = playerSettings,
+                                    )
+                                } else {
+                                    null
+                                }
+                            }
+                            if (sourceLabel != null || items.size > 1) {
+                                Spacer(modifier = Modifier.height(if (layout.isTablet) 14.dp else 16.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth(layout.contentWidthFraction)
+                                        .widthIn(max = layout.contentMaxWidth),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = sourceLabel?.let {
+                                            stringResource(Res.string.bn_home_hero_source, it)
+                                        }.orEmpty(),
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    if (items.size > 1) {
+                                        HeroPageCounter(
+                                            itemCount = items.size,
+                                            pagerState = pagerState,
+                                            modifier = Modifier.padding(start = 12.dp),
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -648,43 +745,9 @@ internal fun HomeHeroSection(
 
         if (isCardStyle && items.size > 1) {
             Spacer(modifier = Modifier.height(12.dp))
-            HeroPageIndicator(
+            HeroPageCounter(
                 itemCount = items.size,
                 pagerState = pagerState,
-                coroutineScope = coroutineScope,
-            )
-        }
-    }
-}
-
-@Composable
-private fun HeroPageIndicator(
-    itemCount: Int,
-    pagerState: PagerState,
-    coroutineScope: CoroutineScope,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        repeat(itemCount) { index ->
-            val activeFraction = heroItemVisibility(pagerState, index, itemCount)
-            Box(
-                modifier = Modifier
-                    .clickable {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(
-                                heroPageForItem(pagerState.currentPage, index, itemCount),
-                            )
-                        }
-                    }
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onBackground)
-                    .graphicsLayer {
-                        alpha = 0.35f + (0.57f * activeFraction)
-                    }
-                    .width(8.dp + (24.dp * activeFraction))
-                    .height(8.dp),
             )
         }
     }
@@ -704,11 +767,6 @@ private fun heroPageOffset(
     pagerState: PagerState,
     page: Int,
 ): Float = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-
-private fun heroItemVisibility(pagerState: PagerState, itemIndex: Int, itemCount: Int): Float {
-    val page = heroPageForItem(pagerState.currentPage, itemIndex, itemCount)
-    return (1f - abs(heroPageOffset(pagerState, page))).coerceIn(0f, 1f)
-}
 
 internal fun heroPageForItem(currentPage: Int, itemIndex: Int, itemCount: Int): Int {
     val page = currentPage.toLong() - currentPage % itemCount + itemIndex
@@ -777,16 +835,20 @@ internal fun HomeHeroReservedSpace(
 private fun HeroContentBlock(
     item: MetaPreview,
     layout: HomeHeroLayout,
+    resume: ContinueWatchingItem?,
+    buttonColor: Color,
     onItemClick: ((MetaPreview) -> Unit)?,
+    onPlayClick: ((MetaPreview, ContinueWatchingItem?) -> Unit)?,
 ) {
     var logoLoadError by remember(item.type, item.id, item.logo) {
         mutableStateOf(false)
     }
     val logoUrl = item.logo?.takeIf { it.isNotBlank() }
 
+    // Alinhado à esquerda como na TV: logo, linha de continuar, sinopse e os dois botões.
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = if (layout.isTablet) Alignment.Start else Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.Start,
     ) {
         if (logoUrl != null && !logoLoadError) {
             AsyncImage(
@@ -798,7 +860,7 @@ private fun HeroContentBlock(
                     .clickable(enabled = onItemClick != null) {
                         onItemClick?.invoke(item)
                     },
-                alignment = if (layout.isTablet) Alignment.CenterStart else Alignment.Center,
+                alignment = Alignment.BottomStart,
                 contentScale = ContentScale.Fit,
                 onError = { logoLoadError = true },
             )
@@ -810,14 +872,10 @@ private fun HeroContentBlock(
                     .clickable(enabled = onItemClick != null) {
                         onItemClick?.invoke(item)
                     },
-                style = if (layout.isTablet) {
-                    MaterialTheme.typography.displaySmall
-                } else {
-                    MaterialTheme.typography.displaySmall
-                },
+                style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Black,
-                textAlign = if (layout.isTablet) TextAlign.Start else TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Start,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -836,57 +894,47 @@ private fun HeroContentBlock(
         val details = detailsState.value
         val rating = (item.imdbRating ?: details?.imdbRating)
             ?.takeIf { raw -> raw.toDoubleOrNull()?.let { it > 0.0 } == true }
+            ?.let { raw -> if (Locale.current.language == "pt") raw.replace('.', ',') else raw }
         val year = (item.releaseInfo ?: details?.releaseInfo)
             ?.takeIf { it.isNotBlank() }
             ?.let(::formatReleaseDateForDisplay)
         val genre = (item.genres.firstOrNull() ?: details?.genres?.firstOrNull())?.takeIf { it.isNotBlank() }
-        val ageRating = details?.ageRating?.trim()?.takeIf { it.isNotBlank() }
         val synopsis = (item.description ?: details?.description)?.trim()?.takeIf { it.isNotBlank() }
-        val typeLabel = when (item.type.lowercase()) {
-            "movie" -> stringResource(Res.string.media_movie)
-            "series", "tv", "show" -> stringResource(Res.string.media_series)
-            else -> item.type.replaceFirstChar(Char::uppercase)
+        val hasProgress = resume != null && resume.progressFraction > 0f
+        val continueText = if (hasProgress) {
+            bnRemainingTimeText(resume)
+                ?.let { stringResource(Res.string.bn_home_hero_continue_left, it) }
+                ?: stringResource(Res.string.bn_home_hero_continue)
+        } else {
+            null
         }
-        val textAlign = if (layout.isTablet) TextAlign.Start else TextAlign.Center
 
         Spacer(modifier = Modifier.height(14.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = if (layout.isTablet) {
-                Arrangement.spacedBy(8.dp, Alignment.Start)
-            } else {
-                Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-            },
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             var needsDot = false
+            if (continueText != null) {
+                HeroMetaText(text = continueText, modifier = Modifier.weight(1f, fill = false))
+                needsDot = true
+            } else {
+                year?.let {
+                    HeroMetaText(text = it)
+                    needsDot = true
+                }
+                genre?.let {
+                    if (needsDot) HeroMetaDot()
+                    HeroMetaText(text = it, modifier = Modifier.weight(1f, fill = false))
+                    needsDot = true
+                }
+            }
             if (rating != null) {
-                Icon(
-                    imageVector = Icons.Rounded.Star,
-                    contentDescription = null,
-                    tint = HeroRatingStar,
-                    modifier = Modifier.size(18.dp),
-                )
+                if (needsDot) HeroMetaDot()
+                HeroImdbBadge()
                 HeroMetaText(text = rating)
-                needsDot = true
             }
-            year?.let {
-                if (needsDot) HeroMetaDot()
-                HeroMetaText(text = it)
-                needsDot = true
-            }
-            genre?.let {
-                if (needsDot) HeroMetaDot()
-                HeroMetaText(text = it, modifier = Modifier.weight(1f, fill = false))
-                needsDot = true
-            }
-            ageRating?.let {
-                if (needsDot) HeroMetaDot()
-                DetailHeroMetaBadge(text = it, contentColor = MaterialTheme.colorScheme.onBackground)
-                needsDot = true
-            }
-            if (needsDot) HeroMetaDot()
-            HeroTypePill(text = typeLabel)
         }
 
         if (synopsis != null) {
@@ -896,33 +944,33 @@ private fun HeroContentBlock(
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
-                textAlign = textAlign,
-                maxLines = 2,
+                textAlign = TextAlign.Start,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            HeroPrimaryButton(
+                text = stringResource(
+                    if (hasProgress) Res.string.bn_home_hero_resume else Res.string.bn_home_hero_watch,
+                ),
+                color = buttonColor,
+                onClick = {
+                    if (onPlayClick != null) onPlayClick(item, resume) else onItemClick?.invoke(item)
+                },
+            )
+            HeroGlassButton(
+                text = stringResource(Res.string.bn_home_hero_details),
+                onClick = { onItemClick?.invoke(item) },
             )
         }
     }
 }
-
-@Composable
-private fun HeroTypePill(text: String) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.16f))
-            .padding(horizontal = 10.dp, vertical = 4.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-        )
-    }
-}
-
-private val HeroRatingStar = Color(0xFFF5C518)
 
 @Composable
 private fun HeroMetaText(text: String, modifier: Modifier = Modifier) {

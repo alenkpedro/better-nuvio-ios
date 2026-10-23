@@ -28,6 +28,8 @@ import com.nuvio.app.core.network.NetworkCondition
 import com.nuvio.app.core.network.NetworkStatusRepository
 import com.nuvio.app.core.ui.LocalNuvioBottomNavigationOverlayPadding
 import com.nuvio.app.core.ui.DynamicArtworkBackground
+import com.nuvio.app.core.ui.NativeNavigationTab
+import com.nuvio.app.core.ui.NativeTabBridge
 import com.nuvio.app.core.ui.ScreenActivityEffect
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioNetworkOfflineCard
@@ -566,6 +568,37 @@ fun HomeScreen(
         )
     }
     val hasContinueWatchingRows = continueWatchingItems.isNotEmpty() || upcomingItems.isNotEmpty()
+    // Destaque: o item de Continuar assistindo de cada título vira "Retomar" e a linha
+    // "Continuar · faltam 58 min".
+    val heroResumeItems = remember(continueWatchingItems) {
+        continueWatchingItems.reversed().associateBy { it.parentMetaId }
+    }
+    val nativeActiveTab by NativeTabBridge.activeTab.collectAsStateWithLifecycle()
+    val onHeroPlayClick: (MetaPreview, ContinueWatchingItem?) -> Unit = { meta, resume ->
+        when {
+            resume != null && onContinueWatchingClick != null -> onContinueWatchingClick(resume)
+            meta.type.equals("movie", ignoreCase = true) && onContinueWatchingClick != null ->
+                onContinueWatchingClick(
+                    ContinueWatchingItem(
+                        parentMetaId = meta.id,
+                        parentMetaType = meta.type,
+                        videoId = meta.id,
+                        title = meta.name,
+                        subtitle = "",
+                        imageUrl = meta.banner ?: meta.poster,
+                        logo = meta.logo,
+                        poster = meta.poster,
+                        background = meta.banner,
+                        pauseDescription = meta.description,
+                        resumePositionMs = 0L,
+                        durationMs = 0L,
+                        progressFraction = 0f,
+                    ),
+                )
+            // Série sem progresso: a página do título escolhe o episódio.
+            else -> onPosterClick?.invoke(meta)
+        }
+    }
 
     ScreenActivityEffect(activeProfileId, continueWatchingItems.isNotEmpty(), hasUserScrolledContinueWatching) { active ->
         if (!active) return@ScreenActivityEffect
@@ -1041,6 +1074,9 @@ fun HomeScreen(
                                 trailerStartUnmuted = homeSettingsUiState.heroTrailerStartUnmuted,
                                 onItemClick = onPosterClick,
                                 onActiveArtworkChange = onActiveHeroArtworkChange,
+                                resumeItems = heroResumeItems,
+                                onPlayClick = onHeroPlayClick,
+                                tabAccentActive = animateCollectionGifs && nativeActiveTab == NativeNavigationTab.Home,
                             )
 
                             else -> HomeHeroReservedSpace(
