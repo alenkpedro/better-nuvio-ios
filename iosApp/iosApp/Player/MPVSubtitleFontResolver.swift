@@ -114,6 +114,17 @@ enum MPVSubtitleFontResolver {
 
     private(set) static var registeredFamilies: [String] = []
 
+    /// Turns "bundle:<file>" into the file's path inside the app; other paths pass through.
+    static func resolveBundleReference(_ reference: String) -> String? {
+        let prefix = "bundle:"
+        guard reference.hasPrefix(prefix) else { return reference }
+        let file = String(reference.dropFirst(prefix.count)) as NSString
+        let name = file.deletingPathExtension
+        let ext = file.pathExtension
+        return Bundle.main.path(forResource: name, ofType: ext, inDirectory: bundledFontsDirectory)
+            ?? Bundle.main.path(forResource: name, ofType: ext)
+    }
+
     static func registerCustomFont(atPath path: String) -> String? {
         let url = URL(fileURLWithPath: path) as CFURL
         var error: Unmanaged<CFError>?
@@ -358,7 +369,9 @@ final class MPVSubtitleFontController {
     func setCustomFontPath(_ path: String?) {
         guard path != customFontPath else { return }
         customFontPath = path
-        customFamily = path.flatMap { MPVSubtitleFontResolver.registerCustomFont(atPath: $0) }
+        // Better Nuvio: "bundle:<file>" is one of the TV's built-in subtitle fonts in SubtitleFonts.
+        let resolvedPath = path.flatMap { MPVSubtitleFontResolver.resolveBundleReference($0) }
+        customFamily = resolvedPath.flatMap { MPVSubtitleFontResolver.registerCustomFont(atPath: $0) }
         if let path, customFamily == nil {
             InAppLogBridge.shared.warn(
                 tag: "MPV/SubFont",

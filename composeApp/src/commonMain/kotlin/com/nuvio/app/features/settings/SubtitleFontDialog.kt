@@ -1,5 +1,8 @@
 package com.nuvio.app.features.settings
 
+import com.nuvio.app.features.player.BuiltInSubtitleFont
+import com.nuvio.app.features.player.previewFamily
+import nuvio.composeapp.generated.resources.bn_subtitle_font_default_tag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -62,7 +65,9 @@ internal fun SubtitleFontDialog(
         },
         onError = { errorRes = Res.string.settings_playback_subtitle_font_failed },
     )
-    val selected = selectedFontFile?.takeIf { file -> fonts.any { it.fileName == file } }
+    val selected = selectedFontFile?.takeIf { file ->
+        BuiltInSubtitleFont.fromId(file) != null || fonts.any { it.fileName == file }
+    } ?: BuiltInSubtitleFont.DEFAULT.id
 
     DialogSurface(
         onDismissRequest = onDismiss,
@@ -76,11 +81,27 @@ internal fun SubtitleFontDialog(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            DialogOption(
-                text = stringResource(Res.string.settings_playback_subtitle_font_default),
-                selected = selected == null,
-                onClick = { onFontSelected(null) },
-            )
+            // Better Nuvio: the TV's 7 fonts first, each sample written in its own face.
+            BuiltInSubtitleFont.entries.forEach { font ->
+                DialogOption(
+                    text = font.label,
+                    description = if (font == BuiltInSubtitleFont.DEFAULT) {
+                        stringResource(Res.string.bn_subtitle_font_default_tag)
+                    } else {
+                        null
+                    },
+                    selected = selected == font.id,
+                    onClick = { onFontSelected(font.id) },
+                    leading = {
+                        Text(
+                            text = "Aa",
+                            fontFamily = font.previewFamily(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.nuvio.colors.textPrimary,
+                        )
+                    },
+                )
+            }
             fonts.forEach { font ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),

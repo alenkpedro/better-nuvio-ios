@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -52,7 +53,6 @@ import nuvio.composeapp.generated.resources.compose_player_bottom_offset
 import nuvio.composeapp.generated.resources.compose_player_capture_line
 import nuvio.composeapp.generated.resources.compose_player_color
 import nuvio.composeapp.generated.resources.compose_player_font
-import nuvio.composeapp.generated.resources.compose_player_font_default
 import nuvio.composeapp.generated.resources.compose_player_font_size
 import nuvio.composeapp.generated.resources.compose_player_font_size_value
 import nuvio.composeapp.generated.resources.compose_player_loading_lines
@@ -337,8 +337,10 @@ private fun SubtitleFontSection(
 ) {
     LaunchedEffect(Unit) { withContext(Dispatchers.Default) { SubtitleFontRepository.ensureLoaded() } }
     val fonts by SubtitleFontRepository.fonts.collectAsState()
-    if (fonts.isEmpty()) return
-    val selected = selectedFontFile?.takeIf { file -> fonts.any { it.fileName == file } }
+    // Better Nuvio: no saved choice (or a deleted import) means Netflix Sans, like the TV.
+    val selected = selectedFontFile?.takeIf { file ->
+        BuiltInSubtitleFont.fromId(file) != null || fonts.any { it.fileName == file }
+    } ?: BuiltInSubtitleFont.DEFAULT.id
 
     SubtitleStyleSection(title = stringResource(Res.string.compose_player_font)) {
         Row(
@@ -347,11 +349,14 @@ private fun SubtitleFontSection(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SubtitleOptionChip(
-                label = stringResource(Res.string.compose_player_font_default),
-                selected = selected == null,
-                onClick = { onFontSelected(null) },
-            )
+            BuiltInSubtitleFont.entries.forEach { font ->
+                SubtitleOptionChip(
+                    label = font.label,
+                    selected = selected == font.id,
+                    onClick = { onFontSelected(font.id) },
+                    fontFamily = font.previewFamily(),
+                )
+            }
             fonts.forEach { font ->
                 SubtitleOptionChip(
                     label = font.familyName,
@@ -368,6 +373,7 @@ private fun SubtitleOptionChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
+    fontFamily: FontFamily? = null,
 ) {
     val tokens = MaterialTheme.nuvio
     Box(
@@ -381,6 +387,7 @@ private fun SubtitleOptionChip(
             text = label,
             color = if (selected) tokens.colors.onAccent else Color.White,
             style = MaterialTheme.typography.labelLarge,
+            fontFamily = fontFamily,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

@@ -1,5 +1,6 @@
 package com.nuvio.app.features.settings
 
+import com.nuvio.app.features.player.BuiltInSubtitleFont
 import com.nuvio.app.core.build.AppFeaturePolicy
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -721,7 +722,7 @@ private fun PlaybackSettingsSection(
                 SettingsNavigationRow(
                     title = stringResource(Res.string.settings_playback_subtitle_font),
                     description = subtitleFonts.firstOrNull { it.fileName == subtitleStyle.customFontFile }?.familyName
-                        ?: stringResource(Res.string.settings_playback_subtitle_font_default),
+                        ?: (BuiltInSubtitleFont.fromId(subtitleStyle.customFontFile) ?: BuiltInSubtitleFont.DEFAULT).label,
                     enabled = subtitleRenderingEnabled,
                     isTablet = isTablet,
                     onClick = { showSubtitleFontDialog = true },

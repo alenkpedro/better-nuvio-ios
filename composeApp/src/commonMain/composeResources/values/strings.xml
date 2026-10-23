@@ -2925,6 +2925,7 @@
     <string name="bn_settings_synced_hours">Synced %1$d h ago</string>
     <string name="bn_settings_not_synced">Not synced yet</string>
     <string name="bn_settings_look_description">Theme, app icon and language</string>
+    <string name="bn_subtitle_font_default_tag">Default</string>
     <string name="bn_accent_title">Accent colour</string>
     <string name="bn_accent_description">A fixed colour, or Immersive, which changes with each title.</string>
     <string name="bn_accent_immersive">Immersive</string>

@@ -1899,6 +1899,7 @@
     <string name="bn_settings_synced_hours">Sincronizado há %1$d h</string>
     <string name="bn_settings_not_synced">Ainda não sincronizado</string>
     <string name="bn_settings_look_description">Tema, ícone do app e idioma</string>
+    <string name="bn_subtitle_font_default_tag">Padrão</string>
     <string name="bn_accent_title">Cor de destaque</string>
     <string name="bn_accent_description">Uma cor fixa, ou a Imersiva, que muda com cada título.</string>
     <string name="bn_accent_immersive">Imersiva</string>

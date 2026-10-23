@@ -10,6 +10,39 @@ data class SubtitleFont(
     val familyName: String,
 )
 
+/**
+ * Better Nuvio: the TV's 7 subtitle fonts, in the TV's order (text.c, TXT_LEG_FONTES).
+ * [id] is what gets saved in the subtitle style; [bundleFile] ships in iosApp/SubtitleFonts
+ * together with its bold face, so libass finds both by family.
+ */
+enum class BuiltInSubtitleFont(val id: String, val label: String, val bundleFile: String) {
+    NETFLIX_SANS("builtin:netflix-sans", "Netflix Sans", "NetflixSans-Regular.otf"),
+    INTER("builtin:inter", "Inter", "Inter-Regular.ttf"),
+    DM_SANS("builtin:dm-sans", "DM Sans", "DMSans-Regular.ttf"),
+    OPEN_SANS("builtin:open-sans", "Open Sans", "OpenSans-Regular.ttf"),
+    ROBOTO("builtin:roboto", "Roboto", "Roboto-Regular.ttf"),
+    MONTSERRAT("builtin:montserrat", "Montserrat", "Montserrat-Regular.ttf"),
+    ATKINSON("builtin:atkinson", "Atkinson Hyperlegible", "AtkinsonHyperlegibleNext-Regular.ttf");
+
+    companion object {
+        /** No saved choice means the TV default, Netflix Sans. */
+        val DEFAULT = NETFLIX_SANS
+
+        fun fromId(id: String?): BuiltInSubtitleFont? = entries.firstOrNull { it.id == id }
+
+        /** The built-in font a saved choice stands for, or null when it is an imported font. */
+        fun resolve(savedFontFile: String?): BuiltInSubtitleFont? =
+            if (savedFontFile.isNullOrBlank()) DEFAULT else fromId(savedFontFile)
+    }
+}
+
+/** What the iOS player gets: "bundle:<file>" for a built-in font, else the imported font's path. */
+fun subtitleFontPlayerRef(savedFontFile: String?): String {
+    BuiltInSubtitleFont.resolve(savedFontFile)?.let { return "bundle:${it.bundleFile}" }
+    return SubtitleFontRepository.pathOf(savedFontFile)
+        ?: "bundle:${BuiltInSubtitleFont.DEFAULT.bundleFile}"
+}
+
 /** The app-private folder imported subtitle fonts are copied into. Kept on this device only. */
 internal expect object SubtitleFontFiles {
     fun directoryPath(): String?
