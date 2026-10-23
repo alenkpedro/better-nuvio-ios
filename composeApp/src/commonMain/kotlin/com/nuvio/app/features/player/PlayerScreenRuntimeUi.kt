@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.core.ui.ProvideCorViva
 import com.nuvio.app.features.watching.application.WatchingState
 import com.nuvio.app.features.home.MetaPreview
 import androidx.compose.animation.AnimatedVisibility
@@ -140,6 +141,17 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     }
     val gestureCallbacks = rememberSurfaceGestureCallbacks()
     val onPinchZoom = rememberUpdatedState<(Float) -> Unit> { factor -> pinchVideoZoom(factor) }
+    val onSwipeUpTracks = rememberUpdatedState<(() -> Unit)?>(
+        if (isLiveTvPlayback || showSubtitleModal || showAudioModal) {
+            null
+        } else {
+            {
+                refreshTracks()
+                showSubtitleModal = true
+                controlsVisible = false
+            }
+        },
+    )
     LaunchedEffect(playerController) {
         if (videoZoom != 1f) playerController?.setVideoZoom(videoZoom)
     }
@@ -262,6 +274,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                 clearLiveGestureFeedbackState = gestureCallbacks.clearLiveGestureFeedback,
                 revealLockedOverlayState = gestureCallbacks.revealLockedOverlay,
                 commitHorizontalSeekState = gestureCallbacks.commitHorizontalSeek,
+                swipeUpTracksState = onSwipeUpTracks,
             )
             .playerSurfacePinchGestures(
                 playbackGesturesEnabled = playbackGesturesEnabled,
@@ -350,7 +363,10 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             )
         }
 
-        RenderPlayerControls(isEpisode = isEpisode)
+        // Better Nuvio: a cor viva do título (botão Pausar, Mais) vem da arte dele.
+        ProvideCorViva(artUrl = if (isLiveTvPlayback) null else background ?: poster) {
+            RenderPlayerControls(isEpisode = isEpisode)
+        }
         RenderPlaybackOverlays(
             runtime = runtime,
             currentGestureFeedback = currentGestureFeedback,
@@ -663,6 +679,18 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
             modifier = Modifier.fillMaxSize(),
             seekPreview = seekPreview,
             onTimelineTouchChange = { touching -> isTouchingTimeline = touching },
+            skipIntervals = skipIntervals,
+            logoUrl = if (isLiveTvPlayback) activeLogo else logo,
+            topEndBadge = {
+                PlayerSubtitleSyncedPill(
+                    selectedAddonSubtitle = selectedAddonSubtitle,
+                    subtitleDelayMs = subtitleDelayMs,
+                    onClick = {
+                        refreshTracks()
+                        showSubtitleModal = true
+                    },
+                )
+            },
         )
     }
 }
@@ -876,10 +904,6 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
                 persistAudioPreference(audioTracks.firstOrNull { it.index == index })
                 playerController?.selectAudioTrack(index)
             }
-            scope.launch {
-                kotlinx.coroutines.delay(200)
-                showAudioModal = false
-            }
         },
         onAudioModalDismissed = { showAudioModal = false },
         showSubtitleModal = showSubtitleModal,
@@ -1084,6 +1108,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
         showStreamInfoModal = showStreamInfoModal,
         mediaInfoJson = snapshotMediaInfoJson,
         onStreamInfoModalDismissed = { showStreamInfoModal = false },
+        currentStreamFilename = currentStreamFilename,
     )
 
     if (showUserRatingSheet) {

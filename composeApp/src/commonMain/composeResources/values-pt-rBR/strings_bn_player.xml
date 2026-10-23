@@ -1,0 +1,57 @@
+<resources>
+    <!-- Better Nuvio: painel de áudio e legendas -->
+    <string name="bn_tracks_header_audio">Áudio</string>
+    <string name="bn_tracks_header_subtitles">Legendas</string>
+    <string name="bn_tracks_header_sync">Sincronia da legenda</string>
+    <string name="bn_tracks_no_audio">Nenhuma faixa de áudio</string>
+    <string name="bn_subtitles_off">Desligadas</string>
+    <string name="bn_subtitle_recommended">Recomendada</string>
+    <string name="bn_subtitle_see_all">Ver as %1$d</string>
+    <string name="bn_subtitle_same_file">mesmo arquivo</string>
+    <string name="bn_subtitle_same_release">mesmo lançamento</string>
+    <string name="bn_subtitle_synced_tag">sincronizada</string>
+    <string name="bn_subtitle_fps">%1$s fps</string>
+    <string name="bn_decimal_separator">,</string>
+    <string name="bn_sync_mode_auto">Automática</string>
+    <string name="bn_sync_mode_ear">De ouvido</string>
+    <string name="bn_sync_mode_manual">Manual</string>
+    <string name="bn_sync_status_synced">Sincronizada · %1$s</string>
+    <string name="bn_sync_auto_hint">Liga sozinha ao escolher uma legenda de addon. Se não casar, nada muda.</string>
+    <string name="bn_sync_auto_pick_addon">Escolha uma legenda de addon para sincronizar sozinha.</string>
+    <string name="bn_sync_ear_hint">Toque em Ouvi quando ouvir uma fala e em Vi quando a legenda dela aparecer, em qualquer ordem.</string>
+    <string name="bn_sync_ear_start">Começar</string>
+    <string name="bn_subtitle_style">Estilo da legenda</string>
+    <string name="bn_subtitle_font_header">Fonte da legenda</string>
+    <string name="bn_back">Voltar</string>
+    <string name="bn_subtitle_size">Tamanho</string>
+    <string name="bn_subtitle_size_s">P</string>
+    <string name="bn_subtitle_size_m">M</string>
+    <string name="bn_subtitle_size_l">G</string>
+    <string name="bn_subtitle_size_xl">GG</string>
+    <string name="bn_subtitle_background">Fundo</string>
+    <string name="bn_subtitle_background_none">Sem</string>
+    <string name="bn_subtitle_background_half">50%</string>
+    <string name="bn_subtitle_background_full">Cheio</string>
+    <string name="bn_subtitle_color">Cor</string>
+    <string name="bn_subtitle_restore">Restaurar padrão</string>
+    <string name="bn_subtitle_more_options">Mais ajustes</string>
+    <!-- Better Nuvio: controles do player -->
+    <string name="bn_player_more">Mais</string>
+    <string name="bn_more_rate">Avaliar</string>
+    <string name="bn_more_rate_sub">Dê sua nota para este título</string>
+    <string name="bn_more_party">Assistir junto</string>
+    <string name="bn_more_party_sub">Assista em sincronia com amigos</string>
+    <string name="bn_more_external">Abrir em outro player</string>
+    <string name="bn_more_external_sub">VLC, Infuse, Outplayer e outros</string>
+    <string name="bn_more_engine">Trocar motor</string>
+    <string name="bn_more_engine_sub">Alterna entre os players internos</string>
+    <string name="bn_more_video">Ajustes de vídeo</string>
+    <string name="bn_more_video_sub">Imagem, cores e decodificação</string>
+    <string name="bn_more_info">Info técnica</string>
+    <string name="bn_more_info_sub">Codec, resolução e taxa de bits</string>
+    <string name="bn_more_intro">Marcar abertura</string>
+    <string name="bn_more_intro_sub">Envie o tempo da abertura para todos</string>
+    <string name="bn_player_ends_at">termina às %1$s</string>
+    <string name="bn_player_subtitle_synced">Legenda sincronizada · %1$s</string>
+    <string name="bn_player_tracks_hint">Áudio e legendas</string>
+</resources>

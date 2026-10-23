@@ -85,7 +85,7 @@ internal fun PlayerSpeedPopup(
     }
 }
 
-private class AboveAnchorPositionProvider(private val gapPx: Int) : PopupPositionProvider {
+internal class AboveAnchorPositionProvider(private val gapPx: Int) : PopupPositionProvider {
     override fun calculatePosition(
         anchorBounds: IntRect,
         windowSize: IntSize,

@@ -86,10 +86,14 @@ internal fun PlayerToolbar(
     onOrientationToggleClick: (() -> Unit)? = null,
     isPortraitPlayback: Boolean = false,
     onPictureInPictureClick: (() -> Unit)? = null,
+    moreActions: List<PlayerMoreAction> = emptyList(),
+    onInteraction: () -> Unit = {},
 ) {
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Spacer(Modifier.weight(1f))
-        // Toolbar actions share one liquid-glass capsule; close sits in its own glass circle.
+        // Better Nuvio: relógio no canto, e a ordem Transmitir, PiP, Girar, Bloquear, Mais.
+        // "Assistir junto" e as ações menos usadas ficam no menu Mais.
+        PlayerClock(modifier = Modifier.padding(end = 12.dp))
         Row(
             modifier = Modifier.playerLiquidGlass(
                 shape = PlayerGlassCapsule,
@@ -98,6 +102,13 @@ internal fun PlayerToolbar(
             ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            onCastClick?.let {
+                PlayerAction(
+                    description = stringResource(Res.string.player_cast),
+                    icon = if (isCasting) Icons.Rounded.CastConnected else Icons.Rounded.Cast,
+                    onClick = it,
+                )
+            }
             onPictureInPictureClick?.let {
                 PlayerAction(
                     description = stringResource(Res.string.compose_player_picture_in_picture),
@@ -112,19 +123,12 @@ internal fun PlayerToolbar(
                     onClick = it,
                 )
             }
-            if (onPartyClick != null) {
+            if (onPartyClick != null && moreActions.isEmpty()) {
                 PlayerAction(
                     description = stringResource(Res.string.party_title),
                     icon = Icons.Rounded.Groups,
                     onClick = onPartyClick,
                     tint = if (partyActive) MaterialTheme.colorScheme.primary else Color.White,
-                )
-            }
-            onCastClick?.let {
-                PlayerAction(
-                    description = stringResource(Res.string.player_cast),
-                    icon = if (isCasting) Icons.Rounded.CastConnected else Icons.Rounded.Cast,
-                    onClick = it,
                 )
             }
             PlayerAction(
@@ -134,6 +138,7 @@ internal fun PlayerToolbar(
                 icon = if (isLocked) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
                 onClick = onLockToggle,
             )
+            PlayerMoreButton(actions = moreActions, onInteraction = onInteraction)
         }
         Spacer(Modifier.width(8.dp))
         NuvioBackButton(

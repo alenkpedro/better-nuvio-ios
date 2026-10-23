@@ -1,5 +1,7 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.core.ui.onCorViva
+import com.nuvio.app.core.ui.corViva
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -172,6 +174,9 @@ internal fun PlayerControlsShell(
     modifier: Modifier = Modifier,
     seekPreview: SeekPreviewController? = null,
     onTimelineTouchChange: (Boolean) -> Unit = {},
+    skipIntervals: List<com.nuvio.app.features.player.skip.SkipInterval> = emptyList(),
+    logoUrl: String? = null,
+    topEndBadge: @Composable () -> Unit = {},
 ) {
     val density = LocalDensity.current
     var timelineHeight by remember { mutableStateOf(0.dp) }
@@ -274,11 +279,34 @@ internal fun PlayerControlsShell(
                         onOrientationToggleClick = onOrientationToggleClick,
                         isPortraitPlayback = isPortraitPlayback,
                         onPictureInPictureClick = onPictureInPictureClick,
+                        moreActions = playerMoreActions(
+                            onRateClick = onRateClick,
+                            userRating = userRating,
+                            onPartyClick = onPartyClick,
+                            partyActive = partyActive,
+                            onOpenInExternalPlayer = onOpenInExternalPlayer,
+                            onSwitchEngineClick = onSwitchEngineClick,
+                            onVideoSettingsClick = onVideoSettingsClick,
+                            onInfoClick = onInfoClick,
+                            onSubmitIntroClick = onSubmitIntroClick,
+                        ),
+                        onInteraction = onInteraction,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .windowInsetsPadding(playerToolbarTopInsets(metrics))
                             .padding(horizontal = metrics.horizontalPadding),
                     )
+                }
+                if (showPlaybackControls) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .windowInsetsPadding(playerToolbarTopInsets(metrics))
+                            .padding(horizontal = metrics.horizontalPadding)
+                            .padding(top = 58.dp),
+                    ) {
+                        topEndBadge()
+                    }
                 }
                 ParentalGuideOverlay(
                     warnings = parentalWarnings,
@@ -356,74 +384,63 @@ internal fun PlayerControlsShell(
                         .windowInsetsPadding(playerTimelineBottomInsets(metrics))
                         .padding(horizontal = metrics.horizontalPadding),
                 ) {
-                    if (!hideDetails) {
-                        PlayerTimelineDetails(
-                            title = title,
+                    // Better Nuvio: logo + linha à esquerda, botões redondos à direita, e a barra
+                    // com "−29:08 · termina às 21:43". Áudio/Legendas sobem do meio do vídeo.
+                    PlayerBottomBar(
+                        title = title,
+                        logoUrl = logoUrl,
+                        infoLine = playerInfoLine(
                             seasonNumber = seasonNumber,
                             episodeNumber = episodeNumber,
                             episodeTitle = episodeTitle,
                             releaseInfo = releaseInfo,
-                            streamTitle = streamTitle,
-                            providerName = providerName,
-                            isPlaying = playbackSnapshot.isPlaying,
-                            metrics = metrics,
-                            badges = badges,
-                            onSourceLineHeightChanged = { height ->
-                                sourceLineHeight = with(density) { height.toDp() }
-                            },
-                        )
-                    }
-                    PlayerChapterLabel(
-                        chapters = playbackSnapshot.chapters,
-                        positionMs = displayedPositionMs,
-                        metrics = metrics,
-                        onClick = onChaptersClick?.let { openChapters ->
-                            {
-                                onInteraction()
-                                openChapters()
-                            }
-                        },
-                    )
-                    PlayerTimeline(
-                        snapshot = playbackSnapshot,
-                        displayedPositionMs = displayedPositionMs,
-                        onScrubChange = onScrubChange,
-                        onScrubFinished = {
-                            onInteraction()
-                            onScrubFinished(it)
-                        },
-                        seekPreview = seekPreview,
-                        onTouchChange = onTimelineTouchChange,
-                    )
-                    PlayerControlActions(
+                            liveProgram = providerName.takeIf { onLiveChannelsClick != null },
+                            chapters = playbackSnapshot.chapters,
+                            positionMs = displayedPositionMs,
+                        ),
+                        onInfoLineClick = onChaptersClick,
+                        sourceLine = streamTitle.ifBlank { providerName }.replace("\n", " · "),
+                        showDetails = !hideDetails,
+                        actions = playerRoundActions(
+                            playbackSnapshot = playbackSnapshot,
+                            resizeMode = resizeMode,
+                            onEpisodesClick = onEpisodesClick,
+                            onSourcesClick = onSourcesClick,
+                            onChaptersClick = onChaptersClick,
+                            qualityLabel = qualityLabel,
+                            onQualityClick = onQualityClick,
+                            onSpeedClick = onSpeedClick,
+                            speedPickerVisible = speedPickerVisible,
+                            onSpeedSelected = onSpeedSelected,
+                            onSpeedPickerDismiss = onSpeedPickerDismiss,
+                            onResizeModeClick = onResizeModeClick,
+                            onNextEpisodeClick = onNextEpisodeClick,
+                        ),
                         playbackSnapshot = playbackSnapshot,
                         displayedPositionMs = displayedPositionMs,
                         showRemainingTime = showRemainingTime,
                         onRuntimeClick = onRuntimeClick,
                         metrics = metrics,
-                        resizeMode = resizeMode,
-                        onSubtitleClick = { onSubtitleClick?.invoke() },
-                        onAudioClick = { onAudioClick?.invoke() },
-                        onSourcesClick = onSourcesClick,
-                        onEpisodesClick = onEpisodesClick,
-                        onChaptersClick = onChaptersClick,
-                        onNextEpisodeClick = onNextEpisodeClick,
-                        onSpeedClick = { onSpeedClick?.invoke() },
-                        speedPickerVisible = speedPickerVisible,
-                        onSpeedSelected = onSpeedSelected,
-                        onSpeedPickerDismiss = onSpeedPickerDismiss,
-                        onResizeModeClick = onResizeModeClick,
-                        onVideoSettingsClick = onVideoSettingsClick,
-                        onOpenInExternalPlayer = onOpenInExternalPlayer,
-                        onStreamInfoClick = onStreamInfoClick,
-                        onSubmitIntroClick = onSubmitIntroClick,
-                        qualityLabel = qualityLabel,
-                        onQualityClick = onQualityClick,
-                        onSwitchEngineClick = onSwitchEngineClick,
-                        onInfoClick = onInfoClick,
-                        onRateClick = onRateClick,
-                        userRating = userRating,
+                        onTracksClick = onSubtitleClick ?: onAudioClick,
                         onInteraction = onInteraction,
+                        onSourceLineHeightChanged = { height ->
+                            sourceLineHeight = with(density) { height.toDp() }
+                        },
+                        timeline = { timelineModifier ->
+                            PlayerTimeline(
+                                snapshot = playbackSnapshot,
+                                displayedPositionMs = displayedPositionMs,
+                                onScrubChange = onScrubChange,
+                                onScrubFinished = {
+                                    onInteraction()
+                                    onScrubFinished(it)
+                                },
+                                modifier = timelineModifier,
+                                seekPreview = seekPreview,
+                                onTouchChange = onTimelineTouchChange,
+                                skipIntervals = skipIntervals,
+                            )
+                        },
                     )
                 }
             }
@@ -804,14 +821,14 @@ internal fun PlayPauseControlButton(
     val playPausePainter = appIconPainter(
         if (isPlaying) AppIconResource.PlayerPause else AppIconResource.PlayerPlay,
     )
+    val playColor = corViva()
+    val playIconColor = playColor.onCorViva()
 
     Box(
         modifier = Modifier
-            .playerLiquidGlass(
-                shape = CircleShape,
-                refractionHeight = 10.dp,
-                refractionAmount = 14.dp,
-            )
+            // Better Nuvio: Pausar/Play cheio na cor viva do título.
+            .clip(CircleShape)
+            .background(playColor)
             .clickable(onClick = onClick)
             .padding(metrics.playButtonPadding),
         contentAlignment = Alignment.Center,
@@ -819,6 +836,7 @@ internal fun PlayPauseControlButton(
         if (isBuffering) {
             NuvioLoadingIndicator(
                 modifier = Modifier.size(metrics.playIconSize),
+                color = playIconColor,
             )
         } else {
             Icon(
@@ -828,7 +846,7 @@ internal fun PlayPauseControlButton(
                 } else {
                     stringResource(Res.string.detail_btn_play)
                 },
-                tint = Color.White,
+                tint = playIconColor,
                 modifier = Modifier.size(metrics.playIconSize),
             )
         }

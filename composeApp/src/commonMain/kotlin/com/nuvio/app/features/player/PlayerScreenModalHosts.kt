@@ -1,6 +1,12 @@
 package com.nuvio.app.features.player
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonObject
 import com.nuvio.app.features.details.MetaDetailsUiState
 import com.nuvio.app.features.details.MetaVideo
 import com.nuvio.app.features.downloads.DownloadsRepository
@@ -111,6 +117,7 @@ internal fun PlayerScreenModalHosts(
     showStreamInfoModal: Boolean,
     mediaInfoJson: String,
     onStreamInfoModalDismissed: () -> Unit,
+    currentStreamFilename: String? = null,
 ) {
     if (pendingP2pSwitch != null) {
         P2pConsentDialog(
@@ -136,16 +143,17 @@ internal fun PlayerScreenModalHosts(
         )
     }
 
-    AudioTrackModal(
-        visible = showAudioModal,
+    // Better Nuvio: audio, subtitles and sync side by side in one panel that rises from the bottom.
+    val mediaInfo = remember(mediaInfoJson) {
+        runCatching { Json.parseToJsonElement(mediaInfoJson).jsonObject }.getOrNull()
+    }
+    val videoFps = (mediaInfo?.get("fps") as? JsonPrimitive)?.doubleOrNull?.takeIf { it > 0 }
+    val mpvFilename = (mediaInfo?.get("filename") as? JsonPrimitive)?.contentOrNull
+    PlayerTracksPanel(
+        visible = showAudioModal || showSubtitleModal,
         audioTracks = audioTracks,
-        selectedIndex = selectedAudioIndex,
-        onTrackSelected = onAudioTrackSelected,
-        onDismiss = onAudioModalDismissed,
-    )
-
-    SubtitleModal(
-        visible = showSubtitleModal,
+        selectedAudioIndex = selectedAudioIndex,
+        onAudioTrackSelected = onAudioTrackSelected,
         subtitleTracks = subtitleTracks,
         selectedSubtitleIndex = selectedSubtitleIndex,
         addonSubtitles = addonSubtitles,
@@ -157,6 +165,12 @@ internal fun PlayerScreenModalHosts(
         subtitleDelayMs = subtitleDelayMs,
         selectedAddonSubtitle = selectedAddonSubtitle,
         subtitleAutoSyncState = subtitleAutoSyncState,
+        videoSource = subtitleMatchVideoSource(
+            fileName = currentStreamFilename,
+            streamTitle = activeStreamTitle,
+            sourceUrl = activeSourceUrl,
+        ) ?: mpvFilename?.takeIf { it.contains(".mkv") || it.contains(".mp4") },
+        videoFps = videoFps,
         onBuiltInTrackSelected = onBuiltInSubtitleTrackSelected,
         onAddonSubtitleSelected = onAddonSubtitleSelected,
         onFetchAddonSubtitles = onFetchAddonSubtitles,
@@ -167,7 +181,10 @@ internal fun PlayerScreenModalHosts(
         onAutoSyncCapture = onAutoSyncCapture,
         onAutoSyncCueSelected = onAutoSyncCueSelected,
         onAutoSyncReload = onAutoSyncReload,
-        onDismiss = onSubtitleModalDismissed,
+        onDismiss = {
+            onAudioModalDismissed()
+            onSubtitleModalDismissed()
+        },
     )
 
     IosVideoSettingsModal(

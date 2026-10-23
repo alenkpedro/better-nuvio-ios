@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import nuvio.composeapp.generated.resources.Res
@@ -45,7 +46,6 @@ import nuvio.composeapp.generated.resources.player_skip_recap
 import nuvio.composeapp.generated.resources.player_skip_movie_credits
 import nuvio.composeapp.generated.resources.player_skip_to_post_credits
 import org.jetbrains.compose.resources.stringResource
-import com.nuvio.app.core.ui.glass.ambientLiquidGlass
 
 @Composable
 fun SkipIntroButton(
@@ -108,35 +108,30 @@ fun SkipIntroButton(
         exit = fadeOut(tween(200)) + scaleOut(tween(200), targetScale = 0.8f),
         modifier = modifier,
     ) {
-        val shape = RoundedCornerShape(16.dp)
+        // Better Nuvio: white pill with dark text, like "Pular abertura" on the TV.
+        val shape = RoundedCornerShape(percent = 50)
         Column(
             modifier = Modifier
                 .width(IntrinsicSize.Max)
                 .clip(shape)
-                .ambientLiquidGlass(
-                    shape = shape,
-                    tint = Color(0xFF1E1E1E).copy(alpha = 0.6f),
-                    fallback = Color(0xFF1E1E1E).copy(alpha = 0.85f),
-                    blurRadius = 18.dp,
-                    refractionHeight = 10.dp,
-                    refractionAmount = 14.dp,
-                )
+                .background(Color.White.copy(alpha = 0.92f))
                 .clickable(enabled = canSkip) { onSkip() },
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = Icons.Default.SkipNext,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = Color(0xFF0A0A0B),
                     modifier = Modifier.size(20.dp),
                 )
                 Text(
                     text = skipLabel(lastType, lastSkipsToPostCredits),
-                    color = Color.White,
+                    color = Color(0xFF0A0A0B),
                     fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 8.dp),
                 )
             }
@@ -144,16 +139,15 @@ fun SkipIntroButton(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(3.dp)
-                    .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
-                    .background(Color.White.copy(alpha = if (controlsVisible || autoHidden || dismissed) 0f else 0.15f)),
+                    .background(Color.Black.copy(alpha = if (controlsVisible || autoHidden || dismissed) 0f else 0.08f)),
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(progress.value)
                         .height(3.dp)
                         .background(
-                            Color(0xFF1E1E1E).copy(
-                                alpha = if (controlsVisible || autoHidden || dismissed) 0f else 0.85f,
+                            Color(0xFF0A0A0B).copy(
+                                alpha = if (controlsVisible || autoHidden || dismissed) 0f else 0.5f,
                             ),
                         ),
                 )
