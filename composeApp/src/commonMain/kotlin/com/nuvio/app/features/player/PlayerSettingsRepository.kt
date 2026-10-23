@@ -348,6 +348,14 @@ object PlayerSettingsRepository {
                 ?: SubtitleLanguageOption.NONE
         secondaryPreferredSubtitleLanguage =
             normalizeLanguageCode(PlayerSettingsStorage.loadSecondaryPreferredSubtitleLanguage())
+        // Better Nuvio: o contorno e a sombra salvos antes eram do padrão do Nuvio
+        // (contorno ligado, sem sombra). Uma vez só, eles voltam ao padrão da TV.
+        val tvStyleMigrated = PlayerSettingsStorage.loadSubtitleTvStyleMigrated()
+        if (!tvStyleMigrated) {
+            PlayerSettingsStorage.saveSubtitleOutlineEnabled(SubtitleStyleState.DEFAULT.outlineEnabled)
+            PlayerSettingsStorage.saveSubtitleShadowEnabled(SubtitleStyleState.DEFAULT.shadowEnabled)
+            PlayerSettingsStorage.saveSubtitleTvStyleMigrated()
+        }
         subtitleStyle = SubtitleStyleState(
             textColor = subtitleColorFromStorage(PlayerSettingsStorage.loadSubtitleTextColor())
                 ?: SubtitleStyleState.DEFAULT.textColor,
@@ -356,10 +364,12 @@ object PlayerSettingsRepository {
             outlineColor = subtitleColorFromStorage(PlayerSettingsStorage.loadSubtitleOutlineColor())
                 ?: SubtitleStyleState.DEFAULT.outlineColor,
             outlineEnabled = PlayerSettingsStorage.loadSubtitleOutlineEnabled()
+                ?.takeIf { tvStyleMigrated }
                 ?: SubtitleStyleState.DEFAULT.outlineEnabled,
             outlineWidth = PlayerSettingsStorage.loadSubtitleOutlineWidth()
                 ?: SubtitleStyleState.DEFAULT.outlineWidth,
             shadowEnabled = PlayerSettingsStorage.loadSubtitleShadowEnabled()
+                ?.takeIf { tvStyleMigrated }
                 ?: SubtitleStyleState.DEFAULT.shadowEnabled,
             shadowStrength = (PlayerSettingsStorage.loadSubtitleShadowStrength()
                 ?: SubtitleStyleState.DEFAULT.shadowStrength)

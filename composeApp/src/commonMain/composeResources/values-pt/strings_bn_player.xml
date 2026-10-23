@@ -34,7 +34,9 @@
     <string name="bn_subtitle_background_full">Cheio</string>
     <string name="bn_subtitle_color">Cor</string>
     <string name="bn_subtitle_restore">Restaurar padrão</string>
-    <string name="bn_subtitle_more_options">Mais ajustes</string>
+    <string name="bn_subtitle_text">Texto</string>
+    <string name="bn_subtitle_bold">Negrito</string>
+    <string name="bn_subtitle_shadow">Sombra</string>
     <!-- Better Nuvio: controles do player -->
     <string name="bn_player_more">Mais</string>
     <string name="bn_more_rate">Avaliar</string>
@@ -54,4 +56,5 @@
     <string name="bn_player_ends_at">termina às %1$s</string>
     <string name="bn_player_subtitle_synced">Legenda sincronizada · %1$s</string>
     <string name="bn_player_tracks_hint">Áudio e legendas</string>
+    <string name="bn_subtitle_group_embedded">Embutidas</string>
 </resources>

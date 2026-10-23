@@ -32,16 +32,13 @@ import com.nuvio.app.core.ui.DialogButtons
 import com.nuvio.app.core.ui.DialogOption
 import com.nuvio.app.core.ui.DialogSurface
 import com.nuvio.app.core.ui.nuvio
-import com.nuvio.app.features.player.SubtitleFontImportResult
 import com.nuvio.app.features.player.SubtitleFontRepository
-import com.nuvio.app.features.player.rememberSubtitleFontImporter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nuvio.composeapp.generated.resources.*
-import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-/** Picks the subtitle font, and imports or deletes the user's own .ttf/.otf fonts. */
+/** Picks the subtitle font (Better Nuvio: the TV's 7 fonts; no import, fonts imported before can still be deleted). */
 @Composable
 internal fun SubtitleFontDialog(
     selectedFontFile: String?,
@@ -50,21 +47,6 @@ internal fun SubtitleFontDialog(
 ) {
     LaunchedEffect(Unit) { withContext(Dispatchers.Default) { SubtitleFontRepository.ensureLoaded() } }
     val fonts by SubtitleFontRepository.fonts.collectAsState()
-    var errorRes by remember { mutableStateOf<StringResource?>(null) }
-    val importFont = rememberSubtitleFontImporter(
-        onPicked = { fileName, bytes ->
-            errorRes = when (val result = SubtitleFontRepository.import(fileName, bytes)) {
-                is SubtitleFontImportResult.Imported -> {
-                    onFontSelected(result.font.fileName)
-                    null
-                }
-                SubtitleFontImportResult.NotAFont -> Res.string.settings_playback_subtitle_font_invalid
-                SubtitleFontImportResult.TooLarge -> Res.string.settings_playback_subtitle_font_too_large
-                SubtitleFontImportResult.Failed -> Res.string.settings_playback_subtitle_font_failed
-            }
-        },
-        onError = { errorRes = Res.string.settings_playback_subtitle_font_failed },
-    )
     val selected = selectedFontFile?.takeIf { file ->
         BuiltInSubtitleFont.fromId(file) != null || fonts.any { it.fileName == file }
     } ?: BuiltInSubtitleFont.DEFAULT.id
@@ -72,7 +54,6 @@ internal fun SubtitleFontDialog(
     DialogSurface(
         onDismissRequest = onDismiss,
         title = stringResource(Res.string.settings_playback_subtitle_font),
-        message = stringResource(Res.string.settings_playback_subtitle_font_note),
     ) {
         Column(
             modifier = Modifier
@@ -128,22 +109,7 @@ internal fun SubtitleFontDialog(
             }
         }
 
-        errorRes?.let { res ->
-            Text(
-                text = stringResource(res),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.nuvio.colors.danger,
-            )
-        }
-
         DialogButtons {
-            DialogButton(
-                text = stringResource(Res.string.settings_playback_subtitle_font_import),
-                onClick = {
-                    errorRes = null
-                    importFont()
-                },
-            )
             DialogButton(
                 text = stringResource(Res.string.action_done),
                 style = DialogButtonStyle.Primary,

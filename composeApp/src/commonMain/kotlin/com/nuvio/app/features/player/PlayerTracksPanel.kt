@@ -84,7 +84,10 @@ import nuvio.composeapp.generated.resources.bn_subtitle_color
 import nuvio.composeapp.generated.resources.bn_subtitle_font_default_tag
 import nuvio.composeapp.generated.resources.bn_subtitle_font_header
 import nuvio.composeapp.generated.resources.bn_subtitle_fps
-import nuvio.composeapp.generated.resources.bn_subtitle_more_options
+import nuvio.composeapp.generated.resources.bn_subtitle_bold
+import nuvio.composeapp.generated.resources.bn_subtitle_group_embedded
+import nuvio.composeapp.generated.resources.bn_subtitle_shadow
+import nuvio.composeapp.generated.resources.bn_subtitle_text
 import nuvio.composeapp.generated.resources.bn_subtitle_recommended
 import nuvio.composeapp.generated.resources.bn_subtitle_restore
 import nuvio.composeapp.generated.resources.bn_subtitle_same_file
@@ -114,12 +117,7 @@ import nuvio.composeapp.generated.resources.compose_player_built_in
 import nuvio.composeapp.generated.resources.compose_player_fetch_subtitles
 import nuvio.composeapp.generated.resources.compose_player_reset
 import nuvio.composeapp.generated.resources.settings_playback_option_forced
-import nuvio.composeapp.generated.resources.settings_playback_subtitle_font_failed
-import nuvio.composeapp.generated.resources.settings_playback_subtitle_font_import
-import nuvio.composeapp.generated.resources.settings_playback_subtitle_font_invalid
-import nuvio.composeapp.generated.resources.settings_playback_subtitle_font_too_large
 import nuvio.composeapp.generated.resources.subtitle_language_unknown
-import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 import kotlin.math.roundToLong
@@ -137,7 +135,7 @@ private val Ink3 = Color.White.copy(alpha = 0.5f)
 private val SyncedGreen = Color(0xFF2FA84F)
 private const val SubtitleGroupPreviewCount = 3
 
-private enum class TracksPanelPage { Main, Style, MoreStyle }
+private enum class TracksPanelPage { Main, Style }
 private enum class SubtitleSyncMode { Auto, Ear, Manual }
 
 private val SubtitleSizeSteps = listOf(14, 18, 22, 26)
@@ -280,41 +278,7 @@ internal fun PlayerTracksPanel(
                                 style = subtitleStyle,
                                 onStyleChanged = onStyleChanged,
                                 onBack = { page = TracksPanelPage.Main },
-                                onMoreOptions = { page = TracksPanelPage.MoreStyle },
                             )
-
-                            TracksPanelPage.MoreStyle -> Column(modifier = Modifier.fillMaxSize()) {
-                                PanelHeaderRow(
-                                    title = stringResource(Res.string.bn_subtitle_more_options),
-                                    onBack = { page = TracksPanelPage.Style },
-                                )
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .weight(1f)
-                                        .verticalScroll(rememberScrollState()),
-                                ) {
-                                    SubtitleStylePanel(
-                                        style = subtitleStyle,
-                                        subtitleDelayMs = subtitleDelayMs,
-                                        selectedAddonSubtitle = selectedAddonSubtitle
-                                            ?: addonSubtitles.findSelectedAddon(selectedAddonSubtitleId),
-                                        subtitleAutoSyncState = subtitleAutoSyncState,
-                                        isCompact = true,
-                                        showHeader = false,
-                                        onStyleChanged = onStyleChanged,
-                                        onSubtitleDelayChanged = onSubtitleDelayChanged,
-                                        onSubtitleDelayReset = onSubtitleDelayReset,
-                                        onSyncByEarClick = {
-                                            onSyncByEarClick()
-                                            onDismiss()
-                                        },
-                                        onAutoSyncCapture = onAutoSyncCapture,
-                                        onAutoSyncCueSelected = onAutoSyncCueSelected,
-                                        onAutoSyncReload = onAutoSyncReload,
-                                    )
-                                }
-                            }
                         }
                     }
                 }
@@ -556,11 +520,17 @@ private fun SubtitleGroupsColumn(
     modifier: Modifier = Modifier,
 ) {
     val effectiveSelectedAddon = selectedAddonSubtitle ?: addonSubtitles.findSelectedAddon(selectedAddonSubtitleId)
-    val playbackLanguageKey = selectedSubtitleLanguageKey(subtitleTracks, selectedSubtitleIndex, effectiveSelectedAddon)
+    val playbackLanguageKey = tvSelectedSubtitleGroupKey(subtitleTracks, selectedSubtitleIndex, effectiveSelectedAddon)
     val playbackOptionId = selectedSubtitleOptionId(subtitleTracks, selectedSubtitleIndex, effectiveSelectedAddon)
     val subtitleStructureKey = subtitleTracksStructureKey(subtitleTracks)
     val addonStructureKey = addonSubtitlesStructureKey(addonSubtitles)
+    // Nomes dos idiomas no idioma do app, para a ordem alfabética da TV.
+    val addonLanguageKeys = remember(addonStructureKey) {
+        addonSubtitles.map { subtitleLanguageKey(it.language) }.distinct()
+    }
+    val languageLabels = addonLanguageKeys.associateWith { languageLabelForCode(it) }
     val languageItems = remember(
+        languageLabels,
         subtitleStructureKey,
         addonStructureKey,
         preferredSubtitleLanguage,
@@ -568,23 +538,26 @@ private fun SubtitleGroupsColumn(
         showOnlyPreferredLanguages,
         playbackLanguageKey,
     ) {
-        buildSubtitleLanguageItems(
+        buildTvSubtitleGroups(
             subtitleTracks = subtitleTracks,
             addonSubtitles = addonSubtitles,
             preferredLanguage = preferredSubtitleLanguage,
             secondaryPreferredLanguage = secondaryPreferredSubtitleLanguage,
             showOnlyPreferredLanguages = showOnlyPreferredLanguages,
             selectedLanguageKey = playbackLanguageKey,
+            languageLabel = { languageLabels[it] ?: it },
         )
     }
-    // The language in use (or the preferred one) opens by default.
+    // The group in use opens by default; with subtitles off, the first language (the
+    // preferred one, as on the TV), or Embutidas when there is no addon subtitle.
     val expanded = remember(visible) { mutableStateMapOf<String, Boolean>() }
     val showAll = remember(visible) { mutableStateListOf<String>() }
     var pendingOptionId by remember(visible) { mutableStateOf(playbackOptionId) }
     LaunchedEffect(playbackOptionId) { pendingOptionId = playbackOptionId }
     val selectedOptionId = pendingOptionId ?: playbackOptionId
     val defaultOpenKey = playbackLanguageKey.takeIf { it != SubtitleOffLanguageKey }
-        ?: languageItems.firstOrNull { it.key != SubtitleOffLanguageKey }?.key
+        ?: languageItems.firstOrNull { it.key != SubtitleOffLanguageKey && it.key != SubtitleEmbeddedGroupKey }?.key
+        ?: languageItems.firstOrNull { it.key == SubtitleEmbeddedGroupKey }?.key
 
     val rows = remember(
         languageItems,
@@ -604,7 +577,7 @@ private fun SubtitleGroupsColumn(
                 val isOpen = expanded[item.key] ?: (item.key == defaultOpenKey)
                 add(SubtitleListRow.Header(item, isOpen))
                 if (!isOpen) return@forEach
-                val options = buildSubtitleSelectionOptions(item.key, subtitleTracks, addonSubtitles)
+                val options = buildTvSubtitleOptions(item.key, subtitleTracks, addonSubtitles)
                 val groupAddons = options.mapNotNull { (it as? SubtitleSelectionOption.Addon)?.subtitle }
                 val recommended = groupAddons.recommendedSubtitle(videoSource, videoFps)
                 val ordered = if (recommended != null) {
@@ -758,6 +731,7 @@ private fun SubtitleLanguageHeader(
 ) {
     val label = when (item.key) {
         SubtitleUnknownLanguageKey -> stringResource(Res.string.subtitle_language_unknown)
+        SubtitleEmbeddedGroupKey -> stringResource(Res.string.bn_subtitle_group_embedded)
         else -> languageLabelForCode(item.key)
     }
     Row(
@@ -1086,6 +1060,36 @@ private fun PanelButton(text: String, onClick: () -> Unit, filled: Boolean = fal
 }
 
 @Composable
+private fun ToggleChip(
+    text: String,
+    checked: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val accent = corViva()
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (checked) accent else Color.White.copy(alpha = 0.08f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+    ) {
+        if (checked) {
+            Icon(Icons.Rounded.Check, contentDescription = null, tint = accent.onCorViva(), modifier = Modifier.size(14.dp))
+        }
+        Text(
+            text = text,
+            color = if (checked) accent.onCorViva() else Ink2,
+            fontSize = 12.5.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
 private fun SegmentedChoice(
     labels: List<String>,
     selectedIndex: Int?,
@@ -1130,7 +1134,6 @@ private fun SubtitleStylePage(
     style: SubtitleStyleState,
     onStyleChanged: (SubtitleStyleState) -> Unit,
     onBack: () -> Unit,
-    onMoreOptions: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxSize(),
@@ -1203,25 +1206,37 @@ private fun SubtitleStylePage(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+            // Negrito e Sombra, como as linhas "Negrito" e "Contorno" da TV
+            // (faixas.c): ligam e desligam na hora, sem outra página.
+            ColumnHeader(text = stringResource(Res.string.bn_subtitle_text))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PanelButton(
-                    text = stringResource(Res.string.bn_subtitle_restore),
-                    onClick = {
-                        onStyleChanged(
-                            SubtitleStyleState.DEFAULT.copy(
-                                stripSdh = style.stripSdh,
-                                useForcedSubtitles = style.useForcedSubtitles,
-                                showOnlyPreferredLanguages = style.showOnlyPreferredLanguages,
-                            ),
-                        )
-                    },
+                ToggleChip(
+                    text = stringResource(Res.string.bn_subtitle_bold),
+                    checked = style.bold,
+                    onClick = { onStyleChanged(style.copy(bold = !style.bold)) },
+                    modifier = Modifier.weight(1f),
                 )
-                PanelButton(
-                    text = stringResource(Res.string.bn_subtitle_more_options) + " ›",
-                    onClick = onMoreOptions,
+                ToggleChip(
+                    text = stringResource(Res.string.bn_subtitle_shadow),
+                    checked = style.shadowEnabled,
+                    onClick = { onStyleChanged(style.copy(shadowEnabled = !style.shadowEnabled)) },
+                    modifier = Modifier.weight(1f),
                 )
             }
+            Spacer(modifier = Modifier.height(6.dp))
+            PanelButton(
+                text = stringResource(Res.string.bn_subtitle_restore),
+                onClick = {
+                    onStyleChanged(
+                        SubtitleStyleState.DEFAULT.copy(
+                            stripSdh = style.stripSdh,
+                            useForcedSubtitles = style.useForcedSubtitles,
+                            showOnlyPreferredLanguages = style.showOnlyPreferredLanguages,
+                        ),
+                    )
+                },
+            )
         }
     }
 }
@@ -1235,22 +1250,7 @@ private fun SubtitleFontGrid(
 ) {
     LaunchedEffect(Unit) { withContext(Dispatchers.Default) { SubtitleFontRepository.ensureLoaded() } }
     val fonts by SubtitleFontRepository.fonts.collectAsState()
-    var importError by remember { mutableStateOf<StringResource?>(null) }
     val selectFont: (String) -> Unit = { onStyleChanged(style.copy(customFontFile = it)) }
-    val importFont = rememberSubtitleFontImporter(
-        onPicked = { fileName, bytes ->
-            importError = when (val result = SubtitleFontRepository.import(fileName, bytes)) {
-                is SubtitleFontImportResult.Imported -> {
-                    selectFont(result.font.fileName)
-                    null
-                }
-                SubtitleFontImportResult.NotAFont -> Res.string.settings_playback_subtitle_font_invalid
-                SubtitleFontImportResult.TooLarge -> Res.string.settings_playback_subtitle_font_too_large
-                SubtitleFontImportResult.Failed -> Res.string.settings_playback_subtitle_font_failed
-            }
-        },
-        onError = { importError = Res.string.settings_playback_subtitle_font_failed },
-    )
     val selected = style.customFontFile?.takeIf { file ->
         BuiltInSubtitleFont.fromId(file) != null || fonts.any { it.fileName == file }
     } ?: BuiltInSubtitleFont.DEFAULT.id
@@ -1308,18 +1308,6 @@ private fun SubtitleFontGrid(
                     }
                     if (pair.size == 1) Spacer(modifier = Modifier.weight(1f))
                 }
-            }
-            Text(
-                text = "+ " + stringResource(Res.string.settings_playback_subtitle_font_import),
-                color = Ink2,
-                fontSize = 13.sp,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable(onClick = importFont)
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-            )
-            importError?.let {
-                Text(text = stringResource(it), color = Color(0xFFFF8A80), fontSize = 11.sp)
             }
         }
     }

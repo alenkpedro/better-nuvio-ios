@@ -63,6 +63,9 @@ internal expect object PlayerSettingsStorage {
     fun saveSubtitleCustomFont(fileName: String?)
     fun loadSubtitleOutlineColor(): String?
     fun saveSubtitleOutlineColor(colorHex: String)
+    /** Better Nuvio: true once the stored style moved to the TV look (shadow on, outline off). */
+    fun loadSubtitleTvStyleMigrated(): Boolean
+    fun saveSubtitleTvStyleMigrated()
     fun loadSubtitleOutlineEnabled(): Boolean?
     fun saveSubtitleOutlineEnabled(enabled: Boolean)
     fun loadSubtitleOutlineWidth(): Int?

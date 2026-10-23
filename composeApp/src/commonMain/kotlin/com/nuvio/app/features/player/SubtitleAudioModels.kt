@@ -55,9 +55,10 @@ data class SubtitleStyleState(
     val textColor: Color = Color.White,
     val backgroundColor: Color = Color.Transparent,
     val outlineColor: Color = Color.Black,
-    val outlineEnabled: Boolean = true,
+    // Better Nuvio: como a TV (player.c legEstilo): sombra macia ligada, sem contorno.
+    val outlineEnabled: Boolean = false,
     val outlineWidth: Int = 2,
-    val shadowEnabled: Boolean = false,
+    val shadowEnabled: Boolean = true,
     val shadowStrength: Int = SUBTITLE_SHADOW_STRENGTH_DEFAULT,
     val bold: Boolean = false,
     val customFontFile: String? = null,

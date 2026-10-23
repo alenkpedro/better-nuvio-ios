@@ -48,6 +48,7 @@ actual object PlayerSettingsStorage {
     private const val subtitleCustomFontKey = "subtitle_custom_font"
     private const val subtitleOutlineColorKey = "subtitle_outline_color"
     private const val subtitleOutlineEnabledKey = "subtitle_outline_enabled"
+    private const val subtitleTvStyleMigratedKey = "bn_subtitle_tv_style_migrated"
     private const val subtitleOutlineWidthKey = "subtitle_outline_width"
     private const val subtitleShadowEnabledKey = "subtitle_shadow_enabled"
     private const val subtitleShadowStrengthKey = "subtitle_shadow_strength"
@@ -509,6 +510,13 @@ actual object PlayerSettingsStorage {
 
     actual fun saveSubtitleOutlineColor(colorHex: String) {
         NSUserDefaults.standardUserDefaults.setObject(colorHex, forKey = ProfileScopedKey.of(subtitleOutlineColorKey))
+    }
+
+    actual fun loadSubtitleTvStyleMigrated(): Boolean =
+        NSUserDefaults.standardUserDefaults.boolForKey(ProfileScopedKey.of(subtitleTvStyleMigratedKey))
+
+    actual fun saveSubtitleTvStyleMigrated() {
+        NSUserDefaults.standardUserDefaults.setBool(true, forKey = ProfileScopedKey.of(subtitleTvStyleMigratedKey))
     }
 
     actual fun loadSubtitleOutlineEnabled(): Boolean? {

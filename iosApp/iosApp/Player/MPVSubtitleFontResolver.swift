@@ -363,7 +363,7 @@ final class MPVSubtitleFontController {
     func reapplyFont() {
         guard let family = desiredFamily() ?? appliedFamily else { return }
         appliedFamily = family
-        player?.setStringProperty("sub-font", family)
+        player?.setSubtitleOption("sub-font", family)
     }
 
     func setCustomFontPath(_ path: String?) {
@@ -527,7 +527,7 @@ final class MPVSubtitleFontController {
         guard let family, family != appliedFamily else { return }
 
         appliedFamily = family
-        player?.setStringProperty("sub-font", family)
+        player?.setSubtitleOption("sub-font", family)
         InAppLogBridge.shared.info(
             tag: "MPV/SubFont",
             message: "font -> \(family) (script=\(script?.rawValue ?? "default"))"

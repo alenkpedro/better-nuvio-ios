@@ -34,7 +34,9 @@
     <string name="bn_subtitle_background_full">Full</string>
     <string name="bn_subtitle_color">Colour</string>
     <string name="bn_subtitle_restore">Restore default</string>
-    <string name="bn_subtitle_more_options">More options</string>
+    <string name="bn_subtitle_text">Text</string>
+    <string name="bn_subtitle_bold">Bold</string>
+    <string name="bn_subtitle_shadow">Shadow</string>
     <!-- Better Nuvio: controles do player -->
     <string name="bn_player_more">More</string>
     <string name="bn_more_rate">Rate</string>
@@ -54,4 +56,5 @@
     <string name="bn_player_ends_at">ends at %1$s</string>
     <string name="bn_player_subtitle_synced">Subtitle synced · %1$s</string>
     <string name="bn_player_tracks_hint">Audio and subtitles</string>
+    <string name="bn_subtitle_group_embedded">Embedded</string>
 </resources>

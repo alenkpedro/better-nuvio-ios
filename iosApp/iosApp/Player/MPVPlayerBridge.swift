@@ -414,6 +414,9 @@ final class MPVPlayerViewController: UIViewController {
     private var lastLoadRequest: PendingLoadRequest?
     private var lastVideoOutputSettings: VideoOutputSettings?
     private var lastSubtitleStyle: SubtitleStyleSettings?
+    /// O que já foi mandado ao mpv atual (sub-*). Zera quando um mpv novo é criado.
+    private var appliedSubtitleOptions: [String: String] = [:]
+    private let appliedSubtitleOptionsLock = NSLock()
     private var lastAudioOutput: String?
     private var lastResizeMode: Int?
     private var lastVideoZoom: Double?
@@ -689,6 +692,9 @@ final class MPVPlayerViewController: UIViewController {
     // MARK: - MPV Setup
 
     private func setupMpv() {
+        appliedSubtitleOptionsLock.lock()
+        appliedSubtitleOptions.removeAll()
+        appliedSubtitleOptionsLock.unlock()
         mpv = mpv_create()
         guard mpv != nil else {
             print("[MPV] Failed to create mpv instance")
@@ -1588,28 +1594,52 @@ final class MPVPlayerViewController: UIViewController {
         guard mpv != nil else { return }
 
         let hasBackground = !backgroundColor.hasPrefix("#00")
-
-        let effectiveOutlineColor = hasBackground ? backgroundColor : outlineColor
-        let hasShadow = shadowOffset > 0
-        let shadowColor = "#B3000000"
-        let effectiveBackColor = (hasShadow && !hasBackground) ? shadowColor : backgroundColor
+        let hasShadow = shadowOffset > 0 && !hasBackground
+        // Better Nuvio: a sombra da TV (text.c, sombraLegenda) é macia, três camadas
+        // desfocadas embaixo da letra, sem contorno. O libass tem uma sombra só e o
+        // desfoque vale para contorno e sombra; sem contorno ele desfocaria a própria
+        // letra. Então, sem contorno, a sombra usa um contorno transparente de 1 px.
+        let softShadow = hasShadow && outlineSize <= 0
+        let effectiveOutlineColor = hasBackground ? backgroundColor : (softShadow ? "#00000000" : outlineColor)
+        let effectiveBackColor = hasShadow ? (softShadow ? "#E6000000" : "#B3000000") : backgroundColor
         let effectiveOutlineSize = hasBackground
             ? max(Double(outlineSize), 1.0)
-            : Double(outlineSize)
+            : (softShadow ? 1.0 : Double(outlineSize))
+        let effectiveShadowOffset = hasShadow ? Double(shadowOffset) * (softShadow ? 0.6 : 1.0) : 0
+        let blur = softShadow ? 1.5 + Double(shadowOffset) * 0.25 : 0
 
         subtitleFonts.reapplyFont()
-        setStringProperty("sub-ass-override", "no")
-        setStringProperty("sub-color", textColor)
-        setStringProperty("sub-back-color", effectiveBackColor)
-        setStringProperty("sub-outline-color", effectiveOutlineColor)
-        setStringProperty("sub-border-style", hasBackground ? "opaque-box" : "outline-and-shadow")
-        setDoubleProperty("sub-shadow-offset", hasBackground ? 0 : Double(shadowOffset))
-        setStringProperty("sub-bold", bold ? "yes" : "no")
-        setDoubleProperty("sub-outline-size", effectiveOutlineSize)
-        setDoubleProperty("sub-font-size", Double(fontSize))
-        setIntProperty("sub-pos", Int64(subPos))
-        setStringProperty("sub-filter-sdh", stripSdh ? "yes" : "no")
-        setStringProperty("sub-filter-sdh-harder", stripSdh ? "yes" : "no")
+        // Como na TV (assrender.c): tamanho, peso, sombra, cor e fonte da pessoa valem
+        // também para legendas .ass; as marcações de cada fala (\pos, \an) continuam.
+        setSubtitleOption("sub-ass-override", "force")
+        setSubtitleOption("sub-color", textColor)
+        setSubtitleOption("sub-back-color", effectiveBackColor)
+        setSubtitleOption("sub-outline-color", effectiveOutlineColor)
+        setSubtitleOption("sub-border-style", hasBackground ? "opaque-box" : "outline-and-shadow")
+        setSubtitleOption("sub-shadow-offset", effectiveShadowOffset)
+        setSubtitleOption("sub-blur", blur)
+        setSubtitleOption("sub-bold", bold ? "yes" : "no")
+        setSubtitleOption("sub-outline-size", effectiveOutlineSize)
+        setSubtitleOption("sub-font-size", Double(fontSize))
+        setSubtitleOption("sub-pos", String(subPos))
+        setSubtitleOption("sub-filter-sdh", stripSdh ? "yes" : "no")
+        setSubtitleOption("sub-filter-sdh-harder", stripSdh ? "yes" : "no")
+    }
+
+    /// Manda ao mpv só o que mudou. Cada opção sub-* faz o mpv refazer a legenda, e as de
+    /// filtro (SDH) a reprocessam inteira; reenviar as treze a cada toque deixava a troca
+    /// de fonte lenta, presa na fila do mpv atrás das outras.
+    func setSubtitleOption(_ name: String, _ value: String) {
+        appliedSubtitleOptionsLock.lock()
+        let changed = appliedSubtitleOptions[name] != value
+        if changed { appliedSubtitleOptions[name] = value }
+        appliedSubtitleOptionsLock.unlock()
+        guard changed else { return }
+        setStringProperty(name, value)
+    }
+
+    private func setSubtitleOption(_ name: String, _ value: Double) {
+        setSubtitleOption(name, String(format: "%.3f", value))
     }
 
     func destroyPlayer() {
