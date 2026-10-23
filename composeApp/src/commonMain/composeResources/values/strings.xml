@@ -1922,6 +1922,19 @@
     <string name="streams_episode_fallback_title">Episode</string>
     <string name="streams_episode_title_with_name">S%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">Fetching…</string>
+    <string name="bn_streams_title">Sources</string>
+    <string name="bn_streams_recommended">Recommended</string>
+    <string name="bn_streams_recommended_usual">Recommended · your usual</string>
+    <string name="bn_streams_resolution_all">All</string>
+    <string name="bn_streams_addon_loading">%1$s · searching</string>
+    <plurals name="bn_streams_found_count">
+        <item quantity="one">%1$d found</item>
+        <item quantity="other">%1$d found</item>
+    </plurals>
+    <plurals name="bn_streams_addons_count">
+        <item quantity="one">%1$d addon</item>
+        <item quantity="other">%1$d addons</item>
+    </plurals>
     <string name="streams_finding_source">Finding stream source</string>
     <string name="playback_show_loading_status">Show loading status</string>
     <string name="playback_show_loading_status_sub">Display step-by-step progress while the player is initializing.</string>

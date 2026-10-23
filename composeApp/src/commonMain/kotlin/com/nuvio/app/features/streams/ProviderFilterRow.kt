@@ -65,6 +65,8 @@ import nuvio.composeapp.generated.resources.streams_refresh
 import nuvio.composeapp.generated.resources.streams_unpin_source
 import org.jetbrains.compose.resources.stringResource
 import com.nuvio.app.core.ui.glass.ambientLiquidGlass
+import com.nuvio.app.core.ui.corViva
+import com.nuvio.app.core.ui.onCorViva
 
 @Composable
 internal fun ProviderFilterRow(
@@ -87,7 +89,9 @@ internal fun ProviderFilterRow(
     val chip: @Composable (AddonStreamGroup?, Boolean, () -> Unit) -> Unit =
         filterChip ?: { group, isSelected, onClick ->
             FilterChip(
-                label = group?.addonName ?: stringResource(Res.string.collections_tab_all),
+                label = group?.let { g ->
+                    if (g.streams.isNotEmpty()) "${g.addonName} ${g.streams.size}" else g.addonName
+                } ?: stringResource(Res.string.collections_tab_all),
                 isSelected = isSelected,
                 isPinned = group != null && group.soleSourcePin()?.key in pinnedSourceIds,
                 onClick = onClick,
@@ -256,9 +260,10 @@ private fun FilterChip(
         animationSpec = tween(durationMillis = 140),
         label = "filter_chip_scale",
     )
+    val activeColor = corViva()
     val containerColor by animateColorAsState(
         targetValue = if (isSelected) {
-            MaterialTheme.colorScheme.primary
+            activeColor
         } else {
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
         },
@@ -267,7 +272,7 @@ private fun FilterChip(
     )
     val contentColor by animateColorAsState(
         targetValue = if (isSelected) {
-            MaterialTheme.colorScheme.onPrimary
+            activeColor.onCorViva()
         } else {
             MaterialTheme.colorScheme.onSurface
         },

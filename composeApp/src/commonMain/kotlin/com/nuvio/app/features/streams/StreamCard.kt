@@ -72,6 +72,7 @@ internal fun StreamCard(
     isCurrent: Boolean = false,
     currentLabel: String? = null,
     outlined: Boolean = false,
+    bnLayout: Boolean = false,
 ) {
     val partyLabel = if (isCurrent) null else LocalStreamHighlight.current(stream)
     val cardShape = RoundedCornerShape(12.dp)
@@ -122,7 +123,7 @@ internal fun StreamCard(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            if (hasBadges && badgePlacement == StreamBadgePlacement.TOP) {
+            if (!bnLayout && hasBadges && badgePlacement == StreamBadgePlacement.TOP) {
                 StreamCardBadgeRow(
                     badgeImages = badgeImages,
                     stream = stream,
@@ -134,6 +135,7 @@ internal fun StreamCard(
             StreamNameWithInstantService(
                 stream = stream,
                 appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
+                label = if (bnLayout) stream.bnNameLine() else stream.streamLabel,
             ) {
                 if (isCurrent && !currentLabel.isNullOrBlank()) {
                     Spacer(modifier = Modifier.width(8.dp))
@@ -152,6 +154,22 @@ internal fun StreamCard(
                 }
             }
 
+            // Better Nuvio: nome e resolução, tamanho e velocidade, depois os selos (ordem da TV).
+            val sizeAndBitrate = if (bnLayout) stream.bnSizeAndBitrate() else null
+            if (sizeAndBitrate != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = sizeAndBitrate,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.5.sp,
+                        shadow = streamGlassTextShadow(),
+                    ),
+                    color = Color.White.copy(alpha = 0.62f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
             val subtitle = stream.streamSubtitle
             if (!subtitle.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
@@ -166,7 +184,20 @@ internal fun StreamCard(
                 )
             }
 
-            if (hasBadges && badgePlacement == StreamBadgePlacement.BOTTOM) {
+            if (bnLayout) {
+                val qualityTags = if (badgeImages.isEmpty()) stream.bnQualityTags() else emptyList()
+                if (badgeImages.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    StreamCardBadgeRow(badgeImages = badgeImages, stream = stream, showFileSizeBadges = false)
+                } else if (qualityTags.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    QualityTagRow(
+                        tags = qualityTags,
+                        background = Color.White.copy(alpha = 0.1f),
+                        contentColor = Color.White.copy(alpha = 0.9f),
+                    )
+                }
+            } else if (hasBadges && badgePlacement == StreamBadgePlacement.BOTTOM) {
                 Spacer(modifier = Modifier.height(5.dp))
                 StreamCardBadgeRow(
                     badgeImages = badgeImages,
@@ -245,6 +276,7 @@ private fun StreamCardBadgeRow(
 private fun StreamNameWithInstantService(
     stream: StreamItem,
     appendInstantServiceToDefaultName: Boolean,
+    label: String = stream.streamLabel,
     trailingContent: @Composable RowScope.() -> Unit = {},
 ) {
     val nameStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -270,7 +302,7 @@ private fun StreamNameWithInstantService(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = stream.streamLabel,
+            text = label,
             modifier = Modifier.weight(1f, fill = false),
             style = nameStyle,
             color = Color.White,
