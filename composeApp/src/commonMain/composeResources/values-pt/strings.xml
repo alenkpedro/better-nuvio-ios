@@ -1908,4 +1908,7 @@
     <string name="bn_accent_preview_immersive">Prévia: a cor vem da arte</string>
     <string name="bn_accent_preview_fixed">Prévia do botão principal</string>
     <string name="bn_accent_more_colors">Mais cores</string>
+    <string name="bn_watch_progress_source_both">Ambas</string>
+    <string name="bn_watch_progress_source_both_description">Usa a conta Nuvio e completa com o Trakt e, se estiver ligado, com o Simkl. Vale o progresso mais recente.</string>
+    <string name="bn_watch_progress_source_account">Conta Nuvio</string>
 </resources>

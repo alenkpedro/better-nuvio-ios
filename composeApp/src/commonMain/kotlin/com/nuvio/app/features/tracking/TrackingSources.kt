@@ -5,6 +5,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class WatchProgressSource {
+    // Better Nuvio: "Ambas" from the TV (cwFonteLocal 0). Nuvio account progress
+    // first, completed by Trakt and Simkl when linked; the newest row wins.
+    // Enum names are what is stored, so new values are only ever added.
+    BOTH,
     TRAKT,
     SIMKL,
     NUVIO_SYNC,
@@ -20,7 +24,16 @@ enum class WatchProgressSource {
             ANILIST -> TrackingProviderId.ANILIST
             WETRAKR -> TrackingProviderId.WETRAKR
             NUVIO_SYNC -> null
+            BOTH -> null
         }
+
+    /** Providers whose progress is merged on top of the Nuvio account rows. */
+    val mergedProviderIds: List<TrackingProviderId>
+        get() = if (this == BOTH) BOTH_MERGED_PROVIDER_IDS else emptyList()
+
+    /** True when the Nuvio account is the base of this source (pull, deletes). */
+    val usesNuvioSync: Boolean
+        get() = providerId == null
 
     companion object {
         fun fromStorage(value: String?): WatchProgressSource =
@@ -28,7 +41,12 @@ enum class WatchProgressSource {
     }
 }
 
-val DEFAULT_WATCH_PROGRESS_SOURCE: WatchProgressSource = WatchProgressSource.TRAKT
+// Same order of preference as the TV merge: account, then Trakt, then Simkl.
+val BOTH_MERGED_PROVIDER_IDS: List<TrackingProviderId> =
+    listOf(TrackingProviderId.TRAKT, TrackingProviderId.SIMKL)
+
+// Better Nuvio: same default as the TV ("Ambas").
+val DEFAULT_WATCH_PROGRESS_SOURCE: WatchProgressSource = WatchProgressSource.BOTH
 val DEFAULT_LIBRARY_SOURCE_MODE: LibrarySourceMode = LibrarySourceMode.TRAKT
 
 fun librarySourceModeFromStorage(value: String?): LibrarySourceMode =
@@ -48,6 +66,8 @@ fun effectiveWatchProgressSource(
     requestedSource: WatchProgressSource,
     isProviderAuthenticated: (TrackingProviderId) -> Boolean,
 ): WatchProgressSource {
+    // "Ambas" never falls back: with nothing linked it is just the account, as on the TV.
+    if (requestedSource == WatchProgressSource.BOTH) return WatchProgressSource.BOTH
     val providerId = requestedSource.providerId ?: return WatchProgressSource.NUVIO_SYNC
     return requestedSource.takeIf { isProviderAuthenticated(providerId) }
         ?: WatchProgressSource.NUVIO_SYNC

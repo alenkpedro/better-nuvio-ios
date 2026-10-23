@@ -197,6 +197,13 @@ fun shouldUseTraktProgress(
     source: WatchProgressSource,
 ): Boolean = isAuthenticated && source == WatchProgressSource.TRAKT
 
+/** Background Trakt polling: Trakt alone, or merged into "Ambas" (Better Nuvio). */
+fun shouldRefreshTraktProgress(
+    isAuthenticated: Boolean,
+    source: WatchProgressSource,
+): Boolean = shouldUseTraktProgress(isAuthenticated, source) ||
+    (isAuthenticated && source == WatchProgressSource.BOTH)
+
 fun effectiveWatchProgressSource(
     isTraktAuthenticated: Boolean,
     requestedSource: WatchProgressSource,

@@ -268,7 +268,10 @@ object WatchProgressRepository {
         TrackingProviderRegistry.progressProviders().forEach { provider ->
             syncScope.launch {
                 provider.changes.collectLatest {
-                    if (activeSource.providerId == provider.providerId) {
+                    if (
+                        activeSource.providerId == provider.providerId ||
+                        provider.providerId in activeSource.mergedProviderIds
+                    ) {
                         publish()
                         if (hasLoaded && !provider.providesCompleteMetadata) {
                             resolveRemoteMetadata()
@@ -470,11 +473,62 @@ object WatchProgressRepository {
                 force = force,
             )
         }
-        return refreshNuvioSource(
+        val nuvioRefreshed = refreshNuvioSource(
             profileId = profileId,
             operationGeneration = operationGeneration,
             force = force,
         )
+        mergedProgressProviders().forEach { provider ->
+            refreshMergedProviderSource(
+                provider = provider,
+                profileId = profileId,
+                operationGeneration = operationGeneration,
+                sourceChanged = sourceChanged,
+                force = force,
+            )
+        }
+        return nuvioRefreshed
+    }
+
+    // "Ambas": a Trakt/Simkl failure must not fail the account refresh; the
+    // TV also just shows what the account has when a provider is unreachable.
+    private suspend fun refreshMergedProviderSource(
+        provider: TrackingProgressProvider,
+        profileId: Int,
+        operationGeneration: Long,
+        sourceChanged: Boolean,
+        force: Boolean,
+    ) {
+        try {
+            provider.refresh(force = force, sourceChanged = sourceChanged)
+            if (isActiveOperation(profileId, operationGeneration)) {
+                publish()
+                if (!provider.providesCompleteMetadata) resolveRemoteMetadata()
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            log.e(error) { "Failed to refresh ${provider.providerId.storageId} progress for Ambas" }
+        }
+    }
+
+    /** Linked Trakt/Simkl providers merged into the account rows ("Ambas"). */
+    private fun mergedProgressProviders(): List<TrackingProgressProvider> =
+        activeSource.mergedProviderIds
+            .filter(::isProgressProviderAvailable)
+            .mapNotNull(TrackingProviderRegistry::progressProvider)
+
+    private fun removeFromMergedProviders(entries: Collection<WatchProgressEntry>, reason: String) {
+        if (entries.isEmpty()) return
+        val targets = entries.map { Triple(it.parentMetaId, it.seasonNumber, it.episodeNumber) }.toSet()
+        mergedProgressProviders().forEach { provider ->
+            val owned = provider.snapshot().entries.filter { entry ->
+                Triple(entry.parentMetaId, entry.seasonNumber, entry.episodeNumber) in targets
+            }
+            if (owned.isEmpty()) return@forEach
+            provider.applyOptimisticRemoval(owned)
+            syncScope.launch { removeProviderProgress(provider, owned, reason) }
+        }
     }
 
     private suspend fun refreshProviderSource(
@@ -1037,7 +1091,16 @@ object WatchProgressRepository {
                     val appliedEntries = if (targetSource.providerId == null) {
                         var appliedLocalEntries = 0
                         for (entry in result.entries) {
-                            val current = localEntry(entry.resolvedProgressKey()) ?: continue
+                            val current = localEntry(entry.resolvedProgressKey()) ?: run {
+                                // "Ambas": rows that came from Trakt/Simkl get the overlay.
+                                if (
+                                    targetSource == WatchProgressSource.BOTH &&
+                                    providerMetadataOverlay.put(targetSource, result.key, meta)
+                                ) {
+                                    appliedLocalEntries += 1
+                                }
+                                null
+                            } ?: continue
                             val enriched = enrichWatchProgressEntry(current = current, meta = meta)
                             if (enriched == current) continue
                             upsertLocalEntry(enriched)
@@ -1168,6 +1231,15 @@ object WatchProgressRepository {
             return
         }
 
+        if (activeSource == WatchProgressSource.BOTH) {
+            removeFromMergedProviders(
+                entries = currentEntries().filter { entry ->
+                    entry.videoId in videoIds &&
+                        (parentMetaId == null || entry.parentMetaId == parentMetaId)
+                },
+                reason = "clear playback progress",
+            )
+        }
         val removedEntries = removeLocalEntriesForVideoIds(
             videoIds = videoIds,
             parentMetaId = parentMetaId,
@@ -1210,6 +1282,9 @@ object WatchProgressRepository {
             return
         }
 
+        if (activeSource == WatchProgressSource.BOTH) {
+            removeFromMergedProviders(entriesToRemove, "remove playback progress")
+        }
         entriesToRemove.forEach { entry ->
             removeLocalEntry(entry.resolvedProgressKey())
         }
@@ -1602,10 +1677,17 @@ object WatchProgressRepository {
         }
 
     private fun currentEntries(): List<WatchProgressEntry> {
-        val providerEntries = activeProgressProvider()
-            ?.snapshot()
-            ?.entries
-            .orEmpty()
+        val providerEntries = if (activeSource == WatchProgressSource.BOTH) {
+            providerMetadataOverlay.project(
+                source = activeSource,
+                entries = mergedProgressProviders().flatMap { it.snapshot().entries },
+            )
+        } else {
+            activeProgressProvider()
+                ?.snapshot()
+                ?.entries
+                .orEmpty()
+        }
         val projectedEntries = projectWatchProgressSourceEntries(
             source = activeSource,
             nuvioEntries = localEntriesSnapshot(),

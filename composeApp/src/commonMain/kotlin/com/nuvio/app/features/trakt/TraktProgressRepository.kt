@@ -114,7 +114,7 @@ object TraktProgressRepository {
                 delay(refreshIntervalMs)
                 TraktAuthRepository.ensureLoaded()
                 TraktSettingsRepository.ensureLoaded()
-                if (!shouldUseTraktProgress(
+                if (!shouldRefreshTraktProgress(
                         isAuthenticated = TraktAuthRepository.isAuthenticated.value,
                         source = TraktSettingsRepository.uiState.value.watchProgressSource,
                     )
