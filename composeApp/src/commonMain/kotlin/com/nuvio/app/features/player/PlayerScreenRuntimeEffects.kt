@@ -206,8 +206,16 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         subtitleAutoSyncState = SubtitleAutoSyncUiState()
     }
 
-    LaunchedEffect(playerController, subtitleStyle) {
-        playerController?.applySubtitleStyle(subtitleStyle)
+    // Better Nuvio: com os controles na tela, a legenda sobe para não ficar embaixo da barra
+    // de progresso e dos botões; quando eles somem, volta para a altura escolhida.
+    val subtitleLiftedForControls = controlsVisible && !isMiniPresentation
+    LaunchedEffect(playerController, subtitleStyle, subtitleLiftedForControls) {
+        val style = if (subtitleLiftedForControls) {
+            subtitleStyle.copy(bottomOffset = maxOf(subtitleStyle.bottomOffset, SubtitleBottomOffsetWithControls))
+        } else {
+            subtitleStyle
+        }
+        playerController?.applySubtitleStyle(style)
     }
 
     // iOS recognises hardware keys in the mpv view controller, because its UIKit view can hold

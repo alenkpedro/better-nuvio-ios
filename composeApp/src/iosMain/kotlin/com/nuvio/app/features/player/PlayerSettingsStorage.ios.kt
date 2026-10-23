@@ -48,7 +48,7 @@ actual object PlayerSettingsStorage {
     private const val subtitleCustomFontKey = "subtitle_custom_font"
     private const val subtitleOutlineColorKey = "subtitle_outline_color"
     private const val subtitleOutlineEnabledKey = "subtitle_outline_enabled"
-    private const val subtitleTvStyleMigratedKey = "bn_subtitle_tv_style_migrated"
+    private const val subtitleTvStyleMigratedKey = "bn_subtitle_tv_style_migrated_v2"
     private const val subtitleOutlineWidthKey = "subtitle_outline_width"
     private const val subtitleShadowEnabledKey = "subtitle_shadow_enabled"
     private const val subtitleShadowStrengthKey = "subtitle_shadow_strength"

@@ -101,13 +101,38 @@ private fun JsonObject.subtitleReleaseName(): String? =
 private fun JsonObject.subtitleFileName(url: String): String? {
     listOf("subtitleFileName", "fileName", "filename", "name", "title")
         .firstNotNullOfOrNull(::safeStringValue)
+        ?.takeUnless(::looksEncodedName)
         ?.let { return it }
     val base = url.substringBefore('?').substringBefore('#').substringAfterLast('/')
     val lower = base.lowercase()
-    if (base.length >= 9 && listOf(".srt", ".ass", ".ssa", ".vtt").any(lower::endsWith)) return base
+    if (base.length >= 9 && listOf(".srt", ".ass", ".ssa", ".vtt").any(lower::endsWith)) {
+        if (!looksEncodedName(base)) return base
+        nameInsideEncoded(base)?.let { return it }
+    }
     subtitleReleaseName()?.let { return it }
-    return safeStringValue("id")?.takeIf { '.' in it }
+    return safeStringValue("id")?.takeIf { '.' in it && !looksEncodedName(it) }
 }
+
+// Better Nuvio: alguns addons põem no fim da URL um JSON em base64 ("eyJjb250ZW50X3R5cGUi…
+// .srt"). Isso não é nome de arquivo; mostrado na lista, vira uma linha ilegível.
+private val EncodedNameRegex = Regex("^[A-Za-z0-9+/_=-]{24,}$")
+
+private fun looksEncodedName(name: String): Boolean {
+    val stem = name.substringBeforeLast('.')
+    return stem.startsWith("eyJ") || (EncodedNameRegex.matches(stem) && stem.none { it == ' ' } &&
+        stem.count { it.isDigit() } + stem.count { it.isUpperCase() } > stem.length / 3)
+}
+
+@OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
+private fun nameInsideEncoded(name: String): String? = runCatching {
+    val stem = name.substringBeforeLast('.').replace('-', '+').replace('_', '/').trimEnd('=')
+    val padded = stem + "=".repeat((4 - stem.length % 4) % 4)
+    val json = kotlin.io.encoding.Base64.decode(padded).decodeToString()
+    val obj = Json.parseToJsonElement(json).jsonObject
+    listOf("file_name", "fileName", "filename", "release_name", "releaseName", "release", "name", "title")
+        .firstNotNullOfOrNull(obj::safeStringValue)
+        ?.takeUnless(::looksEncodedName)
+}.getOrNull()
 
 private fun JsonObject.subtitleFps(): Double? {
     val fps = safeStringValue("fps")?.toDoubleOrNull()

@@ -55,6 +55,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -178,8 +180,11 @@ internal fun PlayerTracksPanel(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    PlatformBackHandler(enabled = visible, onBack = onDismiss)
     var page by remember(visible) { mutableStateOf(TracksPanelPage.Main) }
+    // Na página de estilo, voltar leva à principal; só na principal o painel fecha.
+    PlatformBackHandler(enabled = visible) {
+        if (page != TracksPanelPage.Main) page = TracksPanelPage.Main else onDismiss()
+    }
 
     AnimatedVisibility(
         visible = visible,
@@ -189,10 +194,12 @@ internal fun PlayerTracksPanel(
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val panelHeight = minOf(300.dp, maxHeight - 56.dp).coerceAtLeast(200.dp)
-            // Tapping the video above the panel closes it.
+            // Tapping the video above the panel closes it. Fica fora da acessibilidade: um
+            // toque perto do Voltar não pode cair neste fundo e fechar o painel inteiro.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .clearAndSetSemantics {}
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -392,8 +399,8 @@ private fun PanelHeaderRow(title: String, onBack: () -> Unit) {
             fontSize = 12.sp,
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .clickable(onClick = onBack)
-                .padding(horizontal = 6.dp, vertical = 2.dp),
+                .clickable(role = Role.Button, onClick = onBack)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
         )
     }
 }

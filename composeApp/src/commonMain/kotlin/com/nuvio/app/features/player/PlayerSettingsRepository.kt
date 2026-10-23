@@ -354,6 +354,8 @@ object PlayerSettingsRepository {
         if (!tvStyleMigrated) {
             PlayerSettingsStorage.saveSubtitleOutlineEnabled(SubtitleStyleState.DEFAULT.outlineEnabled)
             PlayerSettingsStorage.saveSubtitleShadowEnabled(SubtitleStyleState.DEFAULT.shadowEnabled)
+            // O negrito também começa desligado, como na TV.
+            PlayerSettingsStorage.saveSubtitleBold(SubtitleStyleState.DEFAULT.bold)
             PlayerSettingsStorage.saveSubtitleTvStyleMigrated()
         }
         subtitleStyle = SubtitleStyleState(

@@ -1598,15 +1598,20 @@ final class MPVPlayerViewController: UIViewController {
         // Better Nuvio: a sombra da TV (text.c, sombraLegenda) é macia, três camadas
         // desfocadas embaixo da letra, sem contorno. O libass tem uma sombra só e o
         // desfoque vale para contorno e sombra; sem contorno ele desfocaria a própria
-        // letra. Então, sem contorno, a sombra usa um contorno transparente de 1 px.
+        // letra. Então, sem contorno, a sombra vira um halo preto translúcido bem
+        // desfocado em volta da letra (a camada de 1 px da TV), mais uma sombra curta
+        // e desfocada embaixo (as camadas de 3 e 6 px). O libass não separa x e y no
+        // deslocamento, por isso ele fica pequeno: assim a diagonal não aparece.
         let softShadow = hasShadow && outlineSize <= 0
-        let effectiveOutlineColor = hasBackground ? backgroundColor : (softShadow ? "#00000000" : outlineColor)
-        let effectiveBackColor = hasShadow ? (softShadow ? "#E6000000" : "#B3000000") : backgroundColor
+        let effectiveOutlineColor = hasBackground ? backgroundColor : (softShadow ? "#66000000" : outlineColor)
+        let effectiveBackColor = hasShadow ? (softShadow ? "#CC000000" : "#B3000000") : backgroundColor
         let effectiveOutlineSize = hasBackground
             ? max(Double(outlineSize), 1.0)
-            : (softShadow ? 1.0 : Double(outlineSize))
-        let effectiveShadowOffset = hasShadow ? Double(shadowOffset) * (softShadow ? 0.6 : 1.0) : 0
-        let blur = softShadow ? 1.5 + Double(shadowOffset) * 0.25 : 0
+            : (softShadow ? 1.6 : Double(outlineSize))
+        let effectiveShadowOffset = hasShadow
+            ? (softShadow ? min(Double(shadowOffset) * 0.4, 1.4) : Double(shadowOffset))
+            : 0
+        let blur = softShadow ? 3.0 + Double(shadowOffset) * 0.4 : 0
 
         subtitleFonts.reapplyFont()
         // Como na TV (assrender.c): tamanho, peso, sombra, cor e fonte da pessoa valem

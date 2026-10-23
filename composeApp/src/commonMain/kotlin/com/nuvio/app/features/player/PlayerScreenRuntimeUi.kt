@@ -366,10 +366,10 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         }
 
         // Better Nuvio: a cor viva do título (botão Pausar, Mais) vem do logo, como na Home e no título.
-        ProvideCorViva(
-            if (isLiveTvPlayback) MaterialTheme.colorScheme.primary
-            else rememberTitleCorViva(logo, background ?: poster),
-        ) {
+        // Vale também para os painéis (áudio e legendas, fontes), senão eles caem no azul do tema.
+        val titleCorViva = if (isLiveTvPlayback) MaterialTheme.colorScheme.primary
+            else rememberTitleCorViva(logo, background ?: poster)
+        ProvideCorViva(titleCorViva) {
             RenderPlayerControls(isEpisode = isEpisode)
         }
         RenderPlaybackOverlays(
@@ -393,7 +393,9 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                 .align(Alignment.TopCenter)
                 .padding(top = 16.dp, start = horizontalSafePadding, end = horizontalSafePadding),
         )
-        RenderPlayerModals()
+        ProvideCorViva(titleCorViva) {
+            RenderPlayerModals()
+        }
         RenderParty(runtime = runtime)
         }
     }

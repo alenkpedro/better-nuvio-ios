@@ -51,6 +51,9 @@ const val SUBTITLE_SHADOW_STRENGTH_DEFAULT = 2
 internal val subtitleFontSizeRangeSp: IntRange
     get() = if (isIos) 6..40 else 12..40
 
+/** Altura mínima da legenda com os controles na tela (no iOS, sub-pos 75: acima da barra). */
+internal const val SubtitleBottomOffsetWithControls = 50
+
 data class SubtitleStyleState(
     val textColor: Color = Color.White,
     val backgroundColor: Color = Color.Transparent,
