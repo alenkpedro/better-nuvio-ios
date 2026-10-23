@@ -333,7 +333,9 @@ final class TabNavigationCoordinator: ObservableObject {
 enum NuvioAppTab: String, CaseIterable, Hashable {
     case home = "Home"
     case search = "Search"
+    case discover = "Discover"
     case library = "Library"
+    case calendar = "Calendar"
     case liveTv = "LiveTv"
     case settings = "Settings"
 
@@ -350,7 +352,9 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
         switch kotlinName?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
         case "home": return .home
         case "search": return .search
+        case "discover": return .discover
         case "library": return .library
+        case "calendar": return .calendar
         case "livetv", "live_tv", "live tv": return .liveTv
         case "settings", "profile": return .settings
         default: return nil
@@ -361,6 +365,8 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
         switch self {
         case .home: return "NuvioTabHome"
         case .search: return "NuvioTabSearch"
+        case .discover: return "NuvioTabDiscover"
+        case .calendar: return "NuvioTabCalendar"
         case .library: return "NuvioTabLibrary"
         case .liveTv: return "NuvioTabLiveTv"
         case .settings: return "NuvioTabProfile"
@@ -371,6 +377,8 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
         switch self {
         case .home: return "house.fill"
         case .search: return "magnifyingglass"
+        case .discover: return "safari.fill"
+        case .calendar: return "calendar"
         case .library: return "rectangle.stack.fill"
         case .liveTv: return "tv.fill"
         case .settings: return "person.crop.circle.fill"
@@ -838,6 +846,9 @@ final class AppNavigationCoordinator: ObservableObject {
 
     @Published var selectedTab: NuvioAppTab = .home {
         didSet {
+            if selectedTab != .settings {
+                lastBarTab = selectedTab
+            }
             if selectedTab != oldValue {
                 setTabBarVisible(true)
                 refreshSelectedTabDepth()
@@ -877,6 +888,8 @@ final class AppNavigationCoordinator: ObservableObject {
     let homeCoordinator = TabNavigationCoordinator()
     let searchCoordinator = TabNavigationCoordinator()
     let libraryCoordinator = TabNavigationCoordinator()
+    let discoverCoordinator = TabNavigationCoordinator()
+    let calendarCoordinator = TabNavigationCoordinator()
     let liveTvCoordinator = TabNavigationCoordinator()
     let settingsCoordinator = TabNavigationCoordinator()
     let appGateController = AppGateController()
@@ -908,18 +921,33 @@ final class AppNavigationCoordinator: ObservableObject {
         profileTabInteraction.onAttached = { [weak self] in
             DispatchQueue.main.async { self?.refreshNativeTabBarMetrics() }
         }
-        profileTabInteraction.onLongPress = { [weak self] in
-            guard let self, self.isAppReady else { return }
-            self.isProfileSwitcherPresented = true
-        }
+        // Better Nuvio: the last bar item is no longer Perfil, so its long-press opens nothing.
+        profileTabInteraction.onLongPress = nil
     }
 
     private var allCoordinators: [TabNavigationCoordinator] {
-        [homeCoordinator, searchCoordinator, libraryCoordinator, liveTvCoordinator, settingsCoordinator]
+        [
+            homeCoordinator, searchCoordinator, discoverCoordinator, libraryCoordinator,
+            calendarCoordinator, liveTvCoordinator, settingsCoordinator,
+        ]
     }
 
+    /// Tabs shown in the bar: Início, Busca, Explorar, Biblioteca, Agenda (TV names), plus Live TV
+    /// when enabled. Perfil/Ajustes is not a tab anymore: it opens as a sheet from the avatar on Home.
     var availableTabs: [NuvioAppTab] {
-        NuvioAppTab.allCases.filter { $0 != .liveTv || isLiveTvTabVisible }
+        NuvioAppTab.allCases.filter { $0 != .settings && ($0 != .liveTv || isLiveTvTabVisible) }
+    }
+
+    /// Last bar tab the user was on, shown underneath the Settings sheet.
+    @Published private(set) var lastBarTab: NuvioAppTab = .home
+
+    var isSettingsPresented: Bool {
+        get { selectedTab == .settings }
+        set {
+            if !newValue && selectedTab == .settings {
+                selectedTab = lastBarTab
+            }
+        }
     }
 
     var usesGlassTabBarOverlay: Bool {
@@ -995,7 +1023,9 @@ final class AppNavigationCoordinator: ObservableObject {
         switch tab {
         case .home: return homeCoordinator
         case .search: return searchCoordinator
+        case .discover: return discoverCoordinator
         case .library: return libraryCoordinator
+        case .calendar: return calendarCoordinator
         case .liveTv: return liveTvCoordinator
         case .settings: return settingsCoordinator
         }
@@ -1022,12 +1052,16 @@ final class AppNavigationCoordinator: ObservableObject {
         library: String,
         profile: String,
         switchProfile: String,
-        addProfile: String
+        addProfile: String,
+        discover: String,
+        calendar: String
     ) {
         localizedTabTitles = [
             .home: home,
             .search: search,
+            .discover: discover,
             .library: library,
+            .calendar: calendar,
             .liveTv: NuvioAppTab.liveTv.fallbackTitle,
             .settings: profile,
         ]
@@ -1135,14 +1169,16 @@ struct NativeNavComposeView: UIViewControllerRepresentable {
             onActivate: { tabName in
                 appCoordinator.activateTab(named: tabName)
             },
-            onTabTitles: { home, search, library, profile, switchProfile, addProfile in
+            onTabTitles: { home, search, library, profile, switchProfile, addProfile, discover, calendar in
                 appCoordinator.updateTabTitles(
                     home: home,
                     search: search,
                     library: library,
                     profile: profile,
                     switchProfile: switchProfile,
-                    addProfile: addProfile
+                    addProfile: addProfile,
+                    discover: discover,
+                    calendar: calendar
                 )
             },
             appGateController: appCoordinator.appGateController
@@ -1702,7 +1738,11 @@ struct NativeNavContentView: View {
 
     private var tabSelection: Binding<NuvioAppTab> {
         Binding(
-            get: { appCoordinator.selectedTab },
+            get: {
+                appCoordinator.selectedTab == .settings
+                    ? appCoordinator.lastBarTab
+                    : appCoordinator.selectedTab
+            },
             set: { newTab in
                 if newTab == .settings &&
                     appCoordinator.profileTabInteraction.suppressesProfileSelection {
@@ -1855,6 +1895,16 @@ struct NativeNavContentView: View {
                 }
             }
             .zIndex(0)
+            .sheet(isPresented: $appCoordinator.isSettingsPresented) {
+                TabContentView(
+                    tab: .settings,
+                    usesNativeTabBar: true,
+                    usesTabletFloatingTabBar: usesTabletFloatingTabBar,
+                    coordinator: appCoordinator.coordinator(for: .settings),
+                    appCoordinator: appCoordinator
+                )
+                .ignoresSafeArea(.all)
+            }
 
             AppGateComposeView(appCoordinator: appCoordinator)
                 .ignoresSafeArea(.all)

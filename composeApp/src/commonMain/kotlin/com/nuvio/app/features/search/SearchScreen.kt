@@ -75,6 +75,7 @@ import nuvio.composeapp.generated.resources.home_empty_no_sources_title
 import nuvio.composeapp.generated.resources.search_empty_no_sources_message
 import nuvio.composeapp.generated.resources.compose_search_clear
 import nuvio.composeapp.generated.resources.compose_search_discover_title
+import nuvio.composeapp.generated.resources.compose_nav_discover
 import nuvio.composeapp.generated.resources.compose_search_empty_failed_message
 import nuvio.composeapp.generated.resources.compose_search_empty_failed_title
 import nuvio.composeapp.generated.resources.compose_search_empty_no_results_message
@@ -94,6 +95,10 @@ fun SearchScreen(
     onPosterLongClick: ((MetaPreview) -> Unit)? = null,
     searchFocusRequestCount: Int = 0,
     scrollToTopRequests: Flow<Unit> = emptyFlow(),
+    // Better Nuvio: the bottom bar splits Busca (field + recents, no discover grid) from
+    // Explorar (discover grid, no field). Both default to true to keep the combined screen.
+    showSearchField: Boolean = true,
+    showDiscover: Boolean = true,
 ) {
     val focusRequester = remember { FocusRequester() }
     var isSearchFocused by remember { mutableStateOf(false) }
@@ -150,12 +155,12 @@ fun SearchScreen(
     val addonManifestsLoading = addonsUiState.addons.hasPendingEnabledManifests()
 
     ScreenActivityEffect(addonRefreshKey, homeCatalogSettingsUiState.hideUnreleasedContent) { screenActive ->
-        if (!screenActive) return@ScreenActivityEffect
+        if (!screenActive || !showDiscover) return@ScreenActivityEffect
         SearchRepository.refreshDiscover(addonsUiState.addons)
     }
 
     ScreenActivityEffect(query, addonRefreshKey, homeCatalogSettingsUiState.hideUnreleasedContent) { screenActive ->
-        if (!screenActive) return@ScreenActivityEffect
+        if (!screenActive || !showSearchField) return@ScreenActivityEffect
         val normalizedQuery = query.trim()
         if (normalizedQuery.isBlank()) {
             lastRequestedQuery = null
@@ -171,7 +176,7 @@ fun SearchScreen(
     }
 
     ScreenActivityEffect(listState, query, discoverUiState.canLoadMore, discoverUiState.isLoading) { screenActive ->
-        if (!screenActive || query.isNotBlank()) return@ScreenActivityEffect
+        if (!screenActive || query.isNotBlank() || !showDiscover) return@ScreenActivityEffect
 
         snapshotFlow { listState.layoutInfo }
             .map { layoutInfo ->
@@ -238,6 +243,8 @@ fun SearchScreen(
             homeSectionHorizontalPaddingForWidth(maxWidth.value)
         }
         val headerTitle = when {
+            !showSearchField -> stringResource(Res.string.compose_nav_discover)
+            !showDiscover -> stringResource(Res.string.compose_nav_search)
             query.isNotBlank() -> stringResource(Res.string.compose_nav_search)
             discoverInFocus -> stringResource(Res.string.compose_search_discover_title)
             else -> stringResource(Res.string.compose_nav_search)
@@ -252,6 +259,7 @@ fun SearchScreen(
                         title = headerTitle,
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
+                    if (showSearchField) {
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(6.dp))
                     androidx.compose.foundation.layout.Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         NuvioInputField(
@@ -276,6 +284,7 @@ fun SearchScreen(
                             },
                         )
                     }
+                    }
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(14.dp))
                 }
             }
@@ -287,7 +296,7 @@ fun SearchScreen(
                 autoHidesNativeTabBar = true,
                 modifier = Modifier.weight(1f),
             ) {
-                if (query.isBlank()) {
+                if (query.isBlank() && showDiscover) {
                     item {
                         DiscoverSectionHeader(modifier = Modifier.padding(horizontal = 16.dp))
                     }
@@ -311,7 +320,17 @@ fun SearchScreen(
                         }
                     }
                 }
-                if (query.isBlank()) {
+                if (query.isBlank() && !showDiscover) {
+                    if (recentSearches.isNotEmpty()) {
+                        item(key = "recent_searches") {
+                            SearchRecentSection(
+                                recentSearches = recentSearches,
+                                onSearchPress = { recentQuery -> query = recentQuery },
+                                onRemoveSearch = SearchHistoryRepository::removeSearch,
+                            )
+                        }
+                    }
+                } else if (query.isBlank()) {
                     if (isSearchFocused && recentSearches.isNotEmpty()) {
                         item(key = "recent_searches") {
                             SearchRecentSection(

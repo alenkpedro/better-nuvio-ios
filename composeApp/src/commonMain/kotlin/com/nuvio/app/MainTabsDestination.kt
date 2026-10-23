@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -46,6 +48,8 @@ import com.nuvio.app.core.ui.glass.LiquidGlassEffectDefaults
 import com.nuvio.app.core.ui.glass.LiquidGlassEffectSettings
 import com.nuvio.app.core.ui.glass.LiquidGlassStyle
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.compose_nav_calendar
+import nuvio.composeapp.generated.resources.compose_nav_discover
 import nuvio.composeapp.generated.resources.compose_nav_home
 import nuvio.composeapp.generated.resources.compose_nav_library
 import nuvio.composeapp.generated.resources.compose_nav_live_tv
@@ -272,10 +276,26 @@ internal fun mainFloatingNavigationItems(
     )
     add(
         FloatingNavigationItem(
+            selected = highlightedTab == AppScreenTab.Discover,
+            onClick = { onTabSelected(AppScreenTab.Discover) },
+            icon = Icons.Rounded.Explore,
+            label = stringResource(Res.string.compose_nav_discover),
+        ),
+    )
+    add(
+        FloatingNavigationItem(
             selected = highlightedTab == AppScreenTab.Library,
             onClick = { onTabSelected(AppScreenTab.Library) },
             drawable = Res.drawable.sidebar_library,
             label = stringResource(Res.string.compose_nav_library),
+        ),
+    )
+    add(
+        FloatingNavigationItem(
+            selected = highlightedTab == AppScreenTab.Calendar,
+            onClick = { onTabSelected(AppScreenTab.Calendar) },
+            icon = Icons.Rounded.CalendarMonth,
+            label = stringResource(Res.string.compose_nav_calendar),
         ),
     )
     if (showLiveTv) {
@@ -288,24 +308,7 @@ internal fun mainFloatingNavigationItems(
             ),
         )
     }
-    add(
-        FloatingNavigationItem(
-            selected = highlightedTab == AppScreenTab.Settings,
-            onClick = { onTabSelected(AppScreenTab.Settings) },
-            label = stringResource(Res.string.compose_nav_profile),
-            content = { onClick, iconColorOverride ->
-                ProfileSwitcherTab(
-                    selected = highlightedTab == AppScreenTab.Settings,
-                    onClick = onClick,
-                    onProfileSelected = onProfileSelected,
-                    onAddProfileRequested = onAddProfileRequested,
-                    backdrop = backdrop,
-                    popupBelowAnchor = false,
-                    defaultIconColorOverride = iconColorOverride ?: defaultIconColorOverride,
-                )
-            },
-        ),
-    )
+    // Better Nuvio: Perfil/Ajustes live behind the avatar on Home (TV layout), not in the bar.
 }
 
 @Composable
@@ -331,10 +334,22 @@ internal fun MainClassicNavigationBar(
             contentDescription = stringResource(Res.string.compose_nav_search),
         )
         NavItem(
+            selected = highlightedTab == AppScreenTab.Discover,
+            onClick = { onTabSelected(AppScreenTab.Discover) },
+            icon = Icons.Rounded.Explore,
+            contentDescription = stringResource(Res.string.compose_nav_discover),
+        )
+        NavItem(
             selected = highlightedTab == AppScreenTab.Library,
             onClick = { onTabSelected(AppScreenTab.Library) },
             icon = Res.drawable.sidebar_library,
             contentDescription = stringResource(Res.string.compose_nav_library),
+        )
+        NavItem(
+            selected = highlightedTab == AppScreenTab.Calendar,
+            onClick = { onTabSelected(AppScreenTab.Calendar) },
+            icon = Icons.Rounded.CalendarMonth,
+            contentDescription = stringResource(Res.string.compose_nav_calendar),
         )
         if (showLiveTv) {
             NavItem(
@@ -342,17 +357,6 @@ internal fun MainClassicNavigationBar(
                 onClick = { onTabSelected(AppScreenTab.LiveTv) },
                 icon = Icons.Filled.Tv,
                 contentDescription = stringResource(Res.string.compose_nav_live_tv),
-            )
-        }
-        NavItem(
-            selected = highlightedTab == AppScreenTab.Settings,
-            onClick = { onTabSelected(AppScreenTab.Settings) },
-        ) {
-            ProfileSwitcherTab(
-                selected = highlightedTab == AppScreenTab.Settings,
-                onClick = { onTabSelected(AppScreenTab.Settings) },
-                onProfileSelected = onProfileSelected,
-                onAddProfileRequested = onAddProfileRequested,
             )
         }
     }

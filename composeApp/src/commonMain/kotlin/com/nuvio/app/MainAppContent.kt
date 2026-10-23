@@ -220,7 +220,7 @@ internal fun MainAppContent(
     onGoBack: (() -> Unit)? = null,
     onReplace: ((AppRoute) -> Unit)? = null,
     onActivate: ((AppScreenTab) -> Unit)? = null,
-    onTabTitles: ((home: String, search: String, library: String, profile: String, switchProfile: String, addProfile: String) -> Unit)? = null,
+    onTabTitles: ((home: String, search: String, library: String, profile: String, switchProfile: String, addProfile: String, discover: String, calendar: String) -> Unit)? = null,
     appGateController: AppGateController? = null,
     onRootContentReady: ((Boolean) -> Unit)? = null,
     onSwitchProfile: () -> Unit = {},
@@ -378,6 +378,8 @@ internal fun MainAppContent(
     val nativeTabSearchTitle = stringResource(Res.string.compose_nav_search)
     val nativeTabLibraryTitle = stringResource(Res.string.compose_nav_library)
     val nativeTabProfileTitle = stringResource(Res.string.compose_nav_profile)
+    val nativeTabDiscoverTitle = stringResource(Res.string.compose_nav_discover)
+    val nativeTabCalendarTitle = stringResource(Res.string.compose_nav_calendar)
     val nativeSwitchProfileTitle = stringResource(Res.string.compose_settings_root_switch_profile_title)
     val nativeAddProfileTitle = stringResource(Res.string.compose_profile_add_profile)
     val homescreenSettingsTitle = stringResource(Res.string.compose_settings_page_homescreen)
@@ -462,7 +464,9 @@ internal fun MainAppContent(
                 searchFocusRequestCount++
                 searchScrollToTopRequests.tryEmit(Unit)
             }
+            AppScreenTab.Discover -> searchScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Library -> libraryScrollToTopRequests.tryEmit(Unit)
+            AppScreenTab.Calendar -> Unit
             AppScreenTab.LiveTv -> liveTvScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Settings -> settingsRootActionRequests.tryEmit(Unit)
         }
@@ -512,6 +516,8 @@ internal fun MainAppContent(
         nativeTabProfileTitle,
         nativeSwitchProfileTitle,
         nativeAddProfileTitle,
+        nativeTabDiscoverTitle,
+        nativeTabCalendarTitle,
         onTabTitles,
     ) {
         NativeTabBridge.publishTabTitles(
@@ -527,6 +533,8 @@ internal fun MainAppContent(
             nativeTabProfileTitle,
             nativeSwitchProfileTitle,
             nativeAddProfileTitle,
+            nativeTabDiscoverTitle,
+            nativeTabCalendarTitle,
         )
     }
 
@@ -1684,6 +1692,8 @@ internal fun MainAppContent(
                                 onContinueWatchingClick = onContinueWatchingClick,
                                 onContinueWatchingLongPress = onContinueWatchingLongPress,
                                 onLiveTvChannelClick = onLiveTvChannelClick,
+                                onOpenSettings = { activateTab(AppScreenTab.Settings) },
+                                onNavigationProfileSelected = onNavigationProfileSelected,
                                 onSwitchProfile = onSwitchProfile,
                                 onEditProfile = pushEditProfile,
                                 onSettingsPageClick = if (useNativeNavigation && !isTabletLayout) {

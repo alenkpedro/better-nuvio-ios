@@ -32,6 +32,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -71,6 +73,7 @@ import com.nuvio.app.features.home.HomeCatalogSection
 import com.nuvio.app.features.home.HomeScreen
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.library.LibraryItem
+import com.nuvio.app.features.library.LibraryCalendarTabScreen
 import com.nuvio.app.features.library.LibraryScreen
 import com.nuvio.app.features.library.LibrarySection
 import com.nuvio.app.features.library.LibrarySortOption
@@ -94,6 +97,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.app_brand_name
+import nuvio.composeapp.generated.resources.compose_nav_calendar
+import nuvio.composeapp.generated.resources.compose_nav_discover
 import nuvio.composeapp.generated.resources.compose_nav_home
 import nuvio.composeapp.generated.resources.compose_nav_library
 import nuvio.composeapp.generated.resources.compose_nav_live_tv
@@ -144,6 +149,9 @@ internal data class AppTabRequests(
 )
 
 internal data class AppTabActions(
+    // Better Nuvio: Perfil/Ajustes opens from the avatar at the top-right of Home.
+    val onOpenSettings: (() -> Unit)? = null,
+    val onNavigationProfileSelected: ((NuvioProfile) -> Unit)? = null,
     val onCatalogClick: ((HomeCatalogSection) -> Unit)? = null,
     val onPosterClick: ((MetaPreview) -> Unit)? = null,
     val onPosterLongClick: ((MetaPreview) -> Unit)? = null,
@@ -208,6 +216,9 @@ internal fun AppTabHost(
                         continueWatchingDisintegrationRequest = state.continueWatchingDisintegrationRequest,
                         onFolderClick = actions.onFolderClick,
                         onFirstCatalogRendered = actions.onInitialHomeContentRendered,
+                        onProfileClick = actions.onOpenSettings,
+                        onProfileSelected = actions.onNavigationProfileSelected,
+                        onAddProfileRequested = actions.onSwitchProfile,
                     )
                     }
                 }
@@ -222,6 +233,30 @@ internal fun AppTabHost(
                     onPosterLongClick = actions.onPosterLongClick,
                     searchFocusRequestCount = state.searchFocusRequestCount,
                     scrollToTopRequests = requests.searchScrollToTopRequests,
+                    showDiscover = false,
+                )
+                }
+            }
+
+            AppScreenTab.Discover -> {
+                ConteudoEditorial {
+                SearchScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    onPosterClick = actions.onPosterClick,
+                    onPosterLongClick = actions.onPosterLongClick,
+                    scrollToTopRequests = requests.searchScrollToTopRequests,
+                    showSearchField = false,
+                )
+                }
+            }
+
+            AppScreenTab.Calendar -> {
+                ConteudoEditorial {
+                LibraryCalendarTabScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    title = stringResource(Res.string.compose_nav_calendar),
+                    onPosterClick = actions.onLibraryPosterClick,
+                    onCalendarEpisodeClick = actions.onLibraryCalendarEpisodeClick,
                 )
                 }
             }
@@ -349,6 +384,23 @@ internal fun TabletFloatingTopBar(
                     },
                 )
                 TabletTopPillItem(
+                    label = stringResource(Res.string.compose_nav_discover),
+                    selected = selectedTab == AppScreenTab.Discover,
+                    onClick = { onTabSelected(AppScreenTab.Discover) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Explore,
+                            contentDescription = stringResource(Res.string.compose_nav_discover),
+                            modifier = Modifier.size(NuvioTokens.Space.s18),
+                            tint = if (selectedTab == AppScreenTab.Discover) {
+                                tokens.colors.textPrimary
+                            } else {
+                                tokens.colors.textMuted
+                            },
+                        )
+                    },
+                )
+                TabletTopPillItem(
                     label = stringResource(Res.string.compose_nav_library),
                     selected = selectedTab == AppScreenTab.Library,
                     onClick = { onTabSelected(AppScreenTab.Library) },
@@ -358,6 +410,23 @@ internal fun TabletFloatingTopBar(
                             contentDescription = stringResource(Res.string.compose_nav_library),
                             modifier = Modifier.size(NuvioTokens.Space.s18),
                             tint = if (selectedTab == AppScreenTab.Library) {
+                                tokens.colors.textPrimary
+                            } else {
+                                tokens.colors.textMuted
+                            },
+                        )
+                    },
+                )
+                TabletTopPillItem(
+                    label = stringResource(Res.string.compose_nav_calendar),
+                    selected = selectedTab == AppScreenTab.Calendar,
+                    onClick = { onTabSelected(AppScreenTab.Calendar) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.CalendarMonth,
+                            contentDescription = stringResource(Res.string.compose_nav_calendar),
+                            modifier = Modifier.size(NuvioTokens.Space.s18),
+                            tint = if (selectedTab == AppScreenTab.Calendar) {
                                 tokens.colors.textPrimary
                             } else {
                                 tokens.colors.textMuted
@@ -384,36 +453,7 @@ internal fun TabletFloatingTopBar(
                         },
                     )
                 }
-                Surface(
-                    color = if (selectedTab == AppScreenTab.Settings) {
-                        tokens.colors.overlaySelected
-                    } else {
-                        tokens.colors.surface
-                    },
-                    shape = tokens.shapes.chip,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = tokens.spacing.listGap, vertical = tokens.spacing.controlGap),
-                        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ProfileSwitcherTab(
-                            selected = selectedTab == AppScreenTab.Settings,
-                            onClick = { onTabSelected(AppScreenTab.Settings) },
-                            onProfileSelected = onProfileSelected,
-                            onAddProfileRequested = onAddProfileRequested,
-                        )
-                        Text(
-                            text = stringResource(Res.string.compose_nav_profile),
-                            modifier = Modifier.clickable { onTabSelected(AppScreenTab.Settings) },
-                            style = MaterialTheme.typography.labelLarge,
-                            color = if (selectedTab == AppScreenTab.Settings) {
-                                tokens.colors.textPrimary
-                            } else {
-                                tokens.colors.textMuted
-                            },
-                        )
-                    }
+                // Better Nuvio: Perfil/Ajustes moved to the avatar on Home (TV layout).
                 }
             }
         }

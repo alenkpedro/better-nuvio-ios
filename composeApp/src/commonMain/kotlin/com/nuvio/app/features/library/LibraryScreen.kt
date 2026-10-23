@@ -1525,6 +1525,56 @@ private fun CloudSkeletonBlock(
     )
 }
 
+/**
+ * Better Nuvio: the "Agenda" bottom tab (TV naming). Same release calendar as the Library
+ * calendar dialog, shown as a full screen tab root fed by the saved library.
+ */
+@Composable
+fun LibraryCalendarTabScreen(
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    onPosterClick: ((LibraryItem) -> Unit)? = null,
+    onCalendarEpisodeClick: ((LibraryItem, Int?, Int?) -> Unit)? = null,
+) {
+    val uiState by remember {
+        LibraryRepository.ensureLoaded()
+        LibraryRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val cacheState by LibraryReleaseCalendarCache.state.collectAsStateWithLifecycle()
+    val cacheKey = remember(uiState.items) { LibraryReleaseCalendarCache.cacheKeyFor(uiState.items) }
+    val fallbackEvents = remember(uiState.items) { buildLibraryReleaseCalendarFallbackEvents(uiState.items) }
+    val cacheMatches = cacheState.cacheKey == cacheKey
+    val events = if (cacheMatches) cacheState.events else fallbackEvents
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(uiState.items) {
+        if (uiState.items.isNotEmpty()) {
+            LibraryReleaseCalendarCache.warm(uiState.items)
+        }
+    }
+
+    LibraryReleaseCalendarPanel(
+        events = events,
+        isLoading = cacheMatches && cacheState.isWarming,
+        onDismiss = {},
+        onPosterClick = onPosterClick,
+        onCalendarEpisodeClick = onCalendarEpisodeClick,
+        onMonthRequested = { month ->
+            coroutineScope.launch { LibraryReleaseCalendarCache.ensureMonth(uiState.items, month.key) }
+        },
+        failedSeriesCount = if (cacheMatches) cacheState.failedSeriesKeys.size else 0,
+        onRefresh = {
+            coroutineScope.launch { LibraryReleaseCalendarCache.forceRefresh(uiState.items) }
+        },
+        onRetryFailed = {
+            coroutineScope.launch { LibraryReleaseCalendarCache.retryFailed(uiState.items) }
+        },
+        embedded = true,
+        modifier = modifier,
+        title = title,
+    )
+}
+
 @Composable
 private fun LibraryReleaseCalendarPanel(
     events: List<LibraryCalendarEvent>,
@@ -1536,6 +1586,9 @@ private fun LibraryReleaseCalendarPanel(
     failedSeriesCount: Int = 0,
     onRefresh: (() -> Unit)? = null,
     onRetryFailed: (() -> Unit)? = null,
+    embedded: Boolean = false,
+    modifier: Modifier = Modifier,
+    title: String? = null,
 ) {
     val today = remember { parseLibraryCalendarDate(CurrentDateProvider.todayIsoDate()) ?: LibraryCalendarDate(1970, 1, 1) }
     val todayIso = today.iso
@@ -1566,54 +1619,14 @@ private fun LibraryReleaseCalendarPanel(
         else -> null
     }
     val selectedDate = parseLibraryCalendarDate(selectedDateIso)
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnClickOutside = false,
-            usePlatformDefaultWidth = false,
-        ),
-    ) {
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
-                )
-                .padding(start = 16.dp, top = 16.dp, end = 16.dp),
-        ) {
-            val useHorizontalLayout = maxWidth >= 600.dp || maxWidth > maxHeight
-            val panelHeight = if (useHorizontalLayout) {
-                minOf(maxHeight, 500.dp)
-            } else {
-                minOf(maxHeight, 700.dp)
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(onClick = onDismiss),
-            )
-
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .widthIn(max = 760.dp)
-                    .fillMaxWidth()
-                    .height(panelHeight)
-                    .clickable(onClick = {}),
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(28.dp),
-                shadowElevation = 18.dp,
-            ) {
+    val calendarBody: @Composable (Boolean, Modifier) -> Unit = { useHorizontalLayout, bodyModifier ->
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(20.dp),
+                    modifier = bodyModifier,
                 ) {
                     LibraryCalendarTopBar(
-                        title = stringResource(Res.string.library_calendar_title),
+                        title = title ?: stringResource(Res.string.library_calendar_title),
                         subtitle = stringResource(Res.string.library_calendar_exact_dates_only),
-                        onDismiss = onDismiss,
+                        onDismiss = onDismiss.takeUnless { embedded },
                         isRefreshing = isLoading,
                         onRefresh = onRefresh,
                     )
@@ -1757,6 +1770,69 @@ private fun LibraryReleaseCalendarPanel(
                         }
                     }
                 }
+    }
+    if (embedded) {
+        BoxWithConstraints(
+            modifier = modifier
+                .fillMaxSize()
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+                ),
+        ) {
+            calendarBody(
+                maxWidth >= 600.dp || maxWidth > maxHeight,
+                Modifier
+                    .fillMaxSize()
+                    .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 96.dp),
+            )
+        }
+    } else {
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false,
+            ),
+        ) {
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+                    )
+                    .padding(start = 16.dp, top = 16.dp, end = 16.dp),
+            ) {
+                val useHorizontalLayout = maxWidth >= 600.dp || maxWidth > maxHeight
+                val panelHeight = if (useHorizontalLayout) {
+                    minOf(maxHeight, 500.dp)
+                } else {
+                    minOf(maxHeight, 700.dp)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(onClick = onDismiss),
+                )
+
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .widthIn(max = 760.dp)
+                        .fillMaxWidth()
+                        .height(panelHeight)
+                        .clickable(onClick = {}),
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(28.dp),
+                    shadowElevation = 18.dp,
+                ) {
+                    calendarBody(
+                        useHorizontalLayout,
+                        Modifier
+                            .fillMaxSize()
+                            .padding(20.dp),
+                    )
+                }
             }
         }
     }
@@ -1798,7 +1874,7 @@ private fun LazyListScope.libraryCalendarAgendaContent(
 private fun LibraryCalendarTopBar(
     title: String,
     subtitle: String,
-    onDismiss: () -> Unit,
+    onDismiss: (() -> Unit)?,
     isRefreshing: Boolean = false,
     onRefresh: (() -> Unit)? = null,
 ) {
@@ -1853,16 +1929,18 @@ private fun LibraryCalendarTopBar(
                 }
             }
         }
-        IconButton(
-            onClick = onDismiss,
-            modifier = Modifier.size(40.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Close,
-                contentDescription = stringResource(Res.string.action_close),
-                modifier = Modifier.size(22.dp),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
+        if (onDismiss != null) {
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Close,
+                    contentDescription = stringResource(Res.string.action_close),
+                    modifier = Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
         }
     }
 }

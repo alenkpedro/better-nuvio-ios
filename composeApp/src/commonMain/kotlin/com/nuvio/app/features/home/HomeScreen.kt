@@ -7,6 +7,13 @@ import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import com.nuvio.app.features.profiles.NuvioProfile
+import com.nuvio.app.features.profiles.ProfileSwitcherTab
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -128,6 +135,9 @@ fun HomeScreen(
     continueWatchingDisintegrationRequest: DisintegrationRequest<String>? = null,
     onFolderClick: ((collectionId: String, folderId: String) -> Unit)? = null,
     onFirstCatalogRendered: (() -> Unit)? = null,
+    onProfileClick: (() -> Unit)? = null,
+    onProfileSelected: ((NuvioProfile) -> Unit)? = null,
+    onAddProfileRequested: (() -> Unit)? = null,
 ) {
     LaunchedEffect(Unit) {
         AddonRepository.initialize()
@@ -1258,6 +1268,22 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+        if (onProfileClick != null) {
+            // Better Nuvio: Perfil/Ajustes left the bottom bar (TV tabs). Tap opens Ajustes,
+            // long-press keeps the profile switcher.
+            ProfileSwitcherTab(
+                selected = false,
+                onClick = onProfileClick,
+                onProfileSelected = onProfileSelected ?: {},
+                onAddProfileRequested = onAddProfileRequested ?: {},
+                popupBelowAnchor = true,
+                defaultIconColorOverride = Color.White,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(top = 6.dp, end = 16.dp),
+            )
         }
     }
 }

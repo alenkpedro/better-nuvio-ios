@@ -330,6 +330,8 @@
     <string name="compose_auth_welcome_back">Olá novamente</string>
     <string name="compose_catalog_subtitle_library">Biblioteca</string>
     <string name="compose_catalog_subtitle_trakt_library">Biblioteca do Trakt</string>
+    <string name="compose_nav_calendar">Agenda</string>
+    <string name="compose_nav_discover">Explorar</string>
     <string name="compose_nav_home">Início</string>
     <string name="compose_nav_library">Biblioteca</string>
     <string name="compose_nav_profile">Perfil</string>
