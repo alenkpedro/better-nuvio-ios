@@ -141,6 +141,17 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     }
     val gestureCallbacks = rememberSurfaceGestureCallbacks()
     val onPinchZoom = rememberUpdatedState<(Float) -> Unit> { factor -> pinchVideoZoom(factor) }
+    val onSwipeUpTracks = rememberUpdatedState<(() -> Unit)?>(
+        if (isLiveTvPlayback || showSubtitleModal || showAudioModal) {
+            null
+        } else {
+            {
+                refreshTracks()
+                showSubtitleModal = true
+                controlsVisible = false
+            }
+        },
+    )
     LaunchedEffect(playerController) {
         if (videoZoom != 1f) playerController?.setVideoZoom(videoZoom)
     }
@@ -263,6 +274,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                 clearLiveGestureFeedbackState = gestureCallbacks.clearLiveGestureFeedback,
                 revealLockedOverlayState = gestureCallbacks.revealLockedOverlay,
                 commitHorizontalSeekState = gestureCallbacks.commitHorizontalSeek,
+                swipeUpTracksState = onSwipeUpTracks,
             )
             .playerSurfacePinchGestures(
                 playbackGesturesEnabled = playbackGesturesEnabled,

@@ -64,6 +64,7 @@ internal fun Modifier.playerSurfaceDragGestures(
     clearLiveGestureFeedbackState: State<() -> Unit>,
     revealLockedOverlayState: State<() -> Unit>,
     commitHorizontalSeekState: State<(Long) -> Unit>,
+    swipeUpTracksState: State<(() -> Unit)?>? = null,
 ): Modifier =
     pointerInput(
         gestureController,
@@ -124,6 +125,12 @@ internal fun Modifier.playerSurfaceDragGestures(
             var horizontalSeekPreviewMs = horizontalSeekBaselineMs
             var lastVolumeTarget: Float? = null
             var interruptedByPinch = false
+            // Better Nuvio: arrastar para cima no meio do vídeo abre Áudio | Legendas | Sincronia.
+            val canSwipeUpTracks = region == null &&
+                !isInSideGestureSystemEdge &&
+                down.position.y > height * 0.15f &&
+                down.position.y < height * 0.8f
+            var tracksSwipeTriggered = false
 
             while (true) {
                 val event = awaitPointerEvent()
@@ -176,6 +183,15 @@ internal fun Modifier.playerSurfaceDragGestures(
                     }
 
                     if (gestureMode == null) {
+                        if (canSwipeUpTracks && verticalDominant && totalDy < 0f && !tracksSwipeTriggered) {
+                            val openTracks = swipeUpTracksState?.value
+                            if (openTracks != null) {
+                                tracksSwipeTriggered = true
+                                deactivateHoldToSpeedState.value()
+                                openTracks()
+                            }
+                        }
+                        if (tracksSwipeTriggered) change.consume()
                         continue
                     }
                 }
