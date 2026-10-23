@@ -202,10 +202,9 @@ internal fun EpisodeNavigatorBar(
             Row(
                 modifier = Modifier
                     .weight(1f)
-                    .heightIn(min = 44.dp)
+                    .heightIn(min = 38.dp)
                     .clip(fieldShape)
-                    .background(tokens.colors.surfaceSheet.copy(alpha = 0.6f))
-                    .border(1.dp, tokens.colors.borderDefault, fieldShape)
+                    .background(Color.White.copy(alpha = 0.06f))
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -278,20 +277,21 @@ internal fun EpisodeNavigatorBar(
 @Composable
 private fun EpisodeNavigatorChip(text: String, onClick: () -> Unit) {
     val tokens = MaterialTheme.nuvio
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(19.dp)
+    // Better Nuvio: quieter chips, no border, so the episodes stay in front.
     Box(
         modifier = Modifier
-            .heightIn(min = 44.dp)
+            .heightIn(min = 38.dp)
             .clip(shape)
-            .border(1.dp, tokens.colors.borderDefault, shape)
+            .background(Color.White.copy(alpha = 0.06f))
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelLarge,
-            color = tokens.colors.textPrimary,
+            style = MaterialTheme.typography.labelMedium,
+            color = tokens.colors.textMuted,
             maxLines = 1,
         )
     }
@@ -552,6 +552,7 @@ internal fun LazyListScope.detailEpisodeListItems(
     onEpisodeClick: (MetaVideo) -> Unit,
     onEpisodeLongPress: (MetaVideo) -> Unit,
     onSeasonLongPress: (Int) -> Unit,
+    preferredEpisodeNumber: Int? = null,
 ): Int {
     val grouped = navigator.grouped(meta.videos) { meta.groupedEpisodesForDisplay() }
     if (grouped.isEmpty()) return 0
@@ -624,6 +625,7 @@ internal fun LazyListScope.detailEpisodeListItems(
                     onEpisodeLongPress = onEpisodeLongPress,
                     highlightQuery = query,
                     jumpHighlighted = navigator.highlightedEpisodeKey == episode.navigatorKey(),
+                    preferredEpisodeNumber = preferredEpisodeNumber?.takeIf { season == preferredSeasonNumber },
                 )
             }
         }

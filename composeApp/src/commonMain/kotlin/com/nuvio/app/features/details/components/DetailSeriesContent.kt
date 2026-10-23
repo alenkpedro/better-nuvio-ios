@@ -75,6 +75,11 @@ import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
 import com.nuvio.app.core.ui.NuvioAnimatedWatchedBadge
 import com.nuvio.app.core.ui.NuvioCardDepthSurface
 import com.nuvio.app.core.ui.NuvioProgressBar
+import com.nuvio.app.core.ui.corViva
+import androidx.compose.material.icons.rounded.Check
+import com.nuvio.app.core.ui.onCorViva
+import com.nuvio.app.features.details.bnTimeLeftLabel
+import com.nuvio.app.features.watchprogress.CurrentDateProvider
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.nuvioCardDepth
 import com.nuvio.app.features.ratings.episodeUserRatingTarget
@@ -330,10 +335,16 @@ fun DetailSeriesContent(
                                     fallbackVideoId = episode.id,
                                 )
                                 val userRatingTarget = remember(meta, episode) { meta.episodeUserRatingTarget(episode) }
+                                val preferredInSeason = preferredEpisodeNumberForSeason(
+                                    displayedSeasonNumber = seasonForContent,
+                                    preferredSeasonNumber = preferredSeasonNumber,
+                                    preferredEpisodeNumber = preferredEpisodeNumber,
+                                )
                                 EpisodeListCard(
                                     video = episode,
                                     userRating = rememberUserRating(userRatingTarget),
                                     fallbackImage = meta.background ?: meta.poster,
+                                    isCurrent = isCurrentEpisode(episode, progressByVideoId[episodeVideoId], preferredInSeason),
                                     progressEntry = progressByVideoId[episodeVideoId],
                                     tmdbRating = episode.tmdbRating,
                                     imdbRating = episode.imdbRating,
@@ -425,6 +436,7 @@ internal fun DetailSeriesListEpisode(
     modifier: Modifier = Modifier,
     highlightQuery: String? = null,
     jumpHighlighted: Boolean = false,
+    preferredEpisodeNumber: Int? = null,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val sizing = seriesContentSizing(maxWidth.value)
@@ -439,6 +451,7 @@ internal fun DetailSeriesListEpisode(
             video = episode,
             userRating = rememberUserRating(userRatingTarget),
             fallbackImage = meta.background ?: meta.poster,
+            isCurrent = isCurrentEpisode(episode, progressByVideoId[episodeVideoId], preferredEpisodeNumber),
             progressEntry = progressByVideoId[episodeVideoId],
             tmdbRating = episode.tmdbRating ?: episode.rating,
             imdbRating = episode.seasonEpisodeKey()?.let { episodeRatings[it] } ?: episode.imdbRating,
@@ -498,7 +511,7 @@ private fun SeriesSeasonSelector(
     if (seasons.size <= 1) return
 
     var seasonViewMode by remember {
-        mutableStateOf(SeasonViewModeStorage.load() ?: SeasonViewMode.Posters)
+        mutableStateOf(SeasonViewModeStorage.load() ?: SeasonViewMode.Text)
     }
     val hasSeasonPosters = seasons.any { season ->
         resolveSeasonPoster(
@@ -657,13 +670,10 @@ private fun SeasonTextChipScrollRow(
                     .clip(RoundedCornerShape(sizing.seasonChipRadius))
                     .then(
                         if (isSelected) {
-                            Modifier.ambientLiquidGlass(
-                                shape = RoundedCornerShape(sizing.seasonChipRadius),
-                                tint = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                                fallback = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                            )
+                            // Better Nuvio: the active season is a pill filled with the cor viva.
+                            Modifier.background(corViva())
                         } else {
-                            Modifier.background(Color.Transparent)
+                            Modifier.background(Color.White.copy(alpha = 0.06f))
                         },
                     )
                     .combinedClickable(
@@ -683,7 +693,7 @@ private fun SeasonTextChipScrollRow(
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                     ),
                     color = if (isSelected) {
-                        MaterialTheme.colorScheme.onBackground
+                        corViva().onCorViva()
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     },
@@ -1389,6 +1399,7 @@ private fun EpisodeListCard(
     video: MetaVideo,
     userRating: Int? = null,
     fallbackImage: String?,
+    isCurrent: Boolean = false,
     progressEntry: WatchProgressEntry?,
     tmdbRating: Double?,
     imdbRating: Double?,
@@ -1418,7 +1429,12 @@ private fun EpisodeListCard(
         imdbRating?.takeIf { it > 0.0 && showsRating }?.let(::formatEpisodeRating)
     }
     val hasAnyRating = tmdbRatingLabel != null || imdbRatingLabel != null || userRating != null
-    val formattedDate = remember(video.released) { video.released?.let { formatReleaseDateForDisplay(it) } }
+    val episodeLabel = rememberEpisodeLabel(video)
+    val accent = corViva()
+    val activeProgress = progressEntry?.takeIf { it.progressFraction > 0f && !it.isEffectivelyCompleted }
+    val timeLeft = activeProgress
+        ?.takeIf { isCurrent && it.durationMs > it.lastPositionMs && it.durationMs > 0L }
+        ?.let { entry -> bnTimeLeftLabel(entry.durationMs - entry.lastPositionMs) }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -1431,8 +1447,8 @@ private fun EpisodeListCard(
                 blurRadius = 18.dp,
             )
             .border(
-                width = 1.dp,
-                color = Color.White.copy(alpha = 0.1f),
+                width = if (isCurrent) 2.dp else 1.dp,
+                color = if (isCurrent) accent else Color.White.copy(alpha = 0.1f),
                 shape = cardShape,
             )
             .combinedClickable(
@@ -1469,19 +1485,7 @@ private fun EpisodeListCard(
                     )
                 }
 
-                EpisodeCodeBadge(
-                    text = video.episodeBadge(),
-                    textSize = sizing.badgeTextSize,
-                    radius = sizing.badgeRadius,
-                    horizontalPadding = sizing.badgeHorizontalPadding,
-                    verticalPadding = sizing.badgeVerticalPadding,
-                    backgroundAlpha = 0.85f,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(start = 8.dp, top = 8.dp),
-                )
-
-                NuvioAnimatedWatchedBadge(
+                WhiteWatchedBadge(
                     isVisible = isWatched,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -1501,6 +1505,17 @@ private fun EpisodeListCard(
                     ),
                 verticalArrangement = Arrangement.spacedBy(sizing.contentSpacing),
             ) {
+                // Better Nuvio: "EPISÓDIO 3 · 8 OUT" above the name.
+                Text(
+                    text = episodeLabel,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.8.sp,
+                    ),
+                    color = if (isCurrent) accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Text(
                     text = titleText,
                     style = MaterialTheme.typography.titleMedium.copy(
@@ -1514,19 +1529,19 @@ private fun EpisodeListCard(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                if (formattedDate != null || hasAnyRating) {
+                if (timeLeft != null || hasAnyRating) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        formattedDate?.let { date ->
+                        timeLeft?.let { left ->
                             Text(
-                                text = date,
+                                text = left,
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontSize = sizing.metaTextSize,
                                     fontWeight = FontWeight.Medium,
                                 ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                color = accent,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -1556,8 +1571,7 @@ private fun EpisodeListCard(
             }
         }
 
-        progressEntry
-            ?.takeIf { it.progressFraction > 0f && !it.isEffectivelyCompleted }
+        activeProgress
             ?.let { entry ->
                 NuvioProgressBar(
                     progress = entry.progressFraction,
@@ -1567,7 +1581,7 @@ private fun EpisodeListCard(
                         .padding(start = 12.dp, bottom = 10.dp),
                     height = 5.dp,
                     trackColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.14f),
-                    fillColor = MaterialTheme.colorScheme.primary,
+                    fillColor = accent,
                 )
             }
     }
@@ -1748,4 +1762,67 @@ private fun formatEpisodeRating(rating: Double): String {
     val whole = roundedTenths / 10
     val tenth = (roundedTenths % 10).absoluteValue
     return "$whole.$tenth"
+}
+
+/** Better Nuvio: the episode in progress, or the next one to watch, gets the cor viva. */
+private fun isCurrentEpisode(
+    episode: MetaVideo,
+    progressEntry: WatchProgressEntry?,
+    preferredEpisodeNumber: Int?,
+): Boolean =
+    (progressEntry != null && progressEntry.progressFraction > 0f && !progressEntry.isEffectivelyCompleted) ||
+        (preferredEpisodeNumber != null && episode.episode == preferredEpisodeNumber)
+
+/** "EPISÓDIO 3 · 8 OUT" (the year is added when it isn't the current one). */
+@Composable
+private fun rememberEpisodeLabel(video: MetaVideo): String {
+    val number = video.episode
+    val head = if (number != null) {
+        stringResource(Res.string.bn_episode_label, number.toString())
+    } else {
+        video.episodeBadge().uppercase()
+    }
+    val months = stringResource(Res.string.bn_months_short).split(",")
+    val parts = video.released?.take(10)?.split("-")
+    val year = parts?.getOrNull(0)?.toIntOrNull()
+    val month = parts?.getOrNull(1)?.toIntOrNull()
+    val day = parts?.getOrNull(2)?.toIntOrNull()
+    val monthName = month?.let { months.getOrNull(it - 1)?.trim() }
+    val currentYear = remember { CurrentDateProvider.todayIsoDate().take(4).toIntOrNull() }
+    val date = if (year != null && day != null && monthName != null) {
+        if (year == currentYear) {
+            stringResource(Res.string.bn_episode_date_short, day, monthName)
+        } else {
+            stringResource(Res.string.bn_episode_date_short_year, day, monthName, year)
+        }
+    } else {
+        null
+    }
+    return if (date != null) "$head · $date" else head
+}
+
+/** White "watched" badge in the corner of the episode still. */
+@Composable
+private fun WhiteWatchedBadge(isVisible: Boolean, modifier: Modifier = Modifier) {
+    androidx.compose.animation.AnimatedVisibility(
+        visible = isVisible,
+        enter = androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.fadeOut(),
+        modifier = modifier,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(Color.White),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = androidx.compose.material.icons.Icons.Rounded.Check,
+                contentDescription = stringResource(Res.string.episodes_cd_watched),
+                tint = Color.Black,
+                modifier = Modifier.size(14.dp),
+            )
+        }
+    }
 }

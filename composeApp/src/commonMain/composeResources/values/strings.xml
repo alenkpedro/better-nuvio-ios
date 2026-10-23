@@ -2959,4 +2959,23 @@
     <string name="bn_time_minutes">%1$d min</string>
     <string name="bn_time_hours_minutes">%1$d h %2$d min</string>
     <string name="bn_cw_time_left">%1$s left</string>
+    <string name="bn_resume_available">Resume available · %1$d%</string>
+    <string name="bn_time_left_minutes">%1$d min left</string>
+    <string name="bn_time_left_hours_minutes">%1$d h %2$d min left</string>
+    <string name="bn_action_from_start">From start</string>
+    <string name="bn_action_my_list">My list</string>
+    <string name="bn_action_sources">Sources</string>
+    <string name="bn_action_watched">Watched</string>
+    <string name="bn_action_download">Download</string>
+    <string name="bn_action_shuffle">Shuffle</string>
+    <string name="bn_action_external">External</string>
+    <string name="bn_action_trailer">Trailer</string>
+    <string name="bn_rating_disliked">Didn't like</string>
+    <string name="bn_rating_liked">Liked</string>
+    <string name="bn_rating_loved">Loved</string>
+    <string name="bn_rating_long_press_hint">Hold Liked for a 1–10 rating</string>
+    <string name="bn_episode_label">EPISODE %1$s</string>
+    <string name="bn_episode_date_short">%2$s %1$d</string>
+    <string name="bn_episode_date_short_year">%2$s %1$d, %3$d</string>
+    <string name="bn_months_short">JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC</string>
 </resources>

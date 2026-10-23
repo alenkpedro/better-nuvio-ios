@@ -35,6 +35,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
 import com.nuvio.app.features.ratings.UserRatingSheet
+import com.nuvio.app.features.ratings.UserRatingsRepository
+import com.nuvio.app.core.ui.ProvideCorViva
 import com.nuvio.app.features.ratings.UserRatingSheetRequest
 import com.nuvio.app.features.ratings.episodeUserRatingTarget
 import com.nuvio.app.features.ratings.rememberCanRate
@@ -924,6 +926,38 @@ fun MetaDetailsScreen(
                 val onPlayExternallyClick: (() -> Unit)? = onPlayExternally
                     ?.let { handler -> { runPlayAction(handler, activeResumePositionMs) } }
 
+                // Better Nuvio: "Retomada disponível · 38%" and "Retomar · faltam 58 min".
+                val activeResumeEntry = if ((meta.type == "series" || hasEpisodes) && seriesAction != null) {
+                    watchProgressUiState.progressForVideo(
+                        videoId = seriesStreamVideoId ?: seriesAction.videoId,
+                        parentMetaId = meta.id,
+                        seasonNumber = seriesAction.seasonNumber,
+                        episodeNumber = seriesAction.episodeNumber,
+                    )?.takeIf { (seriesAction.resumePositionMs ?: 0L) > 0L }
+                } else {
+                    movieProgress
+                }?.takeIf { !it.isEffectivelyCompleted && it.progressFraction > 0f }
+                val resumeProgress = if (shufflePoolEmpty) null else activeResumeEntry?.progressFraction
+                val resumeTimeLeft = activeResumeEntry
+                    ?.takeIf { it.durationMs > 0L && it.durationMs > it.lastPositionMs }
+                    ?.let { entry -> bnTimeLeftLabel(entry.durationMs - entry.lastPositionMs) }
+                val primaryPlayLabel = if (resumeProgress != null && resumeTimeLeft != null) {
+                    "$playButtonLabel · $resumeTimeLeft"
+                } else {
+                    playButtonLabel
+                }
+                val onQuickRate: ((Int?) -> Unit)? = if (canRateTitle) {
+                    { value ->
+                        if (value == null) {
+                            UserRatingsRepository.remove(titleRatingTarget)
+                        } else {
+                            UserRatingsRepository.rate(titleRatingTarget, value)
+                        }
+                    }
+                } else {
+                    null
+                }
+
                 val showDownloadButton by remember {
                     DownloadsSettingsRepository.ensureLoaded()
                     DownloadsSettingsRepository.showDownloadButton
@@ -974,7 +1008,7 @@ fun MetaDetailsScreen(
                 val manualPlayHandler = onPlayManually
                 val showManualPlayOption = manualPlayHandler != null && StreamAutoPlayPolicy.isEffectivelyEnabled(playerSettingsUiState)
                 val onPrimaryPlayLongClick: (() -> Unit)? = manualPlayHandler
-                    ?.takeIf { !shufflePoolEmpty && showManualPlayOption && playbackAvailability.canStream(meta.type, primaryVideoId) }
+                    ?.takeIf { !shufflePoolEmpty && playbackAvailability.canStream(meta.type, primaryVideoId) }
                     ?.let { manualPlay ->
                         {
                             stopHeroTrailerForNavigation()
@@ -1145,6 +1179,7 @@ fun MetaDetailsScreen(
                     ?.audioUrl
                     ?.takeIf { heroTrailerSourceUrl != null && it.isNotBlank() }
 
+                ProvideCorViva(meta.poster ?: meta.background ?: meta.logo) {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     val colorScheme = MaterialTheme.colorScheme
                     val useTabletLayout = minOf(maxWidth, maxHeight) >= 600.dp
@@ -1292,7 +1327,7 @@ fun MetaDetailsScreen(
                                                 actions = if (isSectionEnabled(MetaScreenSectionKey.ACTIONS)) {
                                                     {
                                                         TabletDetailHeroActions(
-                                                            playLabel = playButtonLabel,
+                                                            playLabel = primaryPlayLabel,
                                                             playEnabled = isPrimaryPlayEnabled,
                                                             isSaved = isSaved,
                                                             isWatched = isWatched,
@@ -1309,6 +1344,9 @@ fun MetaDetailsScreen(
                                                             onPlayExternallyClick = onPlayExternallyClick,
                                                             userRating = titleUserRating,
                                                             onRateClick = openTitleRating,
+                                                            resumeProgress = resumeProgress,
+                                                            onSourcesClick = onPrimaryPlayLongClick,
+                                                            onQuickRate = onQuickRate,
                                                         )
                                                     }
                                                 } else {
@@ -1334,6 +1372,8 @@ fun MetaDetailsScreen(
                                                 onHeroTrailerReady = onHeroTrailerReady,
                                                 onHeroTrailerEnded = onHeroTrailerFinished,
                                                 onHeroTrailerError = onHeroTrailerFinished,
+                                                onTrailerButtonClick = (heroTrailerCandidate ?: meta.trailers.firstOrNull())
+                                                    ?.let { trailer -> { resolveTrailer(trailer) } },
                                             )
                                         }
                                     }
@@ -1351,7 +1391,7 @@ fun MetaDetailsScreen(
                                         isTablet = isTablet,
                                         contentHorizontalPadding = contentHorizontalPadding,
                                         contentMaxWidth = if (isTablet && !useTabletLayout) contentMaxWidth else Dp.Unspecified,
-                                        playButtonLabel = playButtonLabel,
+                                        playButtonLabel = primaryPlayLabel,
                                         isPrimaryPlayEnabled = isPrimaryPlayEnabled,
                                         isSaved = isSaved,
                                         isWatched = isWatched,
@@ -1367,6 +1407,8 @@ fun MetaDetailsScreen(
                                         onWatchedClick = toggleWatched,
                                         userRating = titleUserRating,
                                         onRateClick = openTitleRating,
+                                        resumeProgress = resumeProgress,
+                                        onQuickRate = onQuickRate,
                                         showManualPlayOption = showManualPlayOption,
                                         preferredEpisodeSeasonNumber = initialSeasonNumber ?: seriesAction?.seasonNumber,
                                         preferredEpisodeNumber = initialEpisodeNumber ?: seriesAction?.episodeNumber,
@@ -1831,6 +1873,7 @@ fun MetaDetailsScreen(
                         }
                     }
                 }
+                }
             }
         }
 
@@ -2157,6 +2200,8 @@ private fun LazyListScope.configuredMetaSectionItems(
     onWatchedClick: () -> Unit,
     userRating: Int? = null,
     onRateClick: (() -> Unit)? = null,
+    resumeProgress: Float? = null,
+    onQuickRate: ((Int?) -> Unit)? = null,
     showManualPlayOption: Boolean,
     preferredEpisodeSeasonNumber: Int?,
     preferredEpisodeNumber: Int?,
@@ -2249,6 +2294,8 @@ private fun LazyListScope.configuredMetaSectionItems(
                     onWatchedClick = onWatchedClick,
                     userRating = userRating,
                     onRateClick = onRateClick,
+                    resumeProgress = resumeProgress,
+                    onQuickRate = onQuickRate,
                     showManualPlayOption = showManualPlayOption,
                     preferredEpisodeSeasonNumber = preferredEpisodeSeasonNumber,
                     preferredEpisodeNumber = preferredEpisodeNumber,
@@ -2307,6 +2354,7 @@ private fun LazyListScope.configuredMetaSectionItems(
             onEpisodeClick = onEpisodeClick,
             onEpisodeLongPress = onEpisodeLongPress,
             onSeasonLongPress = onSeasonLongPress,
+            preferredEpisodeNumber = preferredEpisodeNumber,
         )
         emittedItemCount += emitted
         return emitted > 0
@@ -2435,6 +2483,8 @@ private fun ConfiguredMetaSections(
     onWatchedClick: () -> Unit,
     userRating: Int? = null,
     onRateClick: (() -> Unit)? = null,
+    resumeProgress: Float? = null,
+    onQuickRate: ((Int?) -> Unit)? = null,
     showManualPlayOption: Boolean,
     preferredEpisodeSeasonNumber: Int?,
     preferredEpisodeNumber: Int?,
@@ -2509,6 +2559,9 @@ private fun ConfiguredMetaSections(
                     iconActionRow = settings.iconActionRow,
                     userRating = userRating,
                     onRateClick = onRateClick,
+                    resumeProgress = resumeProgress,
+                    onSourcesClick = onPrimaryPlayLongClick,
+                    onQuickRate = onQuickRate,
                 )
             }
             MetaScreenSectionKey.OVERVIEW -> {
@@ -2739,4 +2792,15 @@ private fun Color.blendTowards(target: Color, fraction: Float): Color {
         blue = blue + (target.blue - blue) * clamped,
         alpha = alpha + (target.alpha - alpha) * clamped,
     )
+}
+
+/** Better Nuvio: "faltam 58 min" / "faltam 1 h 12 min". */
+@Composable
+internal fun bnTimeLeftLabel(remainingMs: Long): String {
+    val totalMinutes = ((remainingMs + 59_999L) / 60_000L).toInt().coerceAtLeast(1)
+    return if (totalMinutes >= 60) {
+        stringResource(Res.string.bn_time_left_hours_minutes, totalMinutes / 60, totalMinutes % 60)
+    } else {
+        stringResource(Res.string.bn_time_left_minutes, totalMinutes)
+    }
 }
