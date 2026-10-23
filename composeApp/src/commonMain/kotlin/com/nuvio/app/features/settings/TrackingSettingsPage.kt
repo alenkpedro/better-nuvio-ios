@@ -121,7 +121,9 @@ import nuvio.composeapp.generated.resources.trakt_more_like_this_source_tmdb
 import nuvio.composeapp.generated.resources.trakt_more_like_this_source_trakt
 import nuvio.composeapp.generated.resources.trakt_more_like_this_source_simkl
 import nuvio.composeapp.generated.resources.trakt_watch_progress_dialog_title
-import nuvio.composeapp.generated.resources.trakt_watch_progress_source_nuvio
+import nuvio.composeapp.generated.resources.bn_watch_progress_source_account
+import nuvio.composeapp.generated.resources.bn_watch_progress_source_both
+import nuvio.composeapp.generated.resources.bn_watch_progress_source_both_description
 import nuvio.composeapp.generated.resources.trakt_watch_progress_source_trakt
 import nuvio.composeapp.generated.resources.trakt_watch_progress_subtitle
 import nuvio.composeapp.generated.resources.trakt_watch_progress_title
@@ -594,10 +596,17 @@ private fun watchProgressSourceOptions(
 ): List<TrackingPickerOption<WatchProgressSource>> {
     val traktAvailable = isTrackingBrandAvailable(TrackingBrand.TRAKT, traktConnected, simklConnected)
     val simklAvailable = isTrackingBrandAvailable(TrackingBrand.SIMKL, traktConnected, simklConnected)
+    // Better Nuvio: same names and order as the TV (Ambas, Conta Nuvio, Trakt,
+    // Simkl), then the Enhanced extras.
     return listOf(
         TrackingPickerOption(
+            value = WatchProgressSource.BOTH,
+            title = stringResource(Res.string.bn_watch_progress_source_both),
+            description = stringResource(Res.string.bn_watch_progress_source_both_description),
+        ),
+        TrackingPickerOption(
             value = WatchProgressSource.NUVIO_SYNC,
-            title = stringResource(Res.string.trakt_watch_progress_source_nuvio),
+            title = stringResource(Res.string.bn_watch_progress_source_account),
             description = stringResource(Res.string.settings_tracking_nuvio_progress_description),
         ),
         TrackingPickerOption(
@@ -703,7 +712,8 @@ private fun librarySourceModeLabel(source: LibrarySourceMode): String = when (so
 @Composable
 private fun watchProgressSourceLabel(source: WatchProgressSource): String = when (source) {
     WatchProgressSource.TRAKT -> stringResource(Res.string.trakt_watch_progress_source_trakt)
-    WatchProgressSource.NUVIO_SYNC -> stringResource(Res.string.trakt_watch_progress_source_nuvio)
+    WatchProgressSource.BOTH -> stringResource(Res.string.bn_watch_progress_source_both)
+    WatchProgressSource.NUVIO_SYNC -> stringResource(Res.string.bn_watch_progress_source_account)
     WatchProgressSource.SIMKL -> stringResource(Res.string.tracking_source_simkl)
     WatchProgressSource.MDBLIST -> stringResource(Res.string.tracking_source_mdblist)
     WatchProgressSource.ANILIST -> stringResource(Res.string.tracking_source_anilist)

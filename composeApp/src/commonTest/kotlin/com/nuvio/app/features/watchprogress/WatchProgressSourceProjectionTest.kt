@@ -40,6 +40,37 @@ class WatchProgressSourceProjectionTest {
         assertEquals(nuvioEntries, projected)
     }
 
+    @Test
+    fun `Ambas keeps account rows and adds provider rows with the newest row winning`() {
+        val nuvioEntries = listOf(
+            entry(parentMetaId = "newer-on-account", updatedAt = 300L),
+            entry(parentMetaId = "newer-on-trakt", updatedAt = 100L),
+            entry(parentMetaId = "tie", updatedAt = 200L),
+            entry(parentMetaId = "account-only", updatedAt = 50L),
+        )
+        val traktNewer = entry(parentMetaId = "newer-on-trakt", updatedAt = 400L)
+        val providerEntries = listOf(
+            entry(parentMetaId = "newer-on-account", updatedAt = 250L),
+            traktNewer,
+            entry(parentMetaId = "tie", updatedAt = 200L).copy(title = "from provider"),
+            entry(parentMetaId = "trakt-only", updatedAt = 10L),
+        )
+
+        val projected = projectWatchProgressSourceEntries(
+            source = WatchProgressSource.BOTH,
+            nuvioEntries = nuvioEntries,
+            providerEntries = providerEntries,
+        ).associateBy { it.parentMetaId }
+
+        assertEquals(
+            setOf("newer-on-account", "newer-on-trakt", "tie", "account-only", "trakt-only"),
+            projected.keys,
+        )
+        assertEquals(300L, projected.getValue("newer-on-account").lastUpdatedEpochMs)
+        assertEquals(traktNewer, projected.getValue("newer-on-trakt"))
+        assertEquals("tie", projected.getValue("tie").title)
+    }
+
     private fun entry(
         parentMetaId: String,
         updatedAt: Long = 1L,

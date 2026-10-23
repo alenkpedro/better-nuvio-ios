@@ -1549,6 +1549,9 @@
     <string name="settings_tracking_trakt_library_description">Use sua lista de interesses e listas pessoais do Trakt.</string>
     <string name="settings_tracking_simkl_library_description">Use suas listas de pretendo assistir e de status do Simkl.</string>
     <string name="settings_tracking_nuvio_progress_description">Retome com o progresso salvo pelo Nuvio Sync.</string>
+    <string name="bn_watch_progress_source_both">Ambas</string>
+    <string name="bn_watch_progress_source_both_description">Usa a conta Nuvio e completa com o Trakt e, se estiver vinculado, com o Simkl. Vale o progresso mais recente.</string>
+    <string name="bn_watch_progress_source_account">Conta Nuvio</string>
     <string name="settings_tracking_trakt_progress_description">Retome com o progresso de reprodução do Trakt.</string>
     <string name="settings_tracking_trakt_progress_required">Disponível quando o Trakt for a fonte de progresso de reprodução</string>
     <string name="settings_tracking_simkl_progress_description">Retome com o progresso de reprodução do Simkl.</string>

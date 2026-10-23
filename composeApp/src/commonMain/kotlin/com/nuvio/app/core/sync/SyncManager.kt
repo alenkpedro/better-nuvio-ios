@@ -14,7 +14,6 @@ import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.tracking.TrackingProviderRegistry
 import com.nuvio.app.features.tracking.TrackingSettingsRepository
-import com.nuvio.app.features.tracking.WatchProgressSource
 import com.nuvio.app.features.tracking.effectiveLibrarySourceMode
 import com.nuvio.app.features.tracking.effectiveWatchProgressSource
 import com.nuvio.app.features.watchprogress.WatchProgressSourceCoordinator
@@ -560,7 +559,7 @@ object SyncManager {
                 val shouldPullWatchProgress = effectiveWatchProgressSource(
                     requestedSource = settings.watchProgressSource,
                     isProviderAuthenticated = TrackingProviderRegistry::isAuthenticated,
-                ) == WatchProgressSource.NUVIO_SYNC
+                ).usesNuvioSync
 
                 if (!shouldPullLibrary && !shouldPullWatchProgress) {
                     continue

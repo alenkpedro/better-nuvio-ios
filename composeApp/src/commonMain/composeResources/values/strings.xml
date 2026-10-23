@@ -1556,6 +1556,9 @@
     <string name="settings_tracking_trakt_library_description">Use your Trakt watchlist and personal lists.</string>
     <string name="settings_tracking_simkl_library_description">Use your Simkl plan-to-watch and status lists.</string>
     <string name="settings_tracking_nuvio_progress_description">Resume with progress stored by Nuvio Sync.</string>
+    <string name="bn_watch_progress_source_both">Both</string>
+    <string name="bn_watch_progress_source_both_description">Nuvio account first, completed by Trakt and, when linked, Simkl. The most recent progress wins.</string>
+    <string name="bn_watch_progress_source_account">Nuvio account</string>
     <string name="settings_tracking_trakt_progress_description">Resume with playback progress from Trakt.</string>
     <string name="settings_tracking_trakt_progress_required">Available when Trakt is the Watch Progress source</string>
     <string name="settings_tracking_simkl_progress_description">Resume with playback progress from Simkl.</string>

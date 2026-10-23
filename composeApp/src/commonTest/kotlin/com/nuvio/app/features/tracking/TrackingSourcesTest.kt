@@ -26,6 +26,16 @@ class TrackingSourcesTest {
     }
 
     @Test
+    fun `Ambas never falls back and merges Trakt then Simkl`() {
+        assertEquals(WatchProgressSource.BOTH, effectiveWatchProgressSource(WatchProgressSource.BOTH) { false })
+        assertNull(WatchProgressSource.BOTH.providerId)
+        assertEquals(
+            listOf(TrackingProviderId.TRAKT, TrackingProviderId.SIMKL),
+            WatchProgressSource.BOTH.mergedProviderIds,
+        )
+    }
+
+    @Test
     fun `remote library source falls back to local when disconnected`() {
         assertEquals(
             LibrarySourceMode.LOCAL,
