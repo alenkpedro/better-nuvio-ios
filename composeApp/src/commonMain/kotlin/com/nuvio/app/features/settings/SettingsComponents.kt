@@ -300,9 +300,11 @@ internal fun SettingsNavigationRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (icon != null || iconPainter != null) {
+                // Better Nuvio (spec dos Ajustes): ícone branco num quadrado de vidro claro; a cor viva
+                // fica só no que está ativo (chaves, anel do avatar, visto da opção escolhida).
                 Surface(
                     modifier = Modifier.size(iconSize),
-                    color = tokens.colors.accent.copy(alpha = tokens.opacity.pressed),
+                    color = Color.White.copy(alpha = 0.09f),
                     shape = tokens.shapes.compactCard,
                 ) {
                     Row(
@@ -321,8 +323,7 @@ internal fun SettingsNavigationRow(
                             Icon(
                                 imageVector = icon,
                                 contentDescription = null,
-                                modifier = Modifier.gradientMask(MaterialTheme.themePalette.accentBrush()),
-                                tint = tokens.colors.accent,
+                                tint = Color.White,
                             )
                         }
                     }

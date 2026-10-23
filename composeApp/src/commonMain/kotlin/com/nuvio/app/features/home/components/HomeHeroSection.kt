@@ -85,6 +85,7 @@ import com.nuvio.app.core.ui.ScreenActivityEffect
 import com.nuvio.app.core.ui.heroStretchZoom
 import com.nuvio.app.features.details.HeroTrailerAudioState
 import com.nuvio.app.features.details.HeroTrailerSurface
+import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.details.components.HeroTrailerPlayerSurface
 import com.nuvio.app.features.details.selectHeroTrailer
@@ -351,9 +352,12 @@ internal fun HomeHeroSection(
 
             // Cor viva do destaque em cena: botão principal, luz do canto e aba ativa.
             val targetItem = items[pagerState.targetPage % items.size]
+            // Mesma fonte da página do título: o logo e a arte da meta completa.
+            val targetDetails = rememberHeroMetaDetails(targetItem)
             val heroCorVivaTarget = rememberTitleCorVivaTarget(
-                logoUrl = targetItem.logo,
-                artUrl = heroArtworkUrl(targetItem, effectiveArtworkSource),
+                logoUrl = heroLogoUrl(targetItem, targetDetails),
+                artUrl = targetDetails?.let { it.background ?: it.poster }
+                    ?: heroArtworkUrl(targetItem, effectiveArtworkSource),
             )
             val heroCorViva by animateColorAsState(
                 targetValue = heroCorVivaTarget,
@@ -842,21 +846,10 @@ private fun HeroContentBlock(
     onItemClick: ((MetaPreview) -> Unit)?,
     onPlayClick: ((MetaPreview, ContinueWatchingItem?) -> Unit)?,
 ) {
-    val detailsState = remember(item.type, item.id) {
-        mutableStateOf(MetaDetailsRepository.peek(item.type, item.id))
-    }
-    LaunchedEffect(item.type, item.id) {
-        if (detailsState.value == null) {
-            detailsState.value = runCatching {
-                MetaDetailsRepository.fetch(item.type, item.id)
-            }.getOrNull()
-        }
-    }
-    val details = detailsState.value
-    // O logo no lugar do nome: o do catálogo, senão o mesmo da página do título
-    // (meta completa, com o logo do TMDB). Sem logo, o nome em texto.
-    val logoUrl = item.logo?.takeIf { it.isNotBlank() }
-        ?: details?.logo?.takeIf { it.isNotBlank() }
+    val details = rememberHeroMetaDetails(item)
+    // O logo no lugar do nome: o mesmo da página do título (meta completa, com o logo do
+    // TMDB), senão o do catálogo. Sem logo, o nome em texto. A cor viva sai deste mesmo logo.
+    val logoUrl = heroLogoUrl(item, details)
     var logoLoadError by remember(item.type, item.id, logoUrl) {
         mutableStateOf(false)
     }
@@ -1205,3 +1198,23 @@ private fun resolveHeroTargetPage(
         else -> currentPage
     }
 }
+
+/** A meta completa do título (a mesma da página dele): do cache, senão buscada uma vez. */
+@Composable
+private fun rememberHeroMetaDetails(item: MetaPreview): MetaDetails? {
+    val detailsState = remember(item.type, item.id) {
+        mutableStateOf(MetaDetailsRepository.peek(item.type, item.id))
+    }
+    LaunchedEffect(item.type, item.id) {
+        if (detailsState.value == null) {
+            detailsState.value = runCatching {
+                MetaDetailsRepository.fetch(item.type, item.id)
+            }.getOrNull()
+        }
+    }
+    return detailsState.value
+}
+
+private fun heroLogoUrl(item: MetaPreview, details: MetaDetails?): String? =
+    details?.logo?.takeIf { it.isNotBlank() }
+        ?: item.logo?.takeIf { it.isNotBlank() }

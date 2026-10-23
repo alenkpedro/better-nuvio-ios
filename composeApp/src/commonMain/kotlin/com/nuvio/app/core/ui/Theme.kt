@@ -3,7 +3,7 @@ package com.nuvio.app.core.ui
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.material3.ColorScheme
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.nuvio.app.features.settings.ThemeSettingsRepository
@@ -273,10 +273,11 @@ fun NuvioTheme(
     customThemeColors: CustomThemeColors = CustomThemeColors.Default,
     content: @Composable () -> Unit,
 ) {
-    val palette = remember(appTheme, customThemeColors) {
+    val basePalette = remember(appTheme, customThemeColors) {
         ThemeColors.getColorPalette(appTheme, customThemeColors)
     }
-    val colorScheme = buildColorScheme(palette, amoled = amoled).withBetterNuvioAccent()
+    val palette = basePalette.withBetterNuvioAccent()
+    val colorScheme = buildColorScheme(palette, amoled = amoled)
     val tokens = defaultNuvioThemeTokens(palette, amoled = amoled, colorScheme = colorScheme)
 
     val density = LocalDensity.current
@@ -302,21 +303,36 @@ fun NuvioTheme(
 
 /**
  * Better Nuvio: com a Imersiva ligada, a cor de destaque do app é a cor viva do último
- * título (corviva.h na TV), também na Biblioteca, na Agenda e nos Ajustes. Antes do
- * primeiro título, branco com texto escuro (ajustes_cor_destaque). Com uma cor fixa
- * escolhida, fica a cor do tema.
+ * título (corviva.h na TV), também na Biblioteca, na Agenda e nos Ajustes (chaves, anel do
+ * avatar, seletores, aba ativa). Antes do primeiro título, branco com texto escuro
+ * (ajustes_cor_destaque). Com uma cor fixa escolhida, fica a paleta do tema.
  */
 @Composable
-private fun ColorScheme.withBetterNuvioAccent(): ColorScheme {
+private fun ThemeColorPalette.withBetterNuvioAccent(): ThemeColorPalette {
     val immersive by ThemeSettingsRepository.dynamicArtworkBackgroundEnabled.collectAsState()
     val last by ThemeSettingsRepository.lastCorViva.collectAsState()
     val target = when {
-        !immersive -> primary
+        !immersive -> secondary
         last != null -> Color(last!!)
         else -> Color.White
     }
     val accent by animateColorAsState(target, animationSpec = tween(450), label = "bnAccent")
     if (!immersive) return this
     val onAccent = accent.onCorViva()
-    return copy(primary = accent, onPrimary = onAccent)
+    return copy(
+        secondary = accent,
+        secondaryVariant = accent.mixedWith(Color.Black, 0.35f),
+        accentGradient = listOf(accent),
+        nativeAccentHex = formatHexColor(accent.toArgb() and 0xFFFFFF),
+        onSecondary = onAccent,
+        focusRing = accent,
+        focusBackground = background.mixedWith(accent, 0.28f),
+    )
 }
+
+private fun Color.mixedWith(other: Color, fraction: Float): Color = Color(
+    red = red + (other.red - red) * fraction,
+    green = green + (other.green - green) * fraction,
+    blue = blue + (other.blue - blue) * fraction,
+    alpha = 1f,
+)
