@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.core.ui.ProvideCorViva
 import com.nuvio.app.features.watching.application.WatchingState
 import com.nuvio.app.features.home.MetaPreview
 import androidx.compose.animation.AnimatedVisibility
@@ -350,7 +351,10 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             )
         }
 
-        RenderPlayerControls(isEpisode = isEpisode)
+        // Better Nuvio: a cor viva do título (botão Pausar, Mais) vem da arte dele.
+        ProvideCorViva(artUrl = if (isLiveTvPlayback) null else background ?: poster) {
+            RenderPlayerControls(isEpisode = isEpisode)
+        }
         RenderPlaybackOverlays(
             runtime = runtime,
             currentGestureFeedback = currentGestureFeedback,

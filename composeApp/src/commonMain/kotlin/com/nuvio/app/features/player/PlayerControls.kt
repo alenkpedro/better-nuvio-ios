@@ -1,5 +1,7 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.core.ui.onCorViva
+import com.nuvio.app.core.ui.corViva
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -804,14 +806,14 @@ internal fun PlayPauseControlButton(
     val playPausePainter = appIconPainter(
         if (isPlaying) AppIconResource.PlayerPause else AppIconResource.PlayerPlay,
     )
+    val playColor = corViva()
+    val playIconColor = playColor.onCorViva()
 
     Box(
         modifier = Modifier
-            .playerLiquidGlass(
-                shape = CircleShape,
-                refractionHeight = 10.dp,
-                refractionAmount = 14.dp,
-            )
+            // Better Nuvio: Pausar/Play cheio na cor viva do título.
+            .clip(CircleShape)
+            .background(playColor)
             .clickable(onClick = onClick)
             .padding(metrics.playButtonPadding),
         contentAlignment = Alignment.Center,
@@ -819,6 +821,7 @@ internal fun PlayPauseControlButton(
         if (isBuffering) {
             NuvioLoadingIndicator(
                 modifier = Modifier.size(metrics.playIconSize),
+                color = playIconColor,
             )
         } else {
             Icon(
@@ -828,7 +831,7 @@ internal fun PlayPauseControlButton(
                 } else {
                     stringResource(Res.string.detail_btn_play)
                 },
-                tint = Color.White,
+                tint = playIconColor,
                 modifier = Modifier.size(metrics.playIconSize),
             )
         }
