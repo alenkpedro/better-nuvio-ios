@@ -840,10 +840,24 @@ private fun HeroContentBlock(
     onItemClick: ((MetaPreview) -> Unit)?,
     onPlayClick: ((MetaPreview, ContinueWatchingItem?) -> Unit)?,
 ) {
-    var logoLoadError by remember(item.type, item.id, item.logo) {
+    val detailsState = remember(item.type, item.id) {
+        mutableStateOf(MetaDetailsRepository.peek(item.type, item.id))
+    }
+    LaunchedEffect(item.type, item.id) {
+        if (detailsState.value == null) {
+            detailsState.value = runCatching {
+                MetaDetailsRepository.fetch(item.type, item.id)
+            }.getOrNull()
+        }
+    }
+    val details = detailsState.value
+    // O logo no lugar do nome: o do catálogo, senão o mesmo da página do título
+    // (meta completa, com o logo do TMDB). Sem logo, o nome em texto.
+    val logoUrl = item.logo?.takeIf { it.isNotBlank() }
+        ?: details?.logo?.takeIf { it.isNotBlank() }
+    var logoLoadError by remember(item.type, item.id, logoUrl) {
         mutableStateOf(false)
     }
-    val logoUrl = item.logo?.takeIf { it.isNotBlank() }
 
     // Alinhado à esquerda como na TV: logo, linha de continuar, sinopse e os dois botões.
     Column(
@@ -881,17 +895,6 @@ private fun HeroContentBlock(
             )
         }
 
-        val detailsState = remember(item.type, item.id) {
-            mutableStateOf(MetaDetailsRepository.peek(item.type, item.id))
-        }
-        LaunchedEffect(item.type, item.id) {
-            if (detailsState.value == null) {
-                detailsState.value = runCatching {
-                    MetaDetailsRepository.fetch(item.type, item.id)
-                }.getOrNull()
-            }
-        }
-        val details = detailsState.value
         val rating = (item.imdbRating ?: details?.imdbRating)
             ?.takeIf { raw -> raw.toDoubleOrNull()?.let { it > 0.0 } == true }
             ?.let { raw -> if (Locale.current.language == "pt") raw.replace('.', ',') else raw }
