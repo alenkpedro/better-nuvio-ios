@@ -7,6 +7,7 @@
     <string name="bn_subtitles_off">Desligadas</string>
     <string name="bn_subtitle_recommended">Recomendada</string>
     <string name="bn_subtitle_see_all">Ver as %1$d</string>
+    <string name="bn_subtitle_from_video">do vídeo</string>
     <string name="bn_subtitle_same_file">mesmo arquivo</string>
     <string name="bn_subtitle_same_release">mesmo lançamento</string>
     <string name="bn_subtitle_synced_tag">sincronizada</string>

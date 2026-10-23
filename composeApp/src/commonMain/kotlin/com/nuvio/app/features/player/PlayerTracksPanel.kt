@@ -94,6 +94,7 @@ import nuvio.composeapp.generated.resources.bn_subtitle_recommended
 import nuvio.composeapp.generated.resources.bn_subtitle_restore
 import nuvio.composeapp.generated.resources.bn_subtitle_same_file
 import nuvio.composeapp.generated.resources.bn_subtitle_same_release
+import nuvio.composeapp.generated.resources.bn_subtitle_from_video
 import nuvio.composeapp.generated.resources.bn_subtitle_see_all
 import nuvio.composeapp.generated.resources.bn_subtitle_size
 import nuvio.composeapp.generated.resources.bn_subtitle_size_l
@@ -540,8 +541,11 @@ private fun SubtitleGroupsColumn(
     val effectiveSelectedAddon = selectedAddonSubtitle
         ?: addonSubtitles.findSelectedAddon(selectedAddonSubtitleId)
         ?: playingExternal?.let { track -> addonSubtitles.firstOrNull { it.url == track.externalUrl } }
-    val playbackLanguageKey = tvSelectedSubtitleGroupKey(subtitleTracks, selectedSubtitleIndex, effectiveSelectedAddon)
-    val playbackOptionId = selectedSubtitleOptionId(subtitleTracks, selectedSubtitleIndex, effectiveSelectedAddon)
+    // A do stream sem par nos addons entra no grupo do idioma dela, já marcada.
+    val orphanTrack = playingExternal?.takeIf { effectiveSelectedAddon == null }
+    val playbackLanguageKey = tvSelectedSubtitleGroupKey(subtitleTracks, selectedSubtitleIndex, effectiveSelectedAddon, orphanTrack)
+    val playbackOptionId = orphanTrack?.let { SubtitleSelectionOption.BuiltIn(it).id }
+        ?: selectedSubtitleOptionId(subtitleTracks, selectedSubtitleIndex, effectiveSelectedAddon)
     val subtitleStructureKey = subtitleTracksStructureKey(subtitleTracks)
     val addonStructureKey = addonSubtitlesStructureKey(addonSubtitles)
     // Nomes dos idiomas no idioma do app, para a ordem alfabética da TV.
@@ -557,6 +561,7 @@ private fun SubtitleGroupsColumn(
         secondaryPreferredSubtitleLanguage,
         showOnlyPreferredLanguages,
         playbackLanguageKey,
+        orphanTrack,
     ) {
         buildTvSubtitleGroups(
             subtitleTracks = subtitleTracks,
@@ -566,6 +571,7 @@ private fun SubtitleGroupsColumn(
             showOnlyPreferredLanguages = showOnlyPreferredLanguages,
             selectedLanguageKey = playbackLanguageKey,
             languageLabel = { languageLabels[it] ?: it },
+            orphanTrack = orphanTrack,
         )
     }
     // The group in use opens by default; with subtitles off, the first language (the
@@ -590,6 +596,7 @@ private fun SubtitleGroupsColumn(
         videoSource,
         videoFps,
         isLoadingAddonSubtitles,
+        orphanTrack,
     ) {
         buildList {
             add(SubtitleListRow.Off)
@@ -597,7 +604,7 @@ private fun SubtitleGroupsColumn(
                 val isOpen = expanded[item.key] ?: (item.key == defaultOpenKey)
                 add(SubtitleListRow.Header(item, isOpen))
                 if (!isOpen) return@forEach
-                val options = buildTvSubtitleOptions(item.key, subtitleTracks, addonSubtitles)
+                val options = buildTvSubtitleOptions(item.key, subtitleTracks, addonSubtitles, orphanTrack)
                 val groupAddons = options.mapNotNull { (it as? SubtitleSelectionOption.Addon)?.subtitle }
                 val recommended = groupAddons.recommendedSubtitle(videoSource, videoFps)
                 val ordered = if (recommended != null) {
@@ -812,7 +819,11 @@ private fun SubtitleFileRow(
             // Um nome em base64 (link de addon) não se lê: sem ele, fica "Faixa N" no idioma da faixa.
             val label = option.track.label.takeUnless { looksEncodedName(it.substringAfterLast('/')) }.orEmpty()
             title = localizedTrackDisplayName(label, option.track.language, option.track.index)
-            sourceParts += stringResource(Res.string.compose_player_built_in)
+            sourceParts += if (option.track.externalUrl != null) {
+                stringResource(Res.string.bn_subtitle_from_video)
+            } else {
+                stringResource(Res.string.compose_player_built_in)
+            }
             if (option.track.isForced) sourceParts += stringResource(Res.string.settings_playback_option_forced)
         }
 

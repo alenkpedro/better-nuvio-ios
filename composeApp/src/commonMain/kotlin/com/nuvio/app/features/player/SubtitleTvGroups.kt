@@ -17,10 +17,12 @@ internal fun buildTvSubtitleGroups(
     showOnlyPreferredLanguages: Boolean,
     selectedLanguageKey: String,
     languageLabel: (String) -> String,
+    orphanTrack: SubtitleTrack? = null,
 ): List<SubtitleLanguageItem> {
     val primary = preferredLanguage.toTvPreferredKey()
     val secondary = secondaryPreferredLanguage.toTvPreferredKey()
     val counts = linkedMapOf<String, Int>()
+    orphanTrack?.let { counts[subtitleLanguageKey(it.language)] = 1 }
     val seenAddonIds = mutableSetOf<String>()
     addonSubtitles.forEach { subtitle ->
         if (!seenAddonIds.add(SubtitleSelectionOption.Addon(subtitle).id)) return@forEach
@@ -49,25 +51,36 @@ internal fun buildTvSubtitleOptions(
     groupKey: String,
     subtitleTracks: List<SubtitleTrack>,
     addonSubtitles: List<AddonSubtitle>,
+    orphanTrack: SubtitleTrack? = null,
 ): List<SubtitleSelectionOption> = when (groupKey) {
     SubtitleOffLanguageKey -> emptyList()
     SubtitleEmbeddedGroupKey -> subtitleTracks.map { SubtitleSelectionOption.BuiltIn(it) }
     else -> {
         val seen = mutableSetOf<String>()
-        addonSubtitles
+        val orphan = orphanTrack
+            ?.takeIf { subtitleLanguageKey(it.language) == groupKey }
+            ?.let { listOf(SubtitleSelectionOption.BuiltIn(it)) }
+            .orEmpty()
+        orphan + addonSubtitles
             .filter { subtitleLanguageKey(it.language) == groupKey }
             .map(SubtitleSelectionOption::Addon)
             .filter { seen.add(it.id) }
     }
 }
 
-/** O grupo da legenda tocando: a de addon pelo idioma dela, a do arquivo em Embutidas. */
+/**
+ * O grupo da legenda tocando: a de addon pelo idioma dela, a do arquivo em Embutidas.
+ * Uma legenda do stream sem par nos addons (orphanTrack) fica no grupo do idioma dela,
+ * para o painel nunca abrir sem nada marcado (Iago, r6).
+ */
 internal fun tvSelectedSubtitleGroupKey(
     subtitleTracks: List<SubtitleTrack>,
     selectedSubtitleIndex: Int,
     selectedAddonSubtitle: AddonSubtitle?,
+    orphanTrack: SubtitleTrack? = null,
 ): String {
     selectedAddonSubtitle?.let { return subtitleLanguageKey(it.language) }
+    orphanTrack?.let { return subtitleLanguageKey(it.language) }
     val builtInSelected = subtitleTracks.any { it.index == selectedSubtitleIndex } ||
         (selectedSubtitleIndex < 0 && subtitleTracks.any { it.isSelected })
     return if (builtInSelected) SubtitleEmbeddedGroupKey else SubtitleOffLanguageKey
