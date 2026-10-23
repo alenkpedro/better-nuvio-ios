@@ -32,6 +32,11 @@ data class AddonSubtitle(
     val display: String,
     val addonName: String? = null,
     val isSelected: Boolean = false,
+    /** Subtitle file name as reported by the addon (used to match the video release). */
+    val fileName: String? = null,
+    val releaseName: String? = null,
+    /** Frame rate the subtitle was timed for, null when unknown. */
+    val fps: Double? = null,
 )
 
 const val SUBTITLE_DELAY_MIN_MS = -60_000

@@ -16,6 +16,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -86,9 +87,37 @@ private suspend fun parseAddonSubtitles(response: String, request: SubtitleAddon
                 request.addonName,
             ),
             addonName = request.addonName,
+            fileName = obj.subtitleFileName(url),
+            releaseName = obj.subtitleReleaseName(),
+            fps = obj.subtitleFps(),
         )
     }
 }
+
+// Same key order as the TV build (faixas.c nomesLegenda).
+private fun JsonObject.subtitleReleaseName(): String? =
+    listOf("movieReleaseName", "releaseName", "release").firstNotNullOfOrNull(::safeStringValue)
+
+private fun JsonObject.subtitleFileName(url: String): String? {
+    listOf("subtitleFileName", "fileName", "filename", "name", "title")
+        .firstNotNullOfOrNull(::safeStringValue)
+        ?.let { return it }
+    val base = url.substringBefore('?').substringBefore('#').substringAfterLast('/')
+    val lower = base.lowercase()
+    if (base.length >= 9 && listOf(".srt", ".ass", ".ssa", ".vtt").any(lower::endsWith)) return base
+    subtitleReleaseName()?.let { return it }
+    return safeStringValue("id")?.takeIf { '.' in it }
+}
+
+private fun JsonObject.subtitleFps(): Double? {
+    val fps = safeStringValue("fps")?.toDoubleOrNull()
+        ?: safeStringValue("frameRate")?.toDoubleOrNull()
+        ?: safeStringValue("fpsMilli")?.toDoubleOrNull()?.div(1000.0)
+    return fps?.takeIf { it in 15.0..120.0 }
+}
+
+private fun JsonObject.safeStringValue(name: String): String? =
+    (this[name] as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotBlank() }
 
 private fun canonicalSubtitleType(type: String): String =
     if (type.equals("tv", ignoreCase = true)) "series" else type.lowercase()
