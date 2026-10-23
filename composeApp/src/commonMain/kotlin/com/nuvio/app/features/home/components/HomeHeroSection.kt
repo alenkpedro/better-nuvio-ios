@@ -97,6 +97,7 @@ import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.trailer.TrailerPlaybackResolver
 import com.nuvio.app.features.trailer.TrailerPlaybackSource
 import com.nuvio.app.features.watchprogress.ContinueWatchingItem
+import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -365,6 +366,7 @@ internal fun HomeHeroSection(
                 PlayerSettingsRepository.ensureLoaded()
                 PlayerSettingsRepository.uiState
             }.collectAsStateWithLifecycle()
+            val watchProgressState by WatchProgressRepository.uiState.collectAsStateWithLifecycle()
 
             val platformContext = LocalPlatformContext.current
             LaunchedEffect(pagerState.settledPage, items, effectiveArtworkSource) {
@@ -659,7 +661,7 @@ internal fun HomeHeroSection(
 
                             // A fonte que o Play vai usar (se houver) e o contador "2 / 10".
                             val currentResume = resumeItems[currentItem.id]
-                            val sourceLabel = remember(currentItem.type, currentItem.id, currentResume, playerSettings) {
+                            val sourceLabel = remember(currentItem.type, currentItem.id, currentResume, playerSettings, watchProgressState.entries) {
                                 if (currentResume != null) {
                                     heroPlaySourceLabel(
                                         type = currentResume.parentMetaType,
@@ -668,18 +670,18 @@ internal fun HomeHeroSection(
                                         season = currentResume.seasonNumber,
                                         episode = currentResume.episodeNumber,
                                         settings = playerSettings,
+                                        progressEntries = watchProgressState.entries,
                                     )
-                                } else if (currentItem.type.equals("movie", ignoreCase = true)) {
+                                } else {
                                     heroPlaySourceLabel(
                                         type = currentItem.type,
                                         videoId = currentItem.id,
-                                        parentMetaId = null,
+                                        parentMetaId = currentItem.id,
                                         season = null,
                                         episode = null,
                                         settings = playerSettings,
+                                        progressEntries = watchProgressState.entries,
                                     )
-                                } else {
-                                    null
                                 }
                             }
                             if (sourceLabel != null || items.size > 1) {

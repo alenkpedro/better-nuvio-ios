@@ -45,6 +45,9 @@ import com.nuvio.app.core.ui.rememberDynamicArtworkBackgroundEnabled
 import com.nuvio.app.features.player.PlayerSettingsUiState
 import com.nuvio.app.features.settings.ThemeSettingsRepository
 import com.nuvio.app.features.streams.StreamLinkCacheRepository
+import com.nuvio.app.features.streams.lastUsedSourceFor
+import com.nuvio.app.features.streams.toLastUsedSource
+import com.nuvio.app.features.watchprogress.WatchProgressEntry
 import com.nuvio.app.features.watchprogress.ContinueWatchingItem
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -149,7 +152,8 @@ internal fun bnRemainingTimeText(item: ContinueWatchingItem): String? {
 
 /**
  * A fonte que o Play vai usar: o último link guardado ("Reusar último link"), quando ele
- * ainda vale. Mesma chave que o StreamDestination consulta antes de abrir a lista.
+ * ainda vale (mesma chave que o StreamDestination consulta antes de abrir a lista);
+ * senão a última fonte usada no título, do progresso salvo. "BestCine · 1080p".
  */
 internal fun heroPlaySourceLabel(
     type: String,
@@ -158,22 +162,24 @@ internal fun heroPlaySourceLabel(
     season: Int?,
     episode: Int?,
     settings: PlayerSettingsUiState,
+    progressEntries: List<WatchProgressEntry>,
 ): String? {
-    if (!settings.streamReuseLastLinkEnabled) return null
-    val key = StreamLinkCacheRepository.contentKey(
-        type = type,
-        videoId = videoId,
-        parentMetaId = parentMetaId,
-        season = season,
-        episode = episode,
-    )
-    val maxAgeMs = settings.streamReuseLastLinkCacheHours * 60L * 60L * 1000L
-    val cached = runCatching { StreamLinkCacheRepository.getValid(key, maxAgeMs) }.getOrNull() ?: return null
-    val name = cached.streamName.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }
-    return listOfNotNull(cached.addonName.trim().takeIf { it.isNotEmpty() }, name)
-        .distinct()
-        .joinToString(" · ")
-        .takeIf { it.isNotEmpty() }
+    val cached = if (settings.streamReuseLastLinkEnabled) {
+        val key = StreamLinkCacheRepository.contentKey(
+            type = type,
+            videoId = videoId,
+            parentMetaId = parentMetaId,
+            season = season,
+            episode = episode,
+        )
+        val maxAgeMs = settings.streamReuseLastLinkCacheHours * 60L * 60L * 1000L
+        runCatching { StreamLinkCacheRepository.getValid(key, maxAgeMs) }.getOrNull()
+    } else {
+        null
+    }
+    val source = cached?.toLastUsedSource()
+        ?: lastUsedSourceFor(parentMetaId ?: videoId, progressEntries)
+    return source?.label?.takeIf { it.isNotBlank() }
 }
 
 @Composable

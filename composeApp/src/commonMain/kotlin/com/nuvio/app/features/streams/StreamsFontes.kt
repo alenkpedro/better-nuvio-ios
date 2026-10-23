@@ -82,6 +82,9 @@ private fun resolutionIn(text: String): String? {
     }
 }
 
+/** Resolução (4K / 1080p / 720p / 480p) achada num texto livre, como o nome salvo da fonte. */
+internal fun bnResolutionInText(text: String?): String? = text?.let(::resolutionIn)
+
 private fun StreamItem.qualityHaystack(): String = buildString {
     name?.let { append(it).append(' ') }
     title?.let { append(it).append(' ') }
