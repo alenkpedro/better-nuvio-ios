@@ -2934,4 +2934,13 @@
     <string name="bn_accent_preview_immersive">Preview: the colour comes from the artwork</string>
     <string name="bn_accent_preview_fixed">Preview of the main button</string>
     <string name="bn_accent_more_colors">More colours</string>
+    <string name="bn_home_hero_resume">Resume</string>
+    <string name="bn_home_hero_watch">Watch</string>
+    <string name="bn_home_hero_details">Details</string>
+    <string name="bn_home_hero_continue_left">Continue · %1$s left</string>
+    <string name="bn_home_hero_continue">Continue where you left off</string>
+    <string name="bn_home_hero_source">Source: %1$s</string>
+    <string name="bn_time_minutes">%1$d min</string>
+    <string name="bn_time_hours_minutes">%1$d h %2$d min</string>
+    <string name="bn_cw_time_left">%1$s left</string>
 </resources>

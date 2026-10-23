@@ -708,6 +708,8 @@ private fun ContinueWatchingCard(
     val badgeText = continueWatchingCardBadgeText(item = item, airDateText = airDateText)
     val backgroundColor = MaterialTheme.colorScheme.background
     val badgeBackground = continueWatchingBadgeBackground(item)
+    val inProgress = item.progressFraction > 0f
+    val corViva = rememberTitleCorViva(item.logo, item.poster ?: item.background)
 
     Box(
         modifier = Modifier
@@ -807,8 +809,15 @@ private fun ContinueWatchingCard(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(cardMetrics.badgeInset)
-                .clip(ContinueWatchingStatusBadgeShape)
-                .background(badgeBackground)
+                .clip(if (inProgress) RoundedCornerShape(999.dp) else ContinueWatchingStatusBadgeShape)
+                .background(if (inProgress) BetterNuvioGlass else badgeBackground)
+                .then(
+                    if (inProgress) {
+                        Modifier.border(1.dp, BetterNuvioGlassEdge, RoundedCornerShape(999.dp))
+                    } else {
+                        Modifier
+                    },
+                )
                 .padding(
                     horizontal = cardMetrics.badgeHorizontalPadding,
                     vertical = cardMetrics.badgeVerticalPadding,
@@ -842,7 +851,7 @@ private fun ContinueWatchingCard(
                         .fillMaxWidth(item.progressFraction.coerceIn(0f, 1f))
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(999.dp))
-                        .background(MaterialTheme.colorScheme.primary),
+                        .background(corViva),
                 )
             }
         }
@@ -861,18 +870,9 @@ private fun continueWatchingCardBadgeText(
                 "${continueWatchingProgressPercent(item.progressFraction)}%",
             )
         }
-        val effectivePositionMs = when {
-            item.resumePositionMs > 0L -> item.resumePositionMs
-            else -> (item.durationMs * item.progressFraction.coerceIn(0f, 1f)).toLong()
-        }
-        val remainingMinutes = ((item.durationMs - effectivePositionMs).coerceAtLeast(0L) / 60_000L)
-            .coerceAtLeast(1L)
-        val hours = remainingMinutes / 60L
-        val minutes = remainingMinutes % 60L
-        return if (hours > 0L) {
-            stringResource(Res.string.home_continue_watching_hours_minutes_left, hours, minutes)
-        } else {
-            stringResource(Res.string.home_continue_watching_minutes_left, remainingMinutes)
+        val remaining = bnRemainingTimeText(item)
+        if (remaining != null) {
+            return stringResource(Res.string.bn_cw_time_left, remaining)
         }
     }
 
@@ -1000,6 +1000,7 @@ private fun ContinueWatchingWideCard(
                         modifier = Modifier.fillMaxWidth(),
                         height = layout.progressHeight,
                         trackColor = Color.White.copy(alpha = 0.10f),
+                        fillColor = rememberTitleCorViva(item.logo, item.poster ?: item.background),
                     )
                     Text(
                         text = stringResource(
@@ -1106,6 +1107,7 @@ private fun ContinueWatchingPosterCard(
                         modifier = Modifier.width(layout.posterCardWidth - 32.dp),
                         height = layout.progressHeight,
                         trackColor = MaterialTheme.colorScheme.surfaceTint.copy(alpha = 0.16f),
+                        fillColor = rememberTitleCorViva(item.logo, item.poster ?: item.background),
                     )
                 }
             }

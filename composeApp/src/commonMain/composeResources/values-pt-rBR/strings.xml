@@ -2880,4 +2880,13 @@
     <string name="bn_accent_preview_immersive">Prévia: a cor vem da arte</string>
     <string name="bn_accent_preview_fixed">Prévia do botão principal</string>
     <string name="bn_accent_more_colors">Mais cores</string>
+    <string name="bn_home_hero_resume">Retomar</string>
+    <string name="bn_home_hero_watch">Assistir</string>
+    <string name="bn_home_hero_details">Detalhes</string>
+    <string name="bn_home_hero_continue_left">Continuar · faltam %1$s</string>
+    <string name="bn_home_hero_continue">Continuar de onde parou</string>
+    <string name="bn_home_hero_source">Fonte: %1$s</string>
+    <string name="bn_time_minutes">%1$d min</string>
+    <string name="bn_time_hours_minutes">%1$d h %2$d min</string>
+    <string name="bn_cw_time_left">%1$s restantes</string>
 </resources>
