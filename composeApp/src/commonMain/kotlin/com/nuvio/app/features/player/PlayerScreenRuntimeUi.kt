@@ -876,10 +876,6 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
                 persistAudioPreference(audioTracks.firstOrNull { it.index == index })
                 playerController?.selectAudioTrack(index)
             }
-            scope.launch {
-                kotlinx.coroutines.delay(200)
-                showAudioModal = false
-            }
         },
         onAudioModalDismissed = { showAudioModal = false },
         showSubtitleModal = showSubtitleModal,
@@ -1084,6 +1080,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
         showStreamInfoModal = showStreamInfoModal,
         mediaInfoJson = snapshotMediaInfoJson,
         onStreamInfoModalDismissed = { showStreamInfoModal = false },
+        currentStreamFilename = currentStreamFilename,
     )
 
     if (showUserRatingSheet) {

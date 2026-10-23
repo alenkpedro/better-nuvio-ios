@@ -1,0 +1,38 @@
+<resources>
+    <!-- Better Nuvio: audio and subtitle panel -->
+    <string name="bn_tracks_header_audio">Audio</string>
+    <string name="bn_tracks_header_subtitles">Subtitles</string>
+    <string name="bn_tracks_header_sync">Subtitle sync</string>
+    <string name="bn_tracks_no_audio">No audio tracks</string>
+    <string name="bn_subtitles_off">Off</string>
+    <string name="bn_subtitle_recommended">Recommended</string>
+    <string name="bn_subtitle_see_all">See all %1$d</string>
+    <string name="bn_subtitle_same_file">same file</string>
+    <string name="bn_subtitle_same_release">same release</string>
+    <string name="bn_subtitle_synced_tag">synced</string>
+    <string name="bn_subtitle_fps">%1$s fps</string>
+    <string name="bn_decimal_separator">.</string>
+    <string name="bn_sync_mode_auto">Automatic</string>
+    <string name="bn_sync_mode_ear">By ear</string>
+    <string name="bn_sync_mode_manual">Manual</string>
+    <string name="bn_sync_status_synced">Synced · %1$s</string>
+    <string name="bn_sync_auto_hint">Turns on by itself when you pick an addon subtitle. If it doesn\'t match, nothing changes.</string>
+    <string name="bn_sync_auto_pick_addon">Pick an addon subtitle to sync it automatically.</string>
+    <string name="bn_sync_ear_hint">Tap Heard when you hear a line and Saw when its subtitle shows up, in any order.</string>
+    <string name="bn_sync_ear_start">Start</string>
+    <string name="bn_subtitle_style">Subtitle style</string>
+    <string name="bn_subtitle_font_header">Subtitle font</string>
+    <string name="bn_back">Back</string>
+    <string name="bn_subtitle_size">Size</string>
+    <string name="bn_subtitle_size_s">S</string>
+    <string name="bn_subtitle_size_m">M</string>
+    <string name="bn_subtitle_size_l">L</string>
+    <string name="bn_subtitle_size_xl">XL</string>
+    <string name="bn_subtitle_background">Background</string>
+    <string name="bn_subtitle_background_none">None</string>
+    <string name="bn_subtitle_background_half">50%</string>
+    <string name="bn_subtitle_background_full">Full</string>
+    <string name="bn_subtitle_color">Colour</string>
+    <string name="bn_subtitle_restore">Restore default</string>
+    <string name="bn_subtitle_more_options">More options</string>
+</resources>
