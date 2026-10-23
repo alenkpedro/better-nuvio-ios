@@ -107,8 +107,8 @@ trap 'rm -rf "${package_root}"' EXIT
 mkdir -p "${package_root}/Payload"
 ditto "${app_path}" "${package_root}/Payload/${app_bundle_name}"
 
-ipa_path="${output_directory}/nuvio-${version}-enhanced-${configuration_slug}.ipa"
-temporary_ipa="${package_root}/nuvio-${version}-enhanced-${configuration_slug}.ipa"
+ipa_path="${output_directory}/better-nuvio-${version}-${configuration_slug}.ipa"
+temporary_ipa="${package_root}/better-nuvio-${version}-${configuration_slug}.ipa"
 (
     cd "${package_root}"
     /usr/bin/zip -qry "${temporary_ipa}" Payload
