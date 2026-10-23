@@ -2354,6 +2354,7 @@ private fun LazyListScope.configuredMetaSectionItems(
             onEpisodeClick = onEpisodeClick,
             onEpisodeLongPress = onEpisodeLongPress,
             onSeasonLongPress = onSeasonLongPress,
+            preferredEpisodeNumber = preferredEpisodeNumber,
         )
         emittedItemCount += emitted
         return emitted > 0
