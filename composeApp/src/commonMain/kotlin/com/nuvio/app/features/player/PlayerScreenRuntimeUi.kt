@@ -667,6 +667,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
             modifier = Modifier.fillMaxSize(),
             seekPreview = seekPreview,
             onTimelineTouchChange = { touching -> isTouchingTimeline = touching },
+            skipIntervals = skipIntervals,
         )
     }
 }

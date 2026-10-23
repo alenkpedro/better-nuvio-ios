@@ -174,6 +174,7 @@ internal fun PlayerControlsShell(
     modifier: Modifier = Modifier,
     seekPreview: SeekPreviewController? = null,
     onTimelineTouchChange: (Boolean) -> Unit = {},
+    skipIntervals: List<com.nuvio.app.features.player.skip.SkipInterval> = emptyList(),
 ) {
     val density = LocalDensity.current
     var timelineHeight by remember { mutableStateOf(0.dp) }
@@ -408,6 +409,7 @@ internal fun PlayerControlsShell(
                         },
                         seekPreview = seekPreview,
                         onTouchChange = onTimelineTouchChange,
+                        skipIntervals = skipIntervals,
                     )
                     PlayerControlActions(
                         playbackSnapshot = playbackSnapshot,

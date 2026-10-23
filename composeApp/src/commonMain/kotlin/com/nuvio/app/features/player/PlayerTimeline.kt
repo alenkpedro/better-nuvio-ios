@@ -46,6 +46,7 @@ import com.nuvio.app.core.ui.nuvioTypeScale
 import com.nuvio.app.features.player.seekpreview.SeekPreviewController
 import com.nuvio.app.features.player.seekpreview.SeekPreviewOverlay
 import com.nuvio.app.features.streams.StreamBadge
+import com.nuvio.app.features.player.skip.SkipInterval
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import com.nuvio.app.core.i18n.localizedEpisodeTitle
@@ -55,6 +56,22 @@ internal val PlayerTimelineContentInset = 2.dp
 internal val PlayerChapterMarkWidth = 2.dp
 
 internal val PlayerChapterMarkColor = Color.Black.copy(alpha = 0.6f)
+
+internal val PlayerSkipMarkWidth = 2.dp
+
+internal val PlayerSkipMarkHeight = 11.dp
+
+internal val PlayerSkipMarkColor = Color.White.copy(alpha = 0.6f)
+
+/** Começo e fim de cada abertura/recap/créditos, em fração da duração. */
+internal fun List<SkipInterval>.skipMarkFractions(durationMs: Long): List<Float> {
+    if (durationMs <= 0L) return emptyList()
+    val durationSeconds = durationMs / 1000.0
+    return flatMap { listOf(it.startTime, it.endTime) }
+        .filter { it > 0.0 && it < durationSeconds }
+        .map { (it / durationSeconds).toFloat().coerceIn(0f, 1f) }
+        .distinct()
+}
 
 @Composable
 internal fun PlayerTimelineDetails(
@@ -143,8 +160,13 @@ internal fun PlayerTimeline(
     enabled: Boolean = true,
     seekPreview: SeekPreviewController? = null,
     onTouchChange: (Boolean) -> Unit = {},
+    skipIntervals: List<SkipInterval> = emptyList(),
 ) {
     val durationMs = snapshot.durationMs.coerceAtLeast(0L)
+    // Better Nuvio: marcas de abertura/créditos na barra, como na TV.
+    val skipMarks = remember(skipIntervals, durationMs) {
+        skipIntervals.skipMarkFractions(durationMs)
+    }
     val rangeEnd = durationMs.coerceAtLeast(1L).toFloat()
     val bufferedFraction = playerBufferedFraction(snapshot.bufferedPositionMs, durationMs)
     val chapterMarks = remember(snapshot.chapters, durationMs) {
@@ -214,6 +236,19 @@ internal fun PlayerTimeline(
                                         color = PlayerChapterMarkColor,
                                         topLeft = Offset(size.width * fraction - markWidth / 2f, trackOrigin.y),
                                         size = Size(markWidth, trackHeight),
+                                    )
+                                }
+                                val skipMarkWidth = PlayerSkipMarkWidth.toPx()
+                                val skipMarkHeight = PlayerSkipMarkHeight.toPx()
+                                skipMarks.forEach { fraction ->
+                                    drawRoundRect(
+                                        color = PlayerSkipMarkColor,
+                                        topLeft = Offset(
+                                            size.width * fraction - skipMarkWidth / 2f,
+                                            trackOrigin.y + trackHeight / 2f - skipMarkHeight / 2f,
+                                        ),
+                                        size = Size(skipMarkWidth, skipMarkHeight),
+                                        cornerRadius = CornerRadius(skipMarkWidth / 2f),
                                     )
                                 }
                             },
