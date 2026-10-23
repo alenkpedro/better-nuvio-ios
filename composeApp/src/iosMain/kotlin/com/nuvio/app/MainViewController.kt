@@ -108,6 +108,8 @@ private fun nuvioComposeViewController(
     configure = { onFocusBehavior = OnFocusBehavior.DoNothing },
     content = content,
  ).apply {
+    // Before any composition reads the AutoSync preferences (Sincronia > Automática).
+    com.nuvio.app.features.autosync.AutoSyncPreferencesIos.initialize()
     ProfileBiometricAuth.initialize(this)
     view.backgroundColor = nuvioBackgroundColor
 }

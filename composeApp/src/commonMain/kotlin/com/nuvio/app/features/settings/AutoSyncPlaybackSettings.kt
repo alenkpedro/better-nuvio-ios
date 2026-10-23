@@ -38,7 +38,6 @@ internal fun AutoSyncPlaybackSettingsRows(
         AutoSyncPreferencesRepository.ensureLoaded()
         AutoSyncPreferencesRepository.syncToleranceMs
     }.collectAsStateWithLifecycle()
-    if (isIos) return
 
     val preferredLanguageAvailable =
         preferredSubtitleLanguage.isNotBlank() &&
@@ -56,27 +55,30 @@ internal fun AutoSyncPlaybackSettingsRows(
         onCheckedChange = AutoSyncPreferencesRepository::setPreferredSubtitleAutoSyncOnStart,
     )
     if (!preferredSubtitleAutoSyncOnStart) return
-    SettingsGroupDivider(isTablet = isTablet)
-    SettingsSwitchRow(
-        title = stringResource(
-            if (aggressiveMode) {
-                Res.string.settings_playback_auto_sync_mode_aggressive
-            } else {
-                Res.string.settings_playback_auto_sync_mode_passive
-            },
-        ),
-        description = stringResource(
-            if (aggressiveMode) {
-                Res.string.settings_playback_auto_sync_mode_aggressive_description
-            } else {
-                Res.string.settings_playback_auto_sync_mode_passive_description
-            },
-        ),
-        checked = aggressiveMode,
-        enabled = enabled,
-        isTablet = isTablet,
-        onCheckedChange = AutoSyncPreferencesRepository::setAggressiveMode,
-    )
+    // Passive/aggressive is an Android engine choice; iOS runs the TV aligner only.
+    if (!isIos) {
+        SettingsGroupDivider(isTablet = isTablet)
+        SettingsSwitchRow(
+            title = stringResource(
+                if (aggressiveMode) {
+                    Res.string.settings_playback_auto_sync_mode_aggressive
+                } else {
+                    Res.string.settings_playback_auto_sync_mode_passive
+                },
+            ),
+            description = stringResource(
+                if (aggressiveMode) {
+                    Res.string.settings_playback_auto_sync_mode_aggressive_description
+                } else {
+                    Res.string.settings_playback_auto_sync_mode_passive_description
+                },
+            ),
+            checked = aggressiveMode,
+            enabled = enabled,
+            isTablet = isTablet,
+            onCheckedChange = AutoSyncPreferencesRepository::setAggressiveMode,
+        )
+    }
     SettingsGroupDivider(isTablet = isTablet)
     SettingsNavigationRow(
         title = stringResource(
