@@ -681,6 +681,8 @@
     <string name="downloads_open_directory">Open downloads folder</string>
     <string name="downloads_open_directory_failed">Couldn&apos;t open downloads folder</string>
     <string name="downloads_section_active">Active</string>
+    <string name="library_section_movies">Movies</string>
+    <string name="library_section_series">Series</string>
     <string name="downloads_section_movies">Movies</string>
     <string name="downloads_section_shows">Shows</string>
     <string name="downloads_show_downloads">Show Downloads</string>

@@ -2,6 +2,8 @@ package com.nuvio.app.features.library
 
 import androidx.compose.runtime.Composable
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.library_section_movies
+import nuvio.composeapp.generated.resources.library_section_series
 import nuvio.composeapp.generated.resources.library_status_completed
 import nuvio.composeapp.generated.resources.library_status_dropped
 import nuvio.composeapp.generated.resources.library_status_on_hold
@@ -11,6 +13,9 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 private val librarySectionTitleResources: Map<String, StringResource> = mapOf(
+    "movie" to Res.string.library_section_movies,
+    "series" to Res.string.library_section_series,
+    "tv" to Res.string.library_section_series,
     "simkl:status:watching" to Res.string.library_status_watching,
     "simkl:status:plantowatch" to Res.string.library_status_plan_to_watch,
     "simkl:status:hold" to Res.string.library_status_on_hold,

@@ -672,6 +672,8 @@
     <string name="downloads_open_directory">Abrir pasta de downloads</string>
     <string name="downloads_open_directory_failed">Não foi possível abrir a pasta de downloads</string>
     <string name="downloads_section_active">Ativo</string>
+    <string name="library_section_movies">Filmes</string>
+    <string name="library_section_series">Séries</string>
     <string name="downloads_section_movies">Filmes</string>
     <string name="downloads_section_shows">Séries</string>
     <string name="downloads_show_downloads">Mostrar downloads</string>
