@@ -1,5 +1,6 @@
 package com.nuvio.app
 
+import com.nuvio.app.core.ui.ConteudoEditorial
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -85,6 +86,7 @@ internal fun DetailsDestination(
     val directorRole = stringResource(Res.string.person_role_director)
     val writerRole = stringResource(Res.string.person_role_writer)
     val creatorRole = stringResource(Res.string.person_role_creator)
+    ConteudoEditorial {
     MetaDetailsScreen(
         type = route.type,
         id = route.id,
@@ -158,6 +160,7 @@ internal fun DetailsDestination(
         animatedVisibilityScope = animatedVisibilityScope,
         modifier = Modifier.fillMaxSize(),
     )
+    }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -169,6 +172,7 @@ internal fun PersonDestination(
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val onBack = rememberGuardedPopBackStack(navController, route)
+    ConteudoEditorial {
     PersonDetailScreen(
         personId = route.personId,
         personName = route.personName,
@@ -181,6 +185,7 @@ internal fun PersonDestination(
         animatedVisibilityScope = animatedVisibilityScope,
         modifier = Modifier.fillMaxSize(),
     )
+    }
 }
 
 @Composable
@@ -189,6 +194,7 @@ internal fun EntityDestination(
     navController: NuvioNavigator,
 ) {
     val onBack = rememberGuardedPopBackStack(navController, route)
+    ConteudoEditorial {
     TmdbEntityBrowseScreen(
         entityKind = TmdbEntityKind.fromRouteValue(route.entityKind),
         entityId = route.entityId,
@@ -198,4 +204,5 @@ internal fun EntityDestination(
         onOpenMeta = rememberOpenMeta(navController),
         modifier = Modifier.fillMaxSize(),
     )
+    }
 }

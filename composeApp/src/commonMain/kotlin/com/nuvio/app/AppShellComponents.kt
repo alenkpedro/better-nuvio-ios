@@ -1,5 +1,6 @@
 package com.nuvio.app
 
+import com.nuvio.app.core.ui.ConteudoEditorial
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -194,6 +195,7 @@ internal fun AppTabHost(
         when (tab) {
             AppScreenTab.Home -> {
                 key(state.homeContentGeneration) {
+                    ConteudoEditorial {
                     HomeScreen(
                         modifier = Modifier.fillMaxSize(),
                         animateCollectionGifs = state.animateHomeCollectionGifs,
@@ -207,10 +209,12 @@ internal fun AppTabHost(
                         onFolderClick = actions.onFolderClick,
                         onFirstCatalogRendered = actions.onInitialHomeContentRendered,
                     )
+                    }
                 }
             }
 
             AppScreenTab.Search -> {
+                ConteudoEditorial {
                 SearchScreen(
                     modifier = Modifier.fillMaxSize(),
                     listState = state.searchListState,
@@ -219,9 +223,11 @@ internal fun AppTabHost(
                     searchFocusRequestCount = state.searchFocusRequestCount,
                     scrollToTopRequests = requests.searchScrollToTopRequests,
                 )
+                }
             }
 
             AppScreenTab.Library -> {
+                ConteudoEditorial {
                 LibraryScreen(
                     modifier = Modifier.fillMaxSize(),
                     scrollToTopRequests = requests.libraryScrollToTopRequests,
@@ -237,6 +243,7 @@ internal fun AppTabHost(
                     onDownloadsClick = actions.onDownloadsClick,
                     disintegrationRequest = state.libraryDisintegrationRequest,
                 )
+                }
             }
 
             AppScreenTab.LiveTv -> {

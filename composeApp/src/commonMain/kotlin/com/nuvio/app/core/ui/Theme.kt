@@ -23,6 +23,10 @@ import androidx.compose.ui.unit.em
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.bn_inter_display_bold
 import nuvio.composeapp.generated.resources.bn_inter_display_medium
+import nuvio.composeapp.generated.resources.bn_roboto_condensed_bold
+import nuvio.composeapp.generated.resources.bn_roboto_condensed_medium
+import nuvio.composeapp.generated.resources.bn_roboto_condensed_regular
+import nuvio.composeapp.generated.resources.bn_roboto_condensed_semibold
 import org.jetbrains.compose.resources.Font
 
 val LocalAppTheme = staticCompositionLocalOf { AppTheme.WHITE }
@@ -67,6 +71,57 @@ val BetterNuvioTitleFont: FontFamily
         Font(Res.font.bn_inter_display_bold, FontWeight.Bold, FontStyle.Normal),
         Font(Res.font.bn_inter_display_medium, FontWeight.Medium, FontStyle.Normal),
     )
+
+// Fonte editorial da TV (text.h, TXT_COND_*): Roboto Condensed em todo o texto das telas
+// de conteúdo (Home, detalhes, coleções, Explorar, Biblioteca e Agenda). Menus e Ajustes
+// seguem na fonte da interface. Licença OFL em licenses/OFL-Roboto-Condensed.txt.
+val BetterNuvioContentFont: FontFamily
+    @Composable
+    get() = FontFamily(
+        Font(Res.font.bn_roboto_condensed_regular, FontWeight.Normal, FontStyle.Normal),
+        Font(Res.font.bn_roboto_condensed_medium, FontWeight.Medium, FontStyle.Normal),
+        Font(Res.font.bn_roboto_condensed_semibold, FontWeight.SemiBold, FontStyle.Normal),
+        Font(Res.font.bn_roboto_condensed_bold, FontWeight.Bold, FontStyle.Normal),
+    )
+
+/**
+ * Troca a fonte de tudo dentro de [content] pela Roboto Condensed, mantendo tamanhos,
+ * pesos e espaçamentos. Usar na raiz das telas de conteúdo, como a TV faz.
+ */
+@Composable
+fun ConteudoEditorial(content: @Composable () -> Unit) {
+    val font = BetterNuvioContentFont
+    val t = MaterialTheme.typography
+    val s = LocalNuvioTypeScale.current
+    fun TextStyle.cond() = copy(fontFamily = font)
+    val typography = remember(t, font) {
+        t.copy(
+            displayLarge = t.displayLarge.cond(), displayMedium = t.displayMedium.cond(),
+            displaySmall = t.displaySmall.cond(), headlineLarge = t.headlineLarge.cond(),
+            headlineMedium = t.headlineMedium.cond(), headlineSmall = t.headlineSmall.cond(),
+            titleLarge = t.titleLarge.cond(), titleMedium = t.titleMedium.cond(),
+            titleSmall = t.titleSmall.cond(), bodyLarge = t.bodyLarge.cond(),
+            bodyMedium = t.bodyMedium.cond(), bodySmall = t.bodySmall.cond(),
+            labelLarge = t.labelLarge.cond(), labelMedium = t.labelMedium.cond(),
+            labelSmall = t.labelSmall.cond(),
+        )
+    }
+    val scale = remember(s, font) {
+        s.copy(
+            labelXs = s.labelXs.cond(), labelSm = s.labelSm.cond(), bodySm = s.bodySm.cond(),
+            bodyMd = s.bodyMd.cond(), bodyLg = s.bodyLg.cond(), titleSm = s.titleSm.cond(),
+            titleMd = s.titleMd.cond(), titleLg = s.titleLg.cond(),
+            displaySm = s.displaySm.cond(), displayMd = s.displayMd.cond(),
+        )
+    }
+    CompositionLocalProvider(LocalNuvioTypeScale provides scale) {
+        MaterialTheme(
+            colorScheme = MaterialTheme.colorScheme,
+            typography = typography,
+            content = content,
+        )
+    }
+}
 
 private val BodyFont: FontFamily = FontFamily.Default
 

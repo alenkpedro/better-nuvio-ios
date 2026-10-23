@@ -1,5 +1,6 @@
 package com.nuvio.app
 
+import com.nuvio.app.core.ui.ConteudoEditorial
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +63,7 @@ internal fun CatalogDestination(
     }
 
     val target = launch.target
+    ConteudoEditorial {
     CatalogScreen(
         title = launch.title,
         subtitle = launch.subtitle,
@@ -83,4 +85,5 @@ internal fun CatalogDestination(
         },
         modifier = Modifier.fillMaxSize(),
     )
+    }
 }
