@@ -668,6 +668,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
             seekPreview = seekPreview,
             onTimelineTouchChange = { touching -> isTouchingTimeline = touching },
             skipIntervals = skipIntervals,
+            logoUrl = if (isLiveTvPlayback) activeLogo else logo,
         )
     }
 }

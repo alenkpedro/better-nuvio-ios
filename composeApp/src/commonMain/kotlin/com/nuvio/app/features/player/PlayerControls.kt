@@ -175,6 +175,7 @@ internal fun PlayerControlsShell(
     seekPreview: SeekPreviewController? = null,
     onTimelineTouchChange: (Boolean) -> Unit = {},
     skipIntervals: List<com.nuvio.app.features.player.skip.SkipInterval> = emptyList(),
+    logoUrl: String? = null,
 ) {
     val density = LocalDensity.current
     var timelineHeight by remember { mutableStateOf(0.dp) }
@@ -371,76 +372,63 @@ internal fun PlayerControlsShell(
                         .windowInsetsPadding(playerTimelineBottomInsets(metrics))
                         .padding(horizontal = metrics.horizontalPadding),
                 ) {
-                    if (!hideDetails) {
-                        PlayerTimelineDetails(
-                            title = title,
+                    // Better Nuvio: logo + linha à esquerda, botões redondos à direita, e a barra
+                    // com "−29:08 · termina às 21:43". Áudio/Legendas sobem do meio do vídeo.
+                    PlayerBottomBar(
+                        title = title,
+                        logoUrl = logoUrl,
+                        infoLine = playerInfoLine(
                             seasonNumber = seasonNumber,
                             episodeNumber = episodeNumber,
                             episodeTitle = episodeTitle,
                             releaseInfo = releaseInfo,
-                            streamTitle = streamTitle,
-                            providerName = providerName,
-                            isPlaying = playbackSnapshot.isPlaying,
-                            metrics = metrics,
-                            badges = badges,
-                            onSourceLineHeightChanged = { height ->
-                                sourceLineHeight = with(density) { height.toDp() }
-                            },
-                        )
-                    }
-                    PlayerChapterLabel(
-                        chapters = playbackSnapshot.chapters,
-                        positionMs = displayedPositionMs,
-                        metrics = metrics,
-                        onClick = onChaptersClick?.let { openChapters ->
-                            {
-                                onInteraction()
-                                openChapters()
-                            }
-                        },
-                    )
-                    PlayerTimeline(
-                        snapshot = playbackSnapshot,
-                        displayedPositionMs = displayedPositionMs,
-                        onScrubChange = onScrubChange,
-                        onScrubFinished = {
-                            onInteraction()
-                            onScrubFinished(it)
-                        },
-                        seekPreview = seekPreview,
-                        onTouchChange = onTimelineTouchChange,
-                        skipIntervals = skipIntervals,
-                    )
-                    PlayerControlActions(
+                            liveProgram = providerName.takeIf { onLiveChannelsClick != null },
+                            chapters = playbackSnapshot.chapters,
+                            positionMs = displayedPositionMs,
+                        ),
+                        onInfoLineClick = onChaptersClick,
+                        sourceLine = streamTitle.ifBlank { providerName }.replace("\n", " · "),
+                        showDetails = !hideDetails,
+                        actions = playerRoundActions(
+                            playbackSnapshot = playbackSnapshot,
+                            resizeMode = resizeMode,
+                            onEpisodesClick = onEpisodesClick,
+                            onSourcesClick = onSourcesClick,
+                            onChaptersClick = onChaptersClick,
+                            qualityLabel = qualityLabel,
+                            onQualityClick = onQualityClick,
+                            onSpeedClick = onSpeedClick,
+                            speedPickerVisible = speedPickerVisible,
+                            onSpeedSelected = onSpeedSelected,
+                            onSpeedPickerDismiss = onSpeedPickerDismiss,
+                            onResizeModeClick = onResizeModeClick,
+                            onNextEpisodeClick = onNextEpisodeClick,
+                        ),
                         playbackSnapshot = playbackSnapshot,
                         displayedPositionMs = displayedPositionMs,
                         showRemainingTime = showRemainingTime,
                         onRuntimeClick = onRuntimeClick,
                         metrics = metrics,
-                        resizeMode = resizeMode,
-                        onSubtitleClick = { onSubtitleClick?.invoke() },
-                        onAudioClick = { onAudioClick?.invoke() },
-                        onSourcesClick = onSourcesClick,
-                        onEpisodesClick = onEpisodesClick,
-                        onChaptersClick = onChaptersClick,
-                        onNextEpisodeClick = onNextEpisodeClick,
-                        onSpeedClick = { onSpeedClick?.invoke() },
-                        speedPickerVisible = speedPickerVisible,
-                        onSpeedSelected = onSpeedSelected,
-                        onSpeedPickerDismiss = onSpeedPickerDismiss,
-                        onResizeModeClick = onResizeModeClick,
-                        // Better Nuvio: estas ficam no menu Mais do topo.
-                        onVideoSettingsClick = null,
-                        onOpenInExternalPlayer = null,
-                        onStreamInfoClick = onStreamInfoClick,
-                        onSubmitIntroClick = null,
-                        qualityLabel = qualityLabel,
-                        onQualityClick = onQualityClick,
-                        onSwitchEngineClick = null,
-                        onInfoClick = null,
-                        onRateClick = null,
-                        userRating = userRating,
+                        onTracksClick = onSubtitleClick ?: onAudioClick,
                         onInteraction = onInteraction,
+                        onSourceLineHeightChanged = { height ->
+                            sourceLineHeight = with(density) { height.toDp() }
+                        },
+                        timeline = { timelineModifier ->
+                            PlayerTimeline(
+                                snapshot = playbackSnapshot,
+                                displayedPositionMs = displayedPositionMs,
+                                onScrubChange = onScrubChange,
+                                onScrubFinished = {
+                                    onInteraction()
+                                    onScrubFinished(it)
+                                },
+                                modifier = timelineModifier,
+                                seekPreview = seekPreview,
+                                onTouchChange = onTimelineTouchChange,
+                                skipIntervals = skipIntervals,
+                            )
+                        },
                     )
                 }
             }
