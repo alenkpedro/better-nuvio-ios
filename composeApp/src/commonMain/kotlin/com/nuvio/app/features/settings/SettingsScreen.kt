@@ -737,12 +737,19 @@ private fun MobileSettingsScreen(
 
         val watchPartyRowClick = watchPartyRow(onWatchPartyClick)
         val profileDrawsOwnChrome = page == SettingsPage.Profile && showInternalHeader && !LocalUseNativeNavigation.current
+        // Better Nuvio: no app nativo os Ajustes abrem numa folha pelo avatar da Home; a folha já
+        // começa abaixo da barra de status, então a página principal não desconta ela de novo.
+        val rootInSheet = page == SettingsPage.Root && LocalUseNativeNavigation.current
         ProfileInsightsPullToRefresh(enabled = page == SettingsPage.Profile) {
         NuvioScreen(
             modifier = Modifier.nestedScroll(rootSearchRevealConnection),
             listState = listState,
             autoHidesNativeTabBar = true,
-            topPadding = if (page == SettingsPage.Profile) 0.dp else null,
+            topPadding = when {
+                page == SettingsPage.Profile -> 0.dp
+                rootInSheet -> 24.dp
+                else -> null
+            },
         ) {
             if (profileDrawsOwnChrome) {
             } else if (showInternalHeader) {
@@ -753,7 +760,7 @@ private fun MobileSettingsScreen(
                         onBack = previousPage?.let { { onNavigateBack() } },
                     )
                 }
-            } else {
+            } else if (!rootInSheet) {
                 item { Spacer(modifier = Modifier.height(44.dp)) }
             }
 

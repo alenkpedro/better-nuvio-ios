@@ -574,7 +574,7 @@
     <string name="compose_settings_root_trakt_description">Abrir tela de conexão do Trakt</string>
     <string name="compose_settings_root_tracking_description">Conecte os serviços de acompanhamento e escolha qual deles gerencia sua biblioteca e a seção Continuar assistindo.</string>
     <string name="settings_search_empty">Nenhuma configuração encontrada.</string>
-    <string name="settings_search_placeholder">Buscar configurações...</string>
+    <string name="settings_search_placeholder">Buscar nos ajustes</string>
     <string name="settings_search_results_section">RESULTADOS</string>
     <string name="settings_advanced_section_startup">INICIALIZAÇÃO</string>
     <string name="settings_advanced_section_diagnostics">DIAGNÓSTICOS</string>
