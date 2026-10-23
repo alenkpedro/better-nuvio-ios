@@ -1,5 +1,6 @@
 package com.nuvio.app.features.mdblist
 
+import co.touchlab.kermit.Logger
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CancellationException
@@ -19,6 +20,7 @@ class MdbListAuthStore(
     private val persistence: MdbListAuthPersistence,
     initialProfileId: Int = 1
 ) {
+    private val log = Logger.withTag("MdbListAuthStore")
     private val lock = SynchronizedObject()
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private var currentScope = MdbListAuthScope(initialProfileId, 0)
@@ -87,7 +89,7 @@ class MdbListAuthStore(
     }
 
     fun removeProfile(profileId: Int) = synchronized(lock) {
-        persistence.write(profileId, null)
+        clearPersisted("remove profile $profileId") { persistence.write(profileId, null) }
         if (currentScope.profileId == profileId) {
             currentScope = currentScope.copy(generation = currentScope.generation + 1)
             stored = MdbListStoredAuth()
@@ -96,7 +98,7 @@ class MdbListAuthStore(
     }
 
     fun clearAllProfiles() = synchronized(lock) {
-        persistence.clear()
+        clearPersisted("clear all profiles") { persistence.clear() }
         currentScope = currentScope.copy(generation = currentScope.generation + 1)
         stored = MdbListStoredAuth()
         publish()
@@ -117,7 +119,24 @@ class MdbListAuthStore(
         true
     }
 
-    private fun load(profileId: Int): MdbListStoredAuth = persistence.read(profileId)?.let { value ->
+    // Credential storage can be unavailable (e.g. the iOS keychain returns errSecMissingEntitlement -34018
+    // for unsigned simulator builds). Treat that as signed out instead of failing tracker initialization.
+    private fun readPersisted(profileId: Int): String? = try {
+        persistence.read(profileId)
+    } catch (error: Exception) {
+        log.w(error) { "Unable to read stored MDBList credentials for profile $profileId; treating as signed out" }
+        null
+    }
+
+    private inline fun clearPersisted(action: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (error: Exception) {
+            log.w(error) { "Unable to $action in MDBList credential storage" }
+        }
+    }
+
+    private fun load(profileId: Int): MdbListStoredAuth = readPersisted(profileId)?.let { value ->
         runCatching { json.decodeFromString<MdbListStoredAuth>(value) }.getOrNull()
     }?.takeIf { value ->
         value.tokens == null || (value.tokens.accessToken.isNotBlank() && value.tokens.refreshToken.isNotBlank())

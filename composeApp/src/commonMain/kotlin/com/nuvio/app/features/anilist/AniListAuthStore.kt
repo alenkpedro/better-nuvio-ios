@@ -1,5 +1,6 @@
 package com.nuvio.app.features.anilist
 
+import co.touchlab.kermit.Logger
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CancellationException
@@ -24,6 +25,7 @@ class AniListAuthStore(
     initialProfileId: Int = 1,
     private val now: () -> Long = { kotlin.time.Clock.System.now().toEpochMilliseconds() },
 ) {
+    private val log = Logger.withTag("AniListAuthStore")
     private val lock = SynchronizedObject()
     private var currentScope = AniListAuthScope(initialProfileId, 0)
     private var stored = load(initialProfileId)
@@ -88,7 +90,7 @@ class AniListAuthStore(
     }
 
     fun removeProfile(profileId: Int) = synchronized(lock) {
-        persistence.write(profileId, null)
+        clearPersisted("remove profile $profileId") { persistence.write(profileId, null) }
         if (currentScope.profileId == profileId) {
             currentScope = currentScope.copy(generation = currentScope.generation + 1)
             stored = AniListStoredAuth()
@@ -99,7 +101,7 @@ class AniListAuthStore(
     }
 
     fun clearAllProfiles() = synchronized(lock) {
-        persistence.clear()
+        clearPersisted("clear all profiles") { persistence.clear() }
         currentScope = currentScope.copy(generation = currentScope.generation + 1)
         stored = AniListStoredAuth()
         busy = false
@@ -133,7 +135,24 @@ class AniListAuthStore(
         true
     }
 
-    private fun load(profileId: Int): AniListStoredAuth = persistence.read(profileId)?.let { value ->
+    // Credential storage can be unavailable (e.g. the iOS keychain returns errSecMissingEntitlement -34018
+    // for unsigned simulator builds). Treat that as signed out instead of failing tracker initialization.
+    private fun readPersisted(profileId: Int): String? = try {
+        persistence.read(profileId)
+    } catch (error: Exception) {
+        log.w(error) { "Unable to read stored AniList credentials for profile $profileId; treating as signed out" }
+        null
+    }
+
+    private inline fun clearPersisted(action: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (error: Exception) {
+            log.w(error) { "Unable to $action in AniList credential storage" }
+        }
+    }
+
+    private fun load(profileId: Int): AniListStoredAuth = readPersisted(profileId)?.let { value ->
         runCatching { aniListJson.decodeFromString(AniListStoredAuth.serializer(), value) }.getOrNull()
     }?.takeIf { value -> value.accessToken == null || value.accessToken.isNotBlank() } ?: AniListStoredAuth()
 

@@ -1,5 +1,8 @@
 package com.nuvio.app.core.tracking
 
+import co.touchlab.kermit.Logger
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import com.nuvio.app.features.anilist.AniListTracker
 import com.nuvio.app.features.simkl.SimklAuthRepository
 import com.nuvio.app.features.simkl.SimklMutationRepository
@@ -20,10 +23,26 @@ import com.nuvio.app.features.trakt.TraktTrackingProgressProvider
 import com.nuvio.app.features.wetrakr.WeTrakrTracker
 import com.nuvio.app.features.watching.sync.TraktWatchedSyncAdapter
 
+private val bootstrapLog = Logger.withTag("TrackingBootstrap")
+private val failedOptionalProvidersLock = SynchronizedObject()
+private val failedOptionalProviders = mutableSetOf<String>()
+
+// MDBList, AniList and WeTrakr are optional providers. If one of them fails to initialize, skip it
+// instead of crashing callers such as profile selection; the failure is logged once per provider.
+private inline fun registerOptionalProvider(name: String, register: () -> Unit) {
+    try {
+        register()
+    } catch (error: Throwable) {
+        if (synchronized(failedOptionalProvidersLock) { failedOptionalProviders.add(name) }) {
+            bootstrapLog.e(error) { "Skipping $name tracking provider: initialization failed" }
+        }
+    }
+}
+
 fun ensureTrackingProvidersRegistered() {
-    MdbListTracker.register()
-    AniListTracker.register()
-    WeTrakrTracker.register()
+    registerOptionalProvider("MDBList") { MdbListTracker.register() }
+    registerOptionalProvider("AniList") { AniListTracker.register() }
+    registerOptionalProvider("WeTrakr") { WeTrakrTracker.register() }
     TraktAuthRepository.descriptor
     TraktScrobbleRepository.ensureRegistered()
     SimklAuthRepository.descriptor
