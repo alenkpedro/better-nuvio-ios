@@ -1214,6 +1214,26 @@ private fun rememberHeroMetaDetails(item: MetaPreview): MetaDetails? {
         mutableStateOf(MetaDetailsRepository.peek(item.type, item.id))
     }
     LaunchedEffect(item.type, item.id) {
+        // Na abertura a Home pede a meta antes de todos os addons carregarem: às vezes só um
+        // addon sem logo (ou fora do ar) está pronto e a busca volta vazia. Tenta de novo
+        // por alguns segundos, como a página do título, que abre com os addons já prontos.
+        for (attempt in 0 until HERO_META_ATTEMPTS) {
+            if (!detailsState.value?.logo.isNullOrBlank()) return@LaunchedEffect
+            if (attempt > 0) delay(HERO_META_RETRY_MS * attempt)
+            loadHeroMetaOnce(item, detailsState)
+        }
+    }
+    return detailsState.value
+}
+
+private const val HERO_META_ATTEMPTS = 5
+private const val HERO_META_RETRY_MS = 2_000L
+
+private suspend fun loadHeroMetaOnce(
+    item: MetaPreview,
+    detailsState: androidx.compose.runtime.MutableState<MetaDetails?>,
+) {
+    run {
         if (detailsState.value == null) {
             detailsState.value = runCatching {
                 MetaDetailsRepository.fetch(item.type, item.id)
@@ -1237,7 +1257,6 @@ private fun rememberHeroMetaDetails(item: MetaPreview): MetaDetails? {
             heroLog.w { "Destaque sem meta type=${item.type} id=${item.id}" }
         }
     }
-    return detailsState.value
 }
 
 private val heroLog = co.touchlab.kermit.Logger.withTag("HomeHero")
