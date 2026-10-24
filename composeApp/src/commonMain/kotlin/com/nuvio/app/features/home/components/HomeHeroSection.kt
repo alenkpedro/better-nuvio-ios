@@ -851,10 +851,13 @@ private fun HeroContentBlock(
     val details = rememberHeroMetaDetails(item)
     // O logo no lugar do nome: o mesmo da página do título (meta completa, com o logo do
     // TMDB), senão o do catálogo. Sem logo, o nome em texto. A cor viva sai deste mesmo logo.
-    val logoUrl = heroLogoUrl(item, details)
-    var logoLoadError by remember(item.type, item.id, logoUrl) {
-        mutableStateOf(false)
-    }
+    // Se um logo não carrega, tenta o outro (meta do addon ou catálogo) antes do nome em texto.
+    var failedLogos by remember(item.type, item.id) { mutableStateOf(emptySet<String>()) }
+    val logoUrl = listOfNotNull(
+        details?.logo?.takeIf { it.isNotBlank() },
+        item.logo?.takeIf { it.isNotBlank() },
+    ).firstOrNull { it !in failedLogos }
+    val logoLoadError = false
 
     // Alinhado à esquerda como na TV: logo, linha de continuar, sinopse e os dois botões.
     Column(
@@ -873,7 +876,10 @@ private fun HeroContentBlock(
                     },
                 alignment = Alignment.BottomStart,
                 contentScale = ContentScale.Fit,
-                onError = { logoLoadError = true },
+                onError = {
+                    heroLog.w { "Logo do destaque não carregou id=${item.id}" }
+                    failedLogos = failedLogos + logoUrl
+                },
             )
         } else {
             Text(
@@ -1217,17 +1223,24 @@ private fun rememberHeroMetaDetails(item: MetaPreview): MetaDetails? {
         // passar do tempo limite; aí o destaque mostra o nome escrito. A página do título busca
         // sem esse limite e mostra o logo, então aqui a mesma busca, com mais tempo.
         val current = detailsState.value
-        if (current != null && current.logo.isNullOrBlank() && item.logo.isNullOrBlank()) {
+        // Mesmo quando o item do catálogo/Continuar traz um logo próprio: esse logo pode não
+        // carregar, e o da meta do addon é o que a página do título mostra.
+        if (current != null && current.logo.isNullOrBlank()) {
             val logo = runCatching {
                 MetaDetailsRepository.fetchLogo(item.type, item.id)
             }.getOrNull()
+            heroLog.w { "Logo do destaque type=${item.type} id=${item.id} catalogo=${!item.logo.isNullOrBlank()} addon=${!logo.isNullOrBlank()}" }
             if (!logo.isNullOrBlank()) {
                 detailsState.value = current.copy(logo = logo)
             }
+        } else if (current == null) {
+            heroLog.w { "Destaque sem meta type=${item.type} id=${item.id}" }
         }
     }
     return detailsState.value
 }
+
+private val heroLog = co.touchlab.kermit.Logger.withTag("HomeHero")
 
 private fun heroLogoUrl(item: MetaPreview, details: MetaDetails?): String? =
     details?.logo?.takeIf { it.isNotBlank() }
