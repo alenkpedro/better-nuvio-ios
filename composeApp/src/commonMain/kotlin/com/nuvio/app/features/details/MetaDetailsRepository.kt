@@ -264,6 +264,37 @@ object MetaDetailsRepository {
         }
     }
 
+    /**
+     * Better Nuvio: logo do título para o destaque da Home. Na abertura a Home busca vários
+     * títulos juntos e o addon que tem o logo pode passar dos 5 s do fetch(); a página do
+     * título não tem esse limite e mostra o logo. Aqui cada addon tem mais tempo e o primeiro
+     * logo encontrado fica guardado na meta em cache.
+     */
+    suspend fun fetchLogo(type: String, id: String): String? {
+        val requestKey = "$type:$id"
+        peek(type, id)?.logo?.takeIf { it.isNotBlank() }?.let { return it }
+        if (ServerItemRef.parse(id) != null) return null
+
+        val metaLookupId = resolveMetaLookupId(itemId = id, itemType = type)
+        for (manifest in findReadyMetaManifests(type = type, id = metaLookupId)) {
+            val result = withTimeoutOrNull(LOGO_FETCH_TIMEOUT_MS) {
+                tryFetchMeta(manifest, type, metaLookupId, includeMdbList = false)
+            } ?: continue
+            val logo = result.logo?.takeIf { it.isNotBlank() } ?: continue
+            val cachedEntry = cachedMetaByRequestKey[requestKey]
+            cachedMetaByRequestKey[requestKey] = cachedEntry
+                ?.copy(
+                    baseMeta = cachedEntry.baseMeta.copy(logo = logo),
+                    metaScreenMeta = cachedEntry.metaScreenMeta?.copy(logo = logo),
+                )
+                ?: CachedMetaEntry(baseMeta = result)
+            return logo
+        }
+        return null
+    }
+
+    private const val LOGO_FETCH_TIMEOUT_MS = 15_000L
+
     private val backgroundBackoffUntilByHost = mutableMapOf<String, Long>()
 
     internal suspend fun fetchLightweight(type: String, id: String): MetaLookupOutcome {

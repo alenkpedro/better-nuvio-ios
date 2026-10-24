@@ -1213,21 +1213,16 @@ private fun rememberHeroMetaDetails(item: MetaPreview): MetaDetails? {
                 MetaDetailsRepository.fetch(item.type, item.id)
             }.getOrNull()
         }
-        // Na abertura a Home busca os títulos do destaque juntos e a consulta do logo ao TMDB
-        // pode passar do tempo limite; aí o título fica sem logo e o destaque mostra o nome escrito.
-        // A página do título consulta de novo, então aqui também: uma nova tentativa só do TMDB.
+        // Na abertura a Home busca os títulos do destaque juntos e o addon que tem o logo pode
+        // passar do tempo limite; aí o destaque mostra o nome escrito. A página do título busca
+        // sem esse limite e mostra o logo, então aqui a mesma busca, com mais tempo.
         val current = detailsState.value
         if (current != null && current.logo.isNullOrBlank() && item.logo.isNullOrBlank()) {
-            val enriched = runCatching {
-                TmdbSettingsRepository.ensureLoaded()
-                TmdbMetadataService.enrichMeta(
-                    meta = current,
-                    fallbackItemId = item.id,
-                    settings = TmdbSettingsRepository.snapshot(),
-                )
+            val logo = runCatching {
+                MetaDetailsRepository.fetchLogo(item.type, item.id)
             }.getOrNull()
-            if (enriched != null && !enriched.logo.isNullOrBlank()) {
-                detailsState.value = current.copy(logo = enriched.logo)
+            if (!logo.isNullOrBlank()) {
+                detailsState.value = current.copy(logo = logo)
             }
         }
     }
