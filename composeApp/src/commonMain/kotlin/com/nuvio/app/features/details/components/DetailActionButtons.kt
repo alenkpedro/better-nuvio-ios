@@ -1049,7 +1049,8 @@ private fun fitIconActionRow(
     preferredSize: Dp,
     preferredSpacing: Dp,
 ): IconActionRowLayout {
-    val minCell = 62.dp
+    // 54: com o "Do começo" a fileira tem 6 botões e precisa caber num iPhone de 6,1" (Iago, r7).
+    val minCell = 54.dp
     val maxCell = preferredSize + preferredSpacing + 24.dp
     if (count <= 0) return IconActionRowLayout(preferredSize, maxCell, true)
     val evenCell = availableWidth / count

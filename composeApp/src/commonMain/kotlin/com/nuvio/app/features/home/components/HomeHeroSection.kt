@@ -87,6 +87,8 @@ import com.nuvio.app.features.details.HeroTrailerAudioState
 import com.nuvio.app.features.details.HeroTrailerSurface
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaDetailsRepository
+import com.nuvio.app.features.tmdb.TmdbMetadataService
+import com.nuvio.app.features.tmdb.TmdbSettingsRepository
 import com.nuvio.app.features.details.components.HeroTrailerPlayerSurface
 import com.nuvio.app.features.details.selectHeroTrailer
 import com.nuvio.app.features.details.youtubePlaybackUrl
@@ -1210,6 +1212,23 @@ private fun rememberHeroMetaDetails(item: MetaPreview): MetaDetails? {
             detailsState.value = runCatching {
                 MetaDetailsRepository.fetch(item.type, item.id)
             }.getOrNull()
+        }
+        // Na abertura a Home busca os títulos do destaque juntos e a consulta do logo ao TMDB
+        // pode passar do tempo limite; aí o título fica sem logo e o destaque mostra o nome escrito.
+        // A página do título consulta de novo, então aqui também: uma nova tentativa só do TMDB.
+        val current = detailsState.value
+        if (current != null && current.logo.isNullOrBlank() && item.logo.isNullOrBlank()) {
+            val enriched = runCatching {
+                TmdbSettingsRepository.ensureLoaded()
+                TmdbMetadataService.enrichMeta(
+                    meta = current,
+                    fallbackItemId = item.id,
+                    settings = TmdbSettingsRepository.snapshot(),
+                )
+            }.getOrNull()
+            if (enriched != null && !enriched.logo.isNullOrBlank()) {
+                detailsState.value = current.copy(logo = enriched.logo)
+            }
         }
     }
     return detailsState.value
