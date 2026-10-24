@@ -761,6 +761,9 @@ private fun MobileSettingsScreen(
                     NuvioScreenHeader(
                         title = stringResource(page.titleRes),
                         onBack = previousPage?.let { { onNavigateBack() } },
+                        // Na folha: o título encostado no topo e no mesmo preto da folha, sem a faixa azulada.
+                        includeStatusBarPadding = !rootInSheet,
+                        background = if (rootInSheet) Color(0xFF0A0A0B) else null,
                     )
                 }
             } else if (!rootInSheet) {
@@ -784,7 +787,8 @@ private fun MobileSettingsScreen(
                             )
                         },
                         isTablet = false,
-                        showSearchField = rootSearchVisible,
+                        // Na folha, a busca fica sempre à vista, logo abaixo do título (spec dos Ajustes).
+                        showSearchField = rootSearchVisible || rootInSheet,
                         animateSearchField = rootSearchRevealAnimating,
                         onQueryChange = { settingsSearchQuery = it },
                         onTargetClick = { openSearchTarget(it) },

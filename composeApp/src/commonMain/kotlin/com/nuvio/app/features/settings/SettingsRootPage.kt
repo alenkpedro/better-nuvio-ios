@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableLongStateOf
@@ -116,6 +117,23 @@ import nuvio.composeapp.generated.resources.about_supporters_contributors_subtit
 import nuvio.composeapp.generated.resources.about_licenses_attributions_subtitle
 import nuvio.composeapp.generated.resources.whats_new_root_description
 import org.jetbrains.compose.resources.stringResource
+import com.nuvio.app.features.addons.AddonRepository
+import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
+import com.nuvio.app.features.simkl.SimklAuthRepository
+import com.nuvio.app.features.trakt.TraktAuthRepository
+import com.nuvio.app.features.library.LibraryRepository
+import com.nuvio.app.features.watchprogress.WatchProgressRepository
+import com.nuvio.app.core.ui.labelRes
+import nuvio.composeapp.generated.resources.bn_accent_immersive
+import nuvio.composeapp.generated.resources.bn_settings_watch_together
+import nuvio.composeapp.generated.resources.bn_settings_profiles_count
+import nuvio.composeapp.generated.resources.bn_settings_progress_count
+import nuvio.composeapp.generated.resources.bn_settings_in_list
+import nuvio.composeapp.generated.resources.bn_settings_profile_stats
+import nuvio.composeapp.generated.resources.bn_settings_notifications_on
+import nuvio.composeapp.generated.resources.bn_settings_notifications_off
+import nuvio.composeapp.generated.resources.bn_streams_addons_count
+import org.jetbrains.compose.resources.pluralStringResource
 
 private const val PRIVACY_POLICY_URL = "https://nuvio.tv/privacy-policy"
 
@@ -144,55 +162,66 @@ internal fun LazyListScope.settingsRootContent(
     showAdvancedSection: Boolean = true,
     showSupportersContributorsPage: Boolean = true,
 ) {
-    // Better Nuvio layout (Iago, 22/10/2026): profile card, then Conta, App and Sobre.
-    if (showAccountSection && onSwitchProfileClick != null) {
+    // Better Nuvio layout (spec dos Ajustes, 22/10/2026): cartão do perfil, depois Conta, App e Sobre.
+    // Como na TV, o cartão abre a Conta; "Perfis" abre a página do perfil e "Trocar perfil" a escolha.
+    if (showAccountSection) {
         item {
             SettingsProfileCard(
                 isTablet = isTablet,
-                onClick = onSwitchProfileClick,
+                onClick = onAccountClick,
                 onSwitchProfile = onSwitchProfileNow,
             )
         }
     }
     if (showAccountSection) {
         item {
+            val profileCount = ProfileRepository.state.collectAsStateWithLifecycle().value.profiles.size
+            val traktConnected by TraktAuthRepository.isAuthenticated.collectAsStateWithLifecycle()
+            val simklConnected by SimklAuthRepository.isAuthenticated.collectAsStateWithLifecycle()
             SettingsSection(
                 title = stringResource(Res.string.compose_settings_root_account_section),
                 isTablet = isTablet,
             ) {
                 SettingsGroup(isTablet = isTablet) {
-                    SettingsNavigationRow(
-                        title = stringResource(Res.string.compose_settings_page_account),
-                        description = null,
-                        icon = Icons.Rounded.AccountCircle,
-                        isTablet = isTablet,
-                        onClick = onAccountClick,
-                    )
-                    if (onSwitchProfileNow != null) {
-                        SettingsGroupDivider(isTablet = isTablet)
+                    val profilesClick = onSwitchProfileClick ?: onSwitchProfileNow
+                    if (profilesClick != null) {
                         SettingsNavigationRow(
                             title = stringResource(Res.string.bn_settings_profiles),
                             description = null,
                             icon = Icons.Rounded.People,
                             isTablet = isTablet,
-                            onClick = onSwitchProfileNow,
+                            value = if (profileCount > 0) {
+                                pluralStringResource(Res.plurals.bn_settings_profiles_count, profileCount, profileCount)
+                            } else {
+                                null
+                            },
+                            showChevron = true,
+                            onClick = profilesClick,
                         )
+                        SettingsGroupDivider(isTablet = isTablet)
                     }
-                    SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
                         title = stringResource(Res.string.bn_settings_trakt_simkl),
                         description = null,
                         icon = Icons.Default.Sync,
                         isTablet = isTablet,
+                        value = when {
+                            traktConnected && simklConnected -> "Trakt · Simkl"
+                            traktConnected -> "Trakt"
+                            simklConnected -> "Simkl"
+                            else -> null
+                        },
+                        showChevron = true,
                         onClick = onTrackingClick,
                     )
                     if (onWatchPartyClick != null) {
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsNavigationRow(
-                            title = stringResource(Res.string.party_title),
+                            title = stringResource(Res.string.bn_settings_watch_together),
                             description = null,
                             icon = Icons.Rounded.Groups,
                             isTablet = isTablet,
+                            showChevron = true,
                             onClick = onWatchPartyClick,
                         )
                     }
@@ -203,6 +232,10 @@ internal fun LazyListScope.settingsRootContent(
     val advancedInsideApp = showGeneralSection && showAdvancedSection
     if (showGeneralSection) {
         item {
+            val immersive by ThemeSettingsRepository.dynamicArtworkBackgroundEnabled.collectAsStateWithLifecycle()
+            val selectedTheme by ThemeSettingsRepository.selectedTheme.collectAsStateWithLifecycle()
+            val addonCount = AddonRepository.uiState.collectAsStateWithLifecycle().value.addons.size
+            val notificationsOn = EpisodeReleaseNotificationsRepository.uiState.collectAsStateWithLifecycle().value.isEnabled
             SettingsSection(
                 title = stringResource(Res.string.bn_settings_section_app),
                 isTablet = isTablet,
@@ -213,6 +246,8 @@ internal fun LazyListScope.settingsRootContent(
                         description = null,
                         icon = Icons.Rounded.Palette,
                         isTablet = isTablet,
+                        value = if (immersive) stringResource(Res.string.bn_accent_immersive) else stringResource(selectedTheme.labelRes),
+                        showChevron = true,
                         onClick = onLookClick,
                     )
                     SettingsGroupDivider(isTablet = isTablet)
@@ -221,6 +256,7 @@ internal fun LazyListScope.settingsRootContent(
                         description = null,
                         icon = Icons.Rounded.Dashboard,
                         isTablet = isTablet,
+                        showChevron = true,
                         onClick = onAppearanceClick,
                     )
                     SettingsGroupDivider(isTablet = isTablet)
@@ -229,6 +265,8 @@ internal fun LazyListScope.settingsRootContent(
                         description = null,
                         icon = Icons.Rounded.Extension,
                         isTablet = isTablet,
+                        value = if (addonCount > 0) pluralStringResource(Res.plurals.bn_streams_addons_count, addonCount, addonCount) else null,
+                        showChevron = true,
                         onClick = onContentDiscoveryClick,
                     )
                     SettingsGroupDivider(isTablet = isTablet)
@@ -237,6 +275,7 @@ internal fun LazyListScope.settingsRootContent(
                         description = null,
                         icon = Icons.Rounded.PlayArrow,
                         isTablet = isTablet,
+                        showChevron = true,
                         onClick = onPlaybackClick,
                     )
                     SettingsGroupDivider(isTablet = isTablet)
@@ -245,6 +284,7 @@ internal fun LazyListScope.settingsRootContent(
                         description = null,
                         icon = Icons.Rounded.Link,
                         isTablet = isTablet,
+                        showChevron = true,
                         onClick = onIntegrationsClick,
                     )
                     SettingsGroupDivider(isTablet = isTablet)
@@ -253,6 +293,8 @@ internal fun LazyListScope.settingsRootContent(
                         description = null,
                         icon = Icons.Rounded.Notifications,
                         isTablet = isTablet,
+                        value = stringResource(if (notificationsOn) Res.string.bn_settings_notifications_on else Res.string.bn_settings_notifications_off),
+                        showChevron = true,
                         onClick = onNotificationsClick,
                     )
                     if (advancedInsideApp) {
@@ -262,6 +304,7 @@ internal fun LazyListScope.settingsRootContent(
                             description = null,
                             icon = Icons.Rounded.Tune,
                             isTablet = isTablet,
+                            showChevron = true,
                             onClick = onAdvancedClick,
                         )
                     }
@@ -408,73 +451,103 @@ private fun SettingsProfileCard(
     val tokens = MaterialTheme.nuvio
     val profileState by ProfileRepository.state.collectAsStateWithLifecycle()
     val profile = profileState.activeProfile
-    val avatarSize = if (isTablet) 84.dp else 72.dp
+    val avatarSize = if (isTablet) 64.dp else 52.dp
     SettingsGroup(
         isTablet = isTablet,
         modifier = Modifier.padding(top = if (isTablet) 12.dp else 8.dp),
     ) {
-        Row(
+        // Prévia dos Ajustes: avatar, nome e números da conta em cima; sincronia e "Trocar perfil" embaixo,
+        // sobre um leve tom da cor viva.
+        val addonCount = AddonRepository.uiState.collectAsStateWithLifecycle().value.addons.size
+        val progressCount = WatchProgressRepository.uiState.collectAsStateWithLifecycle().value.entries.size
+        val listCount = LibraryRepository.uiState.collectAsStateWithLifecycle().value.items.size
+        val horizontal = if (isTablet) 20.dp else 16.dp
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        listOf(tokens.colors.accent.copy(alpha = 0.16f), Color.Transparent),
+                    ),
+                )
                 .clickable(onClick = onClick)
-                .padding(horizontal = if (isTablet) 20.dp else 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(horizontal = horizontal, vertical = 14.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(avatarSize)
-                    .border(2.5.dp, MaterialTheme.themePalette.accentBrush(), CircleShape)
-                    .padding(4.dp),
-            ) {
-                if (profile != null) {
-                    AppLoadingProfileAvatar(profile = profile, modifier = Modifier.fillMaxSize())
-                } else {
-                    Icon(
-                        imageVector = Icons.Rounded.People,
-                        contentDescription = null,
-                        tint = tokens.colors.accent,
-                        modifier = Modifier.align(Alignment.Center),
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(avatarSize)
+                        .border(2.dp, MaterialTheme.themePalette.accentBrush(), CircleShape)
+                        .padding(3.dp),
+                ) {
+                    if (profile != null) {
+                        AppLoadingProfileAvatar(profile = profile, modifier = Modifier.fillMaxSize())
+                    } else {
+                        Icon(
+                            imageVector = Icons.Rounded.People,
+                            contentDescription = null,
+                            tint = tokens.colors.accent,
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = profile?.name?.takeIf { it.isNotBlank() }
+                            ?: stringResource(Res.string.compose_settings_root_profile_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = tokens.colors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = stringResource(
+                            Res.string.bn_settings_profile_stats,
+                            pluralStringResource(Res.plurals.bn_streams_addons_count, addonCount, addonCount),
+                            pluralStringResource(Res.plurals.bn_settings_progress_count, progressCount, progressCount),
+                            stringResource(Res.string.bn_settings_in_list, listCount),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = tokens.colors.textMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = profile?.name?.takeIf { it.isNotBlank() }
-                        ?: stringResource(Res.string.compose_settings_root_profile_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = tokens.colors.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .clip(CircleShape)
+                        .background(if (lastSyncedAt != null) Color(0xFF34C759) else tokens.colors.textMuted),
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = syncStatusText(lastSyncedAt),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = tokens.colors.textMuted,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
                 )
-            }
-            if (onSwitchProfile != null) {
-                Text(
-                    text = stringResource(Res.string.bn_settings_switch_profile),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = tokens.colors.textPrimary,
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(Color.White.copy(alpha = 0.08f))
-                        .clickable(onClick = onSwitchProfile)
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = tokens.colors.textMuted,
-                    modifier = Modifier.padding(start = 8.dp),
-                )
+                if (onSwitchProfile != null) {
+                    Text(
+                        text = stringResource(Res.string.bn_settings_switch_profile),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = tokens.colors.textPrimary,
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(999.dp))
+                            .background(Color.Black.copy(alpha = 0.25f))
+                            .clickable(onClick = onSwitchProfile)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
+                }
             }
         }
     }

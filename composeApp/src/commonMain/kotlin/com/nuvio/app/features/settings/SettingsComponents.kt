@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material3.Icon
@@ -81,11 +82,13 @@ private fun SettingsCard(
     val tokens = MaterialTheme.nuvio
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = tokens.colors.surface,
+        // Better Nuvio (spec dos Ajustes): vidro neutro rgba(255,255,255,.055) com borda .05,
+        // não a superfície azulada da paleta.
+        color = Color.White.copy(alpha = 0.055f),
         shape = if (isTablet) RoundedCornerShape(NuvioTokens.Radius.xl) else tokens.shapes.compactCard,
         border = BorderStroke(
             tokens.borders.hairline,
-            tokens.colors.borderSubtle,
+            Color.White.copy(alpha = 0.05f),
         ),
     ) {
         Column(content = content)
@@ -110,7 +113,7 @@ internal fun SettingsGroup(
 internal fun SettingsGroupDivider(isTablet: Boolean) {
     val tokens = MaterialTheme.nuvio
     HorizontalDivider(
-        modifier = Modifier.padding(start = if (isTablet) NuvioTokens.Space.s80 - NuvioTokens.Space.s2 else NuvioTokens.Space.s64 + NuvioTokens.Space.s2),
+        modifier = Modifier.padding(start = if (isTablet) NuvioTokens.Space.s80 - NuvioTokens.Space.s2 else 58.dp),
         thickness = tokens.borders.hairline,
         color = tokens.colors.borderSubtle,
     )
@@ -276,11 +279,13 @@ internal fun SettingsNavigationRow(
     enabled: Boolean = true,
     isTablet: Boolean,
     trailingContent: (@Composable RowScope.() -> Unit)? = null,
+    value: String? = null,
+    showChevron: Boolean = false,
     onClick: () -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
-    val iconSize = if (isTablet) 42.dp else 36.dp
-    val verticalPadding = if (isTablet) 16.dp else 14.dp
+    val iconSize = if (isTablet) 42.dp else 30.dp
+    val verticalPadding = if (isTablet) 16.dp else 11.dp
     val horizontalPadding = if (isTablet) 20.dp else 16.dp
 
     Row(
@@ -324,11 +329,12 @@ internal fun SettingsNavigationRow(
                                 imageVector = icon,
                                 contentDescription = null,
                                 tint = Color.White,
+                                modifier = Modifier.size(if (isTablet) 24.dp else 18.dp),
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.width(if (isTablet) 16.dp else 14.dp))
+                Spacer(modifier = Modifier.width(if (isTablet) 16.dp else 12.dp))
             }
             Column {
                 Text(
@@ -348,7 +354,23 @@ internal fun SettingsNavigationRow(
                 }
             }
         }
+        if (!value.isNullOrBlank()) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = tokens.colors.textMuted,
+                maxLines = 1,
+            )
+        }
         trailingContent?.invoke(this)
+        if (showChevron) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = tokens.colors.textMuted,
+                modifier = Modifier.padding(start = 4.dp).size(20.dp),
+            )
+        }
     }
 }
 

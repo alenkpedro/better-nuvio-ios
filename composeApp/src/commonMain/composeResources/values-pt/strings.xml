@@ -1918,6 +1918,19 @@
     <string name="bn_settings_synced_hours">Sincronizado há %1$d h</string>
     <string name="bn_settings_not_synced">Ainda não sincronizado</string>
     <string name="bn_settings_look_description">Tema, ícone do app e idioma</string>
+    <string name="bn_settings_watch_together">Assistir junto</string>
+    <string name="bn_settings_profile_stats">%1$s · %2$s · %3$s</string>
+    <plurals name="bn_settings_progress_count">
+        <item quantity="one">%1$d progresso</item>
+        <item quantity="other">%1$d progressos</item>
+    </plurals>
+    <string name="bn_settings_in_list">%1$d na lista</string>
+    <plurals name="bn_settings_profiles_count">
+        <item quantity="one">%1$d perfil</item>
+        <item quantity="other">%1$d perfis</item>
+    </plurals>
+    <string name="bn_settings_notifications_on">Ligadas</string>
+    <string name="bn_settings_notifications_off">Desligadas</string>
     <string name="bn_subtitle_font_default_tag">Padrão</string>
     <string name="bn_accent_title">Cor de destaque</string>
     <string name="bn_accent_description">Uma cor fixa, ou a Imersiva, que muda com cada título.</string>
