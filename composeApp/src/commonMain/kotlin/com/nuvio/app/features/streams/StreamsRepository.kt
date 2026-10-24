@@ -7,6 +7,8 @@ import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.buildAddonResourceUrl
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.addons.fetchAddonResponseText
+import com.nuvio.app.core.ui.NuvioToastController
+import com.nuvio.app.features.debrid.DebridPlanGuard
 import com.nuvio.app.features.debrid.DirectDebridStreamPreparer
 import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.debrid.DebridStreamPresentation
@@ -30,6 +32,8 @@ import kotlinx.coroutines.flow.update
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withTimeoutOrNull
 
 object StreamsRepository {
     private val log = Logger.withTag("StreamsRepo")
@@ -257,6 +261,33 @@ object StreamsRepository {
         )
 
         activeJob = scope.launch {
+            // Better Nuvio: pergunta o plano das contas de debrid (como a TV, debrid.c).
+            // Conta sem plano (ex.: TorBox gratuito) tem as fontes dela tiradas da lista.
+            val planCheck = async {
+                withTimeoutOrNull(8_000L) {
+                    runCatchingUnlessCancelled {
+                        DebridPlanGuard.refresh(
+                            addonUrls = streamAddons.map { it.manifest.transportUrl },
+                            settings = debridSettings,
+                        )
+                    }
+                }
+            }
+            var planCheckDone = false
+            suspend fun awaitPlanCheck() {
+                if (planCheckDone) return
+                planCheck.await()
+                planCheckDone = true
+                val warned = DebridPlanGuard.takeNewWarnings()
+                if (warned.isNotEmpty()) {
+                    val message = if (warned.size == 1) {
+                        getString(Res.string.bn_debrid_no_plan_one, warned.first().displayName)
+                    } else {
+                        getString(Res.string.bn_debrid_no_plan_many)
+                    }
+                    NuvioToastController.show(message, durationMillis = 6_000L)
+                }
+            }
             val completions = Channel<StreamLoadCompletion>(capacity = Channel.BUFFERED)
             val pluginRemainingByAddonId = pluginProviderGroups
                 .associate { it.addonId to it.scrapers.size }
@@ -376,10 +407,16 @@ object StreamsRepository {
                     groups = listOf(group),
                     rules = streamBadgeRules,
                 ).firstOrNull() ?: group
-                return DebridStreamPresentation.apply(
+                val presented = DebridStreamPresentation.apply(
                     groups = listOf(badgeGroup),
                     settings = debridSettings,
                 ).firstOrNull() ?: badgeGroup
+                val blocked = DebridPlanGuard.blockedServices()
+                if (blocked.isEmpty()) return presented
+                val allowed = presented.streams.filterNot { DebridPlanGuard.isBlocked(it, blocked) }
+                if (allowed.size == presented.streams.size) return presented
+                log.i { "Debrid sem plano: ${presented.streams.size - allowed.size} fontes de ${group.addonName} ficaram de fora" }
+                return presented.copy(streams = allowed)
             }
 
             fun publishAddonGroup(group: AddonStreamGroup) {
@@ -581,7 +618,9 @@ object StreamsRepository {
             }
 
             repeat(totalTasks) {
-                when (val completion = completions.receive()) {
+                val completion = completions.receive()
+                awaitPlanCheck()
+                when (completion) {
                     is StreamLoadCompletion.Addon -> {
                         val result = completion.group
                         publishAddonGroupAfterCacheCheck(result)

@@ -19,6 +19,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.features.addons.AddonRepository
+import com.nuvio.app.features.addons.enabledAddons
+import com.nuvio.app.features.debrid.DebridPlanGuard
+import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.debrid.DirectDebridPlayableResult
 import com.nuvio.app.features.debrid.DirectDebridPlaybackResolver
 import com.nuvio.app.features.debrid.toastMessage
@@ -47,6 +51,7 @@ import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.navigation.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.getString
@@ -305,7 +310,20 @@ internal fun StreamDestination(
             episode = launch.episodeNumber,
         )
         val maxAgeMs = playerSettings.streamReuseLastLinkCacheHours * 60L * 60L * 1000L
-        val cached = StreamLinkCacheRepository.getValid(cacheKey, maxAgeMs)
+        val cached = StreamLinkCacheRepository.getValid(cacheKey, maxAgeMs)?.let { candidate ->
+            // Better Nuvio: link guardado de um debrid sem plano (ex.: TorBox gratuito) não é reaproveitado.
+            if (DebridPlanGuard.servicesOf(candidate.streamName, candidate.url).isEmpty()) return@let candidate
+            withTimeoutOrNull(8_000L) {
+                runCatching {
+                    DebridPlanGuard.refresh(
+                        addonUrls = AddonRepository.uiState.value.addons.enabledAddons()
+                            .mapNotNull { it.manifest?.transportUrl },
+                        settings = DebridSettingsRepository.snapshot(),
+                    )
+                }
+            }
+            candidate.takeUnless { DebridPlanGuard.isBlocked(it.streamName, it.url) }
+        }
         if (cached != null) {
             if (cached.url.isBlank() && !cached.infoHash.isNullOrBlank()) {
                 val cachedStream = StreamItem(

@@ -2946,4 +2946,6 @@
     <string name="bn_debrid_inactive_badge">Assinatura do debrid inativa</string>
     <string name="bn_debrid_inactive_title">A assinatura do debrid não está ativa</string>
     <string name="bn_debrid_inactive_message">Renove a assinatura do debrid ou escolha uma fonte direta.</string>
+    <string name="bn_debrid_no_plan_one">Sua conta %1$s é gratuita e não permite uso pela API — fontes torrent do %1$s ficam de fora</string>
+    <string name="bn_debrid_no_plan_many">Suas contas de debrid são gratuitas e não permitem uso pela API — as fontes torrent ficam de fora</string>
 </resources>
