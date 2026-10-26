@@ -20,6 +20,8 @@ import nuvio.composeapp.generated.resources.bn_settings_synced_min
 import nuvio.composeapp.generated.resources.bn_settings_synced_hours
 import nuvio.composeapp.generated.resources.bn_settings_not_synced
 import nuvio.composeapp.generated.resources.bn_settings_page_look
+import nuvio.composeapp.generated.resources.bn_settings_page_notices
+import nuvio.composeapp.generated.resources.bn_settings_notices_description
 import nuvio.composeapp.generated.resources.bn_settings_section_app
 import nuvio.composeapp.generated.resources.bn_settings_profiles
 import nuvio.composeapp.generated.resources.bn_settings_trakt_simkl
@@ -55,6 +57,7 @@ import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Extension
+import androidx.compose.material.icons.rounded.Campaign
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Info
@@ -155,6 +158,7 @@ internal fun LazyListScope.settingsRootContent(
     onSwitchProfileClick: (() -> Unit)? = null,
     onWatchPartyClick: (() -> Unit)? = null,
     onLookClick: () -> Unit = onAppearanceClick,
+    onNoticesClick: (() -> Unit)? = null,
     onSwitchProfileNow: (() -> Unit)? = null,
     showAccountSection: Boolean = true,
     showGeneralSection: Boolean = true,
@@ -338,6 +342,16 @@ internal fun LazyListScope.settingsRootContent(
                         onClick = onWhatsNewClick,
                     )
                     SettingsGroupDivider(isTablet = isTablet)
+                    if (onNoticesClick != null) {
+                        SettingsNavigationRow(
+                            title = stringResource(Res.string.bn_settings_page_notices),
+                            description = stringResource(Res.string.bn_settings_notices_description),
+                            icon = Icons.Rounded.Campaign,
+                            isTablet = isTablet,
+                            onClick = onNoticesClick,
+                        )
+                        SettingsGroupDivider(isTablet = isTablet)
+                    }
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_privacy_policy),
                         description = stringResource(Res.string.compose_settings_root_privacy_policy_description),

@@ -791,6 +791,7 @@ private fun MobileSettingsScreen(
                             onPlaybackClick = { onPageChange(SettingsPage.Playback) },
                             onAppearanceClick = { onPageChange(SettingsPage.Appearance) },
                             onLookClick = { onPageChange(SettingsPage.Look) },
+                            onNoticesClick = { onPageChange(SettingsPage.Notices) },
                             onAdvancedClick = { onPageChange(SettingsPage.Advanced) },
                             onNotificationsClick = { onPageChange(SettingsPage.Notifications) },
                             onContentDiscoveryClick = { onPageChange(SettingsPage.ContentDiscovery) },
@@ -832,6 +833,7 @@ private fun MobileSettingsScreen(
                     isTablet = false,
                 )
                 SettingsPage.WhatsNew -> Unit
+                SettingsPage.Notices -> noticesSettingsContent(isTablet = false)
                 SettingsPage.Playback -> playbackSettingsContent(
                     isTablet = false,
                     showLoadingOverlay = showLoadingOverlay,
@@ -1282,6 +1284,7 @@ private fun TabletSettingsScreen(
                                 onPlaybackClick = { openInlinePage(SettingsPage.Playback) },
                                 onAppearanceClick = { openInlinePage(SettingsPage.Appearance) },
                                 onLookClick = { openInlinePage(SettingsPage.Look) },
+                                onNoticesClick = { openInlinePage(SettingsPage.Notices) },
                                 onAdvancedClick = { openInlinePage(SettingsPage.Advanced) },
                                 onNotificationsClick = { openInlinePage(SettingsPage.Notifications) },
                                 onContentDiscoveryClick = { openInlinePage(SettingsPage.ContentDiscovery) },
@@ -1326,6 +1329,7 @@ private fun TabletSettingsScreen(
                         isTablet = true,
                     )
                     SettingsPage.WhatsNew -> Unit
+                    SettingsPage.Notices -> noticesSettingsContent(isTablet = true)
                     SettingsPage.Playback -> playbackSettingsContent(
                         isTablet = true,
                         showLoadingOverlay = showLoadingOverlay,

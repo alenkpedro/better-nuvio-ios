@@ -1301,6 +1301,23 @@ internal fun MainAppContent(
                     startFromBeginning = true,
                 )
             }
+        // Better Nuvio: avisos do canal do dono (avisos.c): os não vistos viram um toast na abertura.
+        LaunchedEffect(Unit) {
+            if (!ownsAppRuntime) return@LaunchedEffect
+            kotlinx.coroutines.delay(4000)
+            val portuguese = getString(Res.string.bn_notices_lang) == "pt"
+            val unseen = com.nuvio.app.features.notices.NoticesRepository.refresh(portuguese)
+            if (unseen.isEmpty()) return@LaunchedEffect
+            val message = if (unseen.size == 1) {
+                val notice = unseen.first()
+                if (notice.text.isBlank()) notice.title
+                else getString(Res.string.bn_notices_toast_one, notice.title, notice.text)
+            } else {
+                getString(Res.string.bn_notices_toast_many, unseen.size)
+            }
+            NuvioToastController.show(message, durationMillis = 10_000L)
+            com.nuvio.app.features.notices.NoticesRepository.markSeen(unseen.map { it.id })
+        }
         LaunchedEffect(Unit) {
             if (!ownsAppRuntime) return@LaunchedEffect
             PartyRepository.events.collect { event ->

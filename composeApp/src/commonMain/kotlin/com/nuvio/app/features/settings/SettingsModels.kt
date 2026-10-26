@@ -41,6 +41,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_tracking
 import nuvio.composeapp.generated.resources.compose_settings_root_downloads_title
 import nuvio.composeapp.generated.resources.settings_account
 import nuvio.composeapp.generated.resources.bn_settings_page_look
+import nuvio.composeapp.generated.resources.bn_settings_page_notices
 import org.jetbrains.compose.resources.StringResource
 
 internal enum class SettingsCategory(
@@ -85,6 +86,12 @@ internal enum class SettingsPage(
     ),
     WhatsNew(
         titleRes = Res.string.compose_settings_page_whats_new,
+        category = SettingsCategory.About,
+        parentPage = Root,
+    ),
+    // Better Nuvio: avisos do canal do dono (avisos.c na TV).
+    Notices(
+        titleRes = Res.string.bn_settings_page_notices,
         category = SettingsCategory.About,
         parentPage = Root,
     ),
