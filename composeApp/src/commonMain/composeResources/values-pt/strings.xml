@@ -406,6 +406,8 @@
     <string name="compose_search_empty_no_active_addons_title">Sem addons ativos</string>
     <string name="compose_search_empty_no_results_message">Os catálogos pesquisáveis instalados não devolveram correspondências para esta consulta.</string>
     <string name="compose_search_empty_no_results_title">Nenhum resultado encontrado</string>
+    <string name="compose_search_empty_query_title">Pesquise filmes e séries</string>
+    <string name="compose_search_empty_query_message">Escreva um título, ator ou palavra-chave para pesquisar nos catálogos instalados.</string>
     <string name="compose_search_empty_no_search_catalogs_message">Os teus addons instalados não disponibilizam pesquisa de catálogos.</string>
     <string name="compose_search_empty_no_search_catalogs_title">Sem catálogos pesquisáveis</string>
     <string name="compose_search_placeholder">Pesquisa filmes e séries...</string>

@@ -518,6 +518,8 @@
     <string name="compose_search_empty_no_active_addons_title">No active addons</string>
     <string name="compose_search_empty_no_results_message">Installed searchable catalogs did not return any matches for this query.</string>
     <string name="compose_search_empty_no_results_title">No results found</string>
+    <string name="compose_search_empty_query_title">Search for movies and shows</string>
+    <string name="compose_search_empty_query_message">Type a title, actor or keyword to search your installed catalogs.</string>
     <string name="compose_search_empty_no_search_catalogs_message">Your enabled addons do not support catalog search.</string>
     <string name="compose_search_empty_no_search_catalogs_title">No searchable catalogs</string>
     <string name="compose_search_placeholder">Search movies, shows...</string>

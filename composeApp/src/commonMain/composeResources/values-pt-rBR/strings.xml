@@ -512,6 +512,8 @@
     <string name="compose_search_empty_no_active_addons_title">Nenhum addon ativo</string>
     <string name="compose_search_empty_no_results_message">Catálogos pesquisáveis instalados não retornaram correspondências para esta consulta.</string>
     <string name="compose_search_empty_no_results_title">Nenhum resultado encontrado</string>
+    <string name="compose_search_empty_query_title">Busque filmes e séries</string>
+    <string name="compose_search_empty_query_message">Digite um título, ator ou palavra-chave para buscar nos catálogos instalados.</string>
     <string name="compose_search_empty_no_search_catalogs_message">Seus addons ativados não oferecem suporte à busca em catálogos.</string>
     <string name="compose_search_empty_no_search_catalogs_title">Nenhum catálogo pesquisável</string>
     <string name="compose_search_placeholder">Buscar filmes, séries...</string>

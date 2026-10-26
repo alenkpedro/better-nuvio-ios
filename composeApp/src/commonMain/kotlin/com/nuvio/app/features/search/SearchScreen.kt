@@ -83,6 +83,8 @@ import nuvio.composeapp.generated.resources.compose_search_empty_no_results_titl
 import nuvio.composeapp.generated.resources.compose_search_empty_no_search_catalogs_message
 import nuvio.composeapp.generated.resources.compose_search_empty_no_search_catalogs_title
 import nuvio.composeapp.generated.resources.compose_search_placeholder
+import nuvio.composeapp.generated.resources.compose_search_empty_query_message
+import nuvio.composeapp.generated.resources.compose_search_empty_query_title
 import nuvio.composeapp.generated.resources.compose_search_recent_searches
 import nuvio.composeapp.generated.resources.compose_search_remove_recent_search
 import org.jetbrains.compose.resources.stringResource
@@ -330,6 +332,17 @@ fun SearchScreen(
                                 recentSearches = recentSearches,
                                 onSearchPress = { recentQuery -> query = recentQuery },
                                 onRemoveSearch = SearchHistoryRepository::removeSearch,
+                            )
+                        }
+                    } else {
+                        // Better Nuvio: sem consulta e sem buscas recentes a aba Busca ficava em branco.
+                        item(key = "empty_query_hint") {
+                            HomeEmptyStateCard(
+                                title = stringResource(Res.string.compose_search_empty_query_title),
+                                message = stringResource(Res.string.compose_search_empty_query_message),
+                                modifier = Modifier
+                                    .padding(horizontal = homeSectionPadding)
+                                    .padding(top = 8.dp),
                             )
                         }
                     }
