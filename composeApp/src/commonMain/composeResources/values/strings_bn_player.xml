@@ -65,4 +65,7 @@
     <string name="bn_info_section_engine">Playback engine</string>
     <string name="bn_info_section_video">Video stream</string>
     <string name="bn_info_section_audio">Audio stream</string>
+    <string name="bn_more_cast">Cast</string>
+    <string name="bn_more_cast_sub">Who plays whom in this title</string>
+    <string name="bn_cast_panel_empty">This title\'s cast has not arrived yet.</string>
 </resources>

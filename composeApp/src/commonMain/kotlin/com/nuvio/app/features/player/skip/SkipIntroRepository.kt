@@ -20,17 +20,12 @@ object SkipIntroRepository {
     private const val ANIME_SKIP_TIMEOUT_MS = 3_000L
     private const val ANIME_SKIP_SHOW_LOOKUP_TIMEOUT_MS = 3_000L
 
-    private val introDbConfigured: Boolean
-        get() = IntroDbConfig.URL.isNotBlank()
-
     suspend fun getMovieSkipIntervals(
         contentId: String?,
         videoId: String?,
         requireSkipIntroEnabled: Boolean = true,
     ): List<SkipInterval> {
-        if (!introDbConfigured ||
-            (requireSkipIntroEnabled && !PlayerSettingsRepository.uiState.value.skipIntroEnabled)
-        ) return emptyList()
+        if (requireSkipIntroEnabled && !PlayerSettingsRepository.uiState.value.skipIntroEnabled) return emptyList()
         val imdbId = resolveMovieSkipImdbId(
             contentId, videoId,
             resolveTmdb = { TmdbService.tmdbToImdb(it, "movie") },
@@ -38,8 +33,11 @@ object SkipIntroRepository {
         ) ?: return emptyList()
         val cacheKey = "movie:$imdbId"
         cache[cacheKey]?.let { return it }
-        val data = SkipIntroApi.getIntroDbMovieSegments(imdbId) ?: return emptyList()
-        return data.movieSkipIntervals().also { cache[cacheKey] = it }
+        // Better Nuvio: o TheIntroDB aceita so o imdb_id e devolve marcador de FILME (intro.c).
+        val data = withSkipProviderTimeout("TheIntroDB", INTRO_DB_TIMEOUT_MS, null) {
+            SkipIntroApi.getTheIntroDbMedia(imdbId)
+        } ?: return emptyList()
+        return data.toSkipIntervals(isMovie = true).also { cache[cacheKey] = it }
     }
 
     suspend fun getSkipIntervals(
@@ -65,12 +63,12 @@ object SkipIntroRepository {
         }
         InAppLogger.info(
             "Player/SkipIntro",
-            "skip lookup imdb=$imdbId s=$season e=$episode introDb=$introDbConfigured " +
+            "skip lookup imdb=$imdbId s=$season e=$episode " +
                 "animeSkip=${settings.animeSkipEnabled}",
         )
 
         val introDbDeferred = async {
-            if (introDbConfigured) fetchFromIntroDb(imdbId, season, episode) else emptyList()
+            fetchFromIntroDb(imdbId, season, episode)
         }
         // Resolve IMDB -> season-specific MAL/AniList via Simkl full_anime_seasons.
         // Kept as a deferred so it runs alongside IntroDB: the fork returns early when IntroDB
@@ -159,7 +157,7 @@ object SkipIntroRepository {
             val entries = resolveImdbEntries(imdbId)
             val season = entries.indexOfFirst { it.myanimelist == malId.toIntOrNull() } + 1
             val introDbDeferred = async {
-                if (introDbConfigured) fetchFromIntroDb(imdbId, season, episode) else emptyList()
+                fetchFromIntroDb(imdbId, season, episode)
             }
             val animeSkipDeferred = async { fetchAnimeSkipForEntries(entries, season, episode) }
             introDb = introDbDeferred.await()
@@ -224,7 +222,7 @@ object SkipIntroRepository {
             val entries = resolveImdbEntries(imdbId)
             val season = entries.indexOfFirst { it.kitsu == kitsuId.toIntOrNull() } + 1
             val introDbDeferred = async {
-                if (introDbConfigured) fetchFromIntroDb(imdbId, season, episode) else emptyList()
+                fetchFromIntroDb(imdbId, season, episode)
             }
             val animeSkipDeferred = async { fetchAnimeSkipForEntries(entries, season, episode) }
             introDb = introDbDeferred.await()
@@ -254,14 +252,19 @@ object SkipIntroRepository {
      * result from one provider never shadows a complete segment from another.
      */
     private fun mergeByPriority(vararg providerResults: List<SkipInterval>): List<SkipInterval> {
-        val chosen = LinkedHashMap<String, SkipInterval>()
+        // Better Nuvio: o TheIntroDB devolve uma LISTA por tipo; todos os trechos da categoria
+        // vem do mesmo provedor (o primeiro que a tiver).
+        val chosen = LinkedHashMap<String, MutableList<SkipInterval>>()
         for (result in providerResults) {
+            val fromThisProvider = HashSet<String>()
             for (interval in result) {
                 val category = segmentCategory(interval.type) ?: continue
-                if (category !in chosen) chosen[category] = interval
+                if (category in chosen && category !in fromThisProvider) continue
+                fromThisProvider += category
+                chosen.getOrPut(category) { mutableListOf() } += interval
             }
         }
-        return chosen.values.toList()
+        return chosen.values.flatten()
     }
 
     private fun segmentCategory(type: String): String? = when (type.lowercase()) {
@@ -307,21 +310,19 @@ object SkipIntroRepository {
         return emptyList()
     }
 
+    // Better Nuvio: TheIntroDB (api.theintrodb.org/v3/media), a mesma fonte de intro.c na TV.
     private suspend fun fetchFromIntroDb(imdbId: String, season: Int, episode: Int): List<SkipInterval> {
-        return withSkipProviderTimeout("IntroDB", INTRO_DB_TIMEOUT_MS, emptyList()) {
+        if (season <= 0 || episode <= 0) return emptyList()
+        return withSkipProviderTimeout("TheIntroDB", INTRO_DB_TIMEOUT_MS, emptyList()) {
             try {
-                InAppLogger.debug("Player/SkipIntro", "IntroDB fetch imdb=$imdbId s=$season e=$episode")
-                val data = SkipIntroApi.getIntroDbSegments(imdbId, season, episode)
+                InAppLogger.debug("Player/SkipIntro", "TheIntroDB fetch imdb=$imdbId s=$season e=$episode")
+                val data = SkipIntroApi.getTheIntroDbMedia(imdbId, season, episode)
                 if (data == null) {
-                    InAppLogger.debug("Player/SkipIntro", "IntroDB empty imdb=$imdbId s=$season e=$episode")
+                    InAppLogger.debug("Player/SkipIntro", "TheIntroDB empty imdb=$imdbId s=$season e=$episode")
                     emptyList()
                 } else {
-                    listOfNotNull(
-                        data.intro.toSkipIntervalOrNull("intro"),
-                        data.recap.toSkipIntervalOrNull("recap"),
-                        data.outro.toSkipIntervalOrNull("outro"),
-                    ).also { result ->
-                        InAppLogger.debug("Player/SkipIntro", "IntroDB result imdb=$imdbId s=$season e=$episode count=${result.size}")
+                    data.toSkipIntervals(isMovie = false).also { result ->
+                        InAppLogger.debug("Player/SkipIntro", "TheIntroDB result imdb=$imdbId s=$season e=$episode count=${result.size}")
                     }
                 }
             } catch (error: CancellationException) {
@@ -329,19 +330,11 @@ object SkipIntroRepository {
             } catch (error: Exception) {
                 InAppLogger.warn(
                     "Player/SkipIntro",
-                    "IntroDB failed imdb=$imdbId s=$season e=$episode error=${InAppLogger.throwableSummary(error)}",
+                    "TheIntroDB failed imdb=$imdbId s=$season e=$episode error=${InAppLogger.throwableSummary(error)}",
                 )
                 emptyList()
             }
         }
-    }
-
-    private fun IntroDbSegment?.toSkipIntervalOrNull(type: String): SkipInterval? {
-        if (this == null) return null
-        val start = startSec ?: startMs?.let { it / 1000.0 }
-        val end = endSec ?: endMs?.let { it / 1000.0 }
-        if (start == null || end == null || end <= start) return null
-        return SkipInterval(startTime = start, endTime = end, type = type, provider = "introdb")
     }
 
     private suspend fun fetchFromAniSkip(malId: String, episode: Int): List<SkipInterval> {

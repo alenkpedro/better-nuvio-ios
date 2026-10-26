@@ -663,6 +663,9 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
                 null
             },
             onStreamInfoClick = { openStreamInfo() },
+            onCastPanelClick = if (!isLiveTvPlayback) {
+                { openCastPanel() }
+            } else null,
             moreMenuExpanded = showMoreMenu,
             onMoreMenuExpandedChange = { expanded ->
                 showMoreMenu = expanded
@@ -836,6 +839,18 @@ private fun BoxScope.RenderPlaybackOverlays(
             },
         )
     }
+}
+
+// Better Nuvio: painel de elenco aberto pelo menu Mais (elencopl.c na TV).
+private fun PlayerScreenRuntime.openCastPanel() {
+    showCastPanel = true
+    showSourcesPanel = false
+    showQualityPanel = false
+    showSpeedPanel = false
+    showEpisodesPanel = false
+    showChaptersPanel = false
+    showLiveChannelsPanel = false
+    controlsVisible = false
 }
 
 private fun PlayerScreenRuntime.openChaptersPanel() {
@@ -1099,6 +1114,13 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
         },
         onChaptersPanelDismissed = {
             showChaptersPanel = false
+            controlsVisible = true
+        },
+        showCastPanel = showCastPanel,
+        castTitle = title,
+        cast = (metaUiState.meta ?: playerMeta)?.takeIf { it.id == parentMetaId }?.cast.orEmpty(),
+        onCastPanelDismissed = {
+            showCastPanel = false
             controlsVisible = true
         },
         showSubmitIntroModal = showSubmitIntroModal,

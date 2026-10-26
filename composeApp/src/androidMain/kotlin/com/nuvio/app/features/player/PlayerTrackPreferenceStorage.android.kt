@@ -18,6 +18,7 @@ internal actual object PlayerTrackPreferenceStorage {
     private const val audioTrackIdKey = "audio_track_id"
     private const val subtitleIsForcedKey = "subtitle_is_forced"
     private const val subtitleDelayMsKey = "subtitle_delay_ms"
+    private const val subtitleSavedAtMsKey = "subtitle_saved_at_ms"
 
     private var preferences: SharedPreferences? = null
 
@@ -39,6 +40,7 @@ internal actual object PlayerTrackPreferenceStorage {
             audioName = loadString(audioNameKey, id),
             audioTrackId = loadString(audioTrackIdKey, id),
             subtitleIsForced = loadBoolean(subtitleIsForcedKey, id),
+            subtitleSavedAtMs = loadLong(subtitleSavedAtMsKey, id),
         )
         return preference.takeIf {
             listOf(
@@ -70,6 +72,7 @@ internal actual object PlayerTrackPreferenceStorage {
             putOptionalString(audioNameKey, id, preference.audioName)
             putOptionalString(audioTrackIdKey, id, preference.audioTrackId)
             putOptionalBoolean(subtitleIsForcedKey, id, preference.subtitleIsForced)
+            putOptionalLong(subtitleSavedAtMsKey, id, preference.subtitleSavedAtMs)
         }?.apply()
     }
 
@@ -99,6 +102,22 @@ internal actual object PlayerTrackPreferenceStorage {
         val prefs = preferences ?: return null
         if (!prefs.contains(key)) return null
         return prefs.getBoolean(key, false)
+    }
+
+    private fun loadLong(field: String, contentId: String): Long? {
+        val key = scopedKey(field, contentId)
+        val prefs = preferences ?: return null
+        if (!prefs.contains(key)) return null
+        return prefs.getLong(key, 0L)
+    }
+
+    private fun SharedPreferences.Editor.putOptionalLong(field: String, contentId: String, value: Long?) {
+        val key = scopedKey(field, contentId)
+        if (value == null) {
+            remove(key)
+        } else {
+            putLong(key, value)
+        }
     }
 
     private fun SharedPreferences.Editor.putOptionalBoolean(field: String, contentId: String, value: Boolean?) {

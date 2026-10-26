@@ -19,6 +19,7 @@ import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.RecentActors
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
@@ -163,6 +164,7 @@ internal fun playerMoreActions(
     onInfoClick: (() -> Unit)?,
     onStreamInfoClick: (() -> Unit)?,
     onSubmitIntroClick: (() -> Unit)?,
+    onCastPanelClick: (() -> Unit)? = null,
 ): List<PlayerMoreAction> = listOfNotNull(
     onRateClick?.let {
         PlayerMoreAction(
@@ -205,6 +207,15 @@ internal fun playerMoreActions(
             subtitle = stringResource(Res.string.bn_more_video_sub),
             onClick = it,
             icon = Icons.Rounded.Build,
+        )
+    },
+    // Better Nuvio: o elenco do título durante a reprodução (elencopl.c na TV).
+    onCastPanelClick?.let {
+        PlayerMoreAction(
+            title = stringResource(Res.string.bn_more_cast),
+            subtitle = stringResource(Res.string.bn_more_cast_sub),
+            onClick = it,
+            icon = Icons.Rounded.RecentActors,
         )
     },
     onInfoClick?.let {

@@ -502,42 +502,65 @@ internal fun findPersistedAudioTrackIndex(
     }?.index ?: languageCandidates.firstOrNull()?.index ?: -1
 }
 
+/**
+ * Better Nuvio: a legenda de addon lembrada no episodio seguinte (escolhaLembrada em
+ * faixas.c). A url muda a cada episodio, entao "a mesma" e: mesmo idioma, mesmo addon e
+ * mesma marcacao de forcada; entre essas, a que casa com o release do video primeiro.
+ * A url so decide quando o episodio e o mesmo (reabrir). Addon diferente nao conta: sem a
+ * mesma, vale o automatico de sempre.
+ */
 internal fun findPersistedAddonSubtitle(
     subtitles: List<AddonSubtitle>,
     preference: PersistedPlayerTrackPreference,
+    videoSource: String? = null,
+    videoFps: Double? = null,
 ): AddonSubtitle? {
     preference.addonSubtitleUrl?.takeIf { it.isNotBlank() }?.let { url ->
         subtitles.firstOrNull { it.url == url }?.let { return it }
     }
     val language = preference.subtitleLanguage?.takeIf { it.isNotBlank() } ?: return null
-    val candidates = subtitles.filter { addonSubtitleMatchesLanguage(it, language) }
+    val candidates = subtitles.filter { it.url.isNotBlank() && addonSubtitleMatchesLanguage(it, language) }
     val providerCandidates = preference.addonSubtitleAddonName?.takeIf { it.isNotBlank() }?.let { name ->
         candidates.filter { it.addonName.equals(name, ignoreCase = true) }
-    }.orEmpty()
-    val preferredCandidates = providerCandidates.ifEmpty { candidates }
-    return preferredCandidates.firstOrNull {
+    } ?: candidates
+    if (providerCandidates.isEmpty()) return null
+    val forcedCandidates = preference.subtitleIsForced?.let { forced ->
+        providerCandidates.filter { addonSubtitleIsForced(it) == forced }
+    }?.takeIf { it.isNotEmpty() } ?: providerCandidates
+    forcedCandidates.recommendedSubtitle(videoSource, videoFps)?.let { return it }
+    return forcedCandidates.firstOrNull {
         it.display.equals(preference.subtitleName, ignoreCase = true)
-    } ?: preferredCandidates.firstOrNull()
+    } ?: forcedCandidates.firstOrNull()
 }
 
+/**
+ * Better Nuvio: a embutida lembrada (escolhaLembrada em faixas.c): mesmo idioma E mesmo
+ * nome ("SDH", "Forced") primeiro, que se repetem entre episodios do mesmo release; o id
+ * da faixa so desempata, porque muda entre releases.
+ */
 internal fun findPersistedSubtitleTrackIndex(
     tracks: List<SubtitleTrack>,
     preference: PersistedPlayerTrackPreference,
 ): Int {
-    preference.subtitleTrackId?.takeIf { it.isNotBlank() }?.let { trackId ->
-        tracks.firstOrNull { it.id == trackId }?.let { return it.index }
-    }
-
     val languageCandidates = preference.subtitleLanguage?.takeIf { it.isNotBlank() }?.let { language ->
         tracks.indices.filter { index ->
             SubtitleLanguageMatching.matchesLanguageCode(tracks[index].language, language) ||
                 subtitleTrackMatchesLanguage(tracks[index], language)
         }
     }.orEmpty()
-    val forcedFiltered = if (preference.subtitleIsForced == true) {
-        languageCandidates.filter { index -> tracks[index].isForced }
-    } else {
-        languageCandidates
+    val forcedFiltered = when (preference.subtitleIsForced) {
+        true -> languageCandidates.filter { index -> tracks[index].isForced }
+        false -> languageCandidates.filter { index -> !tracks[index].isForced }
+            .ifEmpty { languageCandidates }
+        null -> languageCandidates
+    }
+    preference.subtitleName?.takeIf { it.isNotBlank() }?.let { name ->
+        forcedFiltered.firstOrNull { index -> tracks[index].label.equals(name, ignoreCase = true) }
+            ?.let { return tracks[it].index }
+    }
+    preference.subtitleTrackId?.takeIf { it.isNotBlank() }?.let { trackId ->
+        val pool = if (languageCandidates.isEmpty()) tracks.indices.toList() else forcedFiltered
+        pool.firstOrNull { index -> tracks[index].id == trackId }?.let { return tracks[it].index }
     }
     if (forcedFiltered.size == 1) return tracks[forcedFiltered.first()].index
     if (forcedFiltered.size > 1) {
