@@ -36,49 +36,46 @@ data class ArmEntry(
     @SerialName("imdb") val imdb: String? = null,
 )
 
-// --- IntroDb API response models ---
+// --- TheIntroDB API response models ---
 
+// Better Nuvio: as tres chaves que a TV usa (intro.c). Cada uma e uma LISTA, porque um
+// episodio pode ter mais de um trecho do mesmo tipo. "preview" (trecho do proximo
+// episodio) fica de fora de proposito, como na TV.
 @Serializable
-data class IntroDbSegmentsResponse(
-    @SerialName("imdb_id") val imdbId: String? = null,
-    @SerialName("season") val season: Int? = null,
-    @SerialName("episode") val episode: Int? = null,
-    @SerialName("intro") val intro: IntroDbSegment? = null,
-    @SerialName("recap") val recap: IntroDbSegment? = null,
-    @SerialName("outro") val outro: IntroDbSegment? = null,
-    @SerialName("post_credits") val postCredits: IntroDbSegment? = null,
+data class TheIntroDbMediaResponse(
+    @SerialName("type") val type: String? = null,
+    @SerialName("intro") val intro: List<TheIntroDbSegment>? = null,
+    @SerialName("recap") val recap: List<TheIntroDbSegment>? = null,
+    @SerialName("credits") val credits: List<TheIntroDbSegment>? = null,
 )
 
-internal fun IntroDbSegmentsResponse.movieSkipIntervals(): List<SkipInterval> {
-    val credits = outro.movieIntervalOrNull("movie-credits")
-    val scene = postCredits.movieIntervalOrNull("post-credits")
-    // End-credit skipping must stop before the post-credits scene, even if data overlaps.
-    val safeCredits = if (credits != null && scene != null &&
-        scene.startTime < credits.endTime && scene.endTime > credits.startTime
-    ) {
-        credits.copy(endTime = scene.startTime).takeIf { it.endTime > it.startTime }
-    } else credits
-    return listOfNotNull(safeCredits, scene)
-}
-
-private fun IntroDbSegment?.movieIntervalOrNull(type: String): SkipInterval? {
-    if (this == null) return null
-    val start = startSec ?: startMs?.let { it / 1000.0 } ?: return null
-    val end = endSec ?: endMs?.let { it / 1000.0 } ?: return null
-    if (!start.isFinite() || !end.isFinite() || start < 0 || end <= start) return null
-    return SkipInterval(start, end, type, "introdb")
-}
-
+// MILISSEGUNDOS. `start_ms: null` = zero (comeca junto com a midia); `end_ms: null` = ate o fim.
 @Serializable
-data class IntroDbSegment(
-    @SerialName("start_sec") val startSec: Double? = null,
-    @SerialName("end_sec") val endSec: Double? = null,
+data class TheIntroDbSegment(
     @SerialName("start_ms") val startMs: Long? = null,
     @SerialName("end_ms") val endMs: Long? = null,
-    @SerialName("confidence") val confidence: Double? = null,
-    @SerialName("submission_count") val submissionCount: Int? = null,
-    @SerialName("updated_at") val updatedAt: String? = null,
 )
+
+/**
+ * Better Nuvio: converte a resposta do TheIntroDB em trechos do player. Sem fim vira
+ * Double.MAX_VALUE, o mesmo sentinela de "ate o fim" que os outros provedores usam.
+ * Em filme os creditos sao "movie-credits"; vale o que comeca POR ULTIMO (#115 na TV:
+ * um filme com creditos de abertura e finais marcados nao pode pular no comeco).
+ */
+internal fun TheIntroDbMediaResponse.toSkipIntervals(isMovie: Boolean): List<SkipInterval> {
+    fun List<TheIntroDbSegment>?.convert(type: String): List<SkipInterval> =
+        orEmpty().mapNotNull { segment ->
+            val start = (segment.startMs ?: 0L).coerceAtLeast(0L) / 1000.0
+            val end = segment.endMs?.let { it / 1000.0 } ?: Double.MAX_VALUE
+            if (end <= start) null else SkipInterval(start, end, type, "theintrodb")
+        }
+    val credits = if (isMovie) {
+        listOfNotNull(credits.convert("movie-credits").maxByOrNull { it.startTime })
+    } else {
+        credits.convert("outro").sortedByDescending { it.startTime }
+    }
+    return intro.convert("intro") + recap.convert("recap") + credits
+}
 
 @Serializable
 data class SubmitIntroRequest(

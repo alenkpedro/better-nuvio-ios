@@ -13,14 +13,19 @@ internal object SkipIntroApi {
     private const val ARM_BASE = "https://arm.haglund.dev/api/v2/"
     private const val ANIMESKIP_BASE = "https://api.anime-skip.com/"
 
-    // --- IntroDb ---
+    // --- TheIntroDB (leitura) ---
 
-    suspend fun getIntroDbMovieSegments(imdbId: String): IntroDbSegmentsResponse? {
-        val baseUrl = IntroDbConfig.URL.trimEnd('/')
-        if (baseUrl.isBlank()) return null
+    // Better Nuvio: os marcadores vem do TheIntroDB, como intro.c na TV. Sem chave e sem
+    // cadastro; aceita `imdb_id` sozinho (filme) ou com season/episode (serie). Titulo
+    // desconhecido responde 404, que aqui vira null ("zero marcadores").
+    suspend fun getTheIntroDbMedia(
+        imdbId: String,
+        season: Int? = null,
+        episode: Int? = null,
+    ): TheIntroDbMediaResponse? {
         return try {
-            val text = httpGetText(introDbMovieSegmentsUrl(baseUrl, imdbId))
-            json.decodeFromString<IntroDbSegmentsResponse>(text)
+            val text = httpGetText(theIntroDbMediaUrl(imdbId, season, episode))
+            json.decodeFromString<TheIntroDbMediaResponse>(text)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
@@ -28,23 +33,7 @@ internal object SkipIntroApi {
         }
     }
 
-    suspend fun getIntroDbSegments(
-        imdbId: String,
-        season: Int,
-        episode: Int,
-    ): IntroDbSegmentsResponse? {
-        val baseUrl = IntroDbConfig.URL.trimEnd('/')
-        if (baseUrl.isBlank()) return null
-        val url = "$baseUrl/segments?imdb_id=$imdbId&season=$season&episode=$episode"
-        return try {
-            val text = httpGetText(url)
-            json.decodeFromString<IntroDbSegmentsResponse>(text)
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            null
-        }
-    }
+    // --- IntroDb (envio) ---
 
     suspend fun submitIntro(
         apiKey: String,
@@ -222,5 +211,14 @@ internal object SkipIntroApi {
     }
 }
 
-internal fun introDbMovieSegmentsUrl(baseUrl: String, imdbId: String): String =
-    "${baseUrl.trimEnd('/')}/segments?imdb_id=$imdbId&is_movie=true"
+private const val THE_INTRO_DB_MEDIA_URL = "https://api.theintrodb.org/v3/media"
+
+/** Better Nuvio: o id pode vir como "tt123:1:2"; a API quer so a parte do IMDb (intro.c). */
+internal fun theIntroDbMediaUrl(imdbId: String, season: Int?, episode: Int?): String {
+    val id = imdbId.substringBefore(':')
+    return if (season != null && episode != null && season > 0 && episode > 0) {
+        "$THE_INTRO_DB_MEDIA_URL?imdb_id=$id&season=$season&episode=$episode"
+    } else {
+        "$THE_INTRO_DB_MEDIA_URL?imdb_id=$id"
+    }
+}
