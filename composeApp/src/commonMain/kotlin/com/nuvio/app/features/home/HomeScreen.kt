@@ -37,6 +37,9 @@ import com.nuvio.app.core.ui.LocalNuvioBottomNavigationOverlayPadding
 import com.nuvio.app.core.ui.DynamicArtworkBackground
 import com.nuvio.app.core.ui.NativeNavigationTab
 import com.nuvio.app.core.ui.NativeTabBridge
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import com.nuvio.app.core.ui.ScreenActivityEffect
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioNetworkOfflineCard
@@ -1272,6 +1275,7 @@ fun HomeScreen(
         if (onProfileClick != null) {
             // Better Nuvio: Perfil/Ajustes left the bottom bar (TV tabs). Tap opens Ajustes,
             // long-press keeps the profile switcher.
+            val avatarDensity = LocalDensity.current
             ProfileSwitcherTab(
                 selected = false,
                 onClick = onProfileClick,
@@ -1282,7 +1286,22 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(top = 6.dp, end = 16.dp),
+                    .padding(top = 6.dp, end = 16.dp)
+                    // Better Nuvio: a animação de escolha de perfil voa até este avatar
+                    // (antes mirava o último item da barra de abas).
+                    .onGloballyPositioned { coordinates ->
+                        val bounds = coordinates.boundsInWindow()
+                        if (bounds.width > 0f && bounds.height > 0f) {
+                            with(avatarDensity) {
+                                NativeTabBridge.receiveProfileTabIconFrame(
+                                    xDp = bounds.left.toDp().value,
+                                    yDp = bounds.top.toDp().value,
+                                    widthDp = bounds.width.toDp().value,
+                                    heightDp = bounds.height.toDp().value,
+                                )
+                            }
+                        }
+                    },
             )
         }
     }

@@ -22,7 +22,6 @@ import nuvio.composeapp.generated.resources.compose_settings_page_homescreen
 import nuvio.composeapp.generated.resources.compose_settings_page_integrations
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
 import nuvio.composeapp.generated.resources.compose_settings_page_whats_new
-import nuvio.composeapp.generated.resources.compose_settings_page_live_tv
 import nuvio.composeapp.generated.resources.compose_settings_page_mdblist_ratings
 import nuvio.composeapp.generated.resources.compose_settings_page_media_server
 import nuvio.composeapp.generated.resources.compose_settings_page_media_servers
@@ -197,11 +196,6 @@ internal enum class SettingsPage(
     ),
     Debrid(
         titleRes = Res.string.compose_settings_page_debrid,
-        category = SettingsCategory.General,
-        parentPage = Integrations,
-    ),
-    LiveTv(
-        titleRes = Res.string.compose_settings_page_live_tv,
         category = SettingsCategory.General,
         parentPage = Integrations,
     ),

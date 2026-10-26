@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material3.Scaffold
@@ -52,7 +51,6 @@ import nuvio.composeapp.generated.resources.compose_nav_calendar
 import nuvio.composeapp.generated.resources.compose_nav_discover
 import nuvio.composeapp.generated.resources.compose_nav_home
 import nuvio.composeapp.generated.resources.compose_nav_library
-import nuvio.composeapp.generated.resources.compose_nav_live_tv
 import nuvio.composeapp.generated.resources.compose_nav_profile
 import nuvio.composeapp.generated.resources.compose_nav_search
 import nuvio.composeapp.generated.resources.sidebar_library
@@ -74,7 +72,6 @@ internal fun MainTabsDestination(
     useNativeTabBar: Boolean,
     liquidGlassNativeTabBarSupported: Boolean,
     liquidGlassNativeTabBarEnabled: Boolean,
-    showLiveTvInNavigation: Boolean,
     requests: AppTabRequests,
     state: AppTabState,
     actions: (isTabletLayout: Boolean) -> AppTabActions,
@@ -86,7 +83,13 @@ internal fun MainTabsDestination(
     PlatformBackHandler(enabled = true, onBack = onBack)
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val isTabletLayout = useTabletFloatingTabBar || maxWidth >= 768.dp
+        // Better Nuvio: no iOS os Ajustes abrem numa folha; no iPad ela é estreita, então o
+        // layout de tablet (duas colunas) segue a largura da folha, não o aparelho.
+        val isTabletLayout = if (useNativeNavigation && selectedTab == AppScreenTab.Settings) {
+            maxWidth >= 768.dp
+        } else {
+            useTabletFloatingTabBar || maxWidth >= 768.dp
+        }
         val nativeActiveTab by NativeTabBridge.activeTab.collectAsState()
         val highlightedTab = if (useNativeNavigation) nativeActiveTab.toAppScreenTab() else selectedTab
         val tabActions = remember(actions, isTabletLayout) { actions(isTabletLayout) }
@@ -114,7 +117,6 @@ internal fun MainTabsDestination(
         val navBarBackdrop = if (floatingBarVisible) rememberNuvioBackdrop() else null
         val floatingNavigationItems = mainFloatingNavigationItems(
             highlightedTab = highlightedTab,
-            showLiveTv = showLiveTvInNavigation,
             onTabSelected = onTabSelected,
             onProfileSelected = onProfileSelected,
             onAddProfileRequested = onAddProfileRequested,
@@ -132,7 +134,6 @@ internal fun MainTabsDestination(
                 if (tabsRouteActive && !isTabletLayout && !useNativeBottomTabs && navBarStyleSetting == NavBarStyle.CLASSIC) {
                     MainClassicNavigationBar(
                         highlightedTab = highlightedTab,
-                        showLiveTv = showLiveTvInNavigation,
                         onTabSelected = onTabSelected,
                         onProfileSelected = onProfileSelected,
                         onAddProfileRequested = onAddProfileRequested,
@@ -177,7 +178,6 @@ internal fun MainTabsDestination(
                 if (isTabletLayout && !useNativeBottomTabs && navBarStyleSetting == NavBarStyle.CLASSIC) {
                     TabletFloatingTopBar(
                         selectedTab = highlightedTab,
-                        showLiveTv = showLiveTvInNavigation,
                         onTabSelected = onTabSelected,
                         onProfileSelected = onProfileSelected,
                         onAddProfileRequested = onAddProfileRequested,
@@ -251,7 +251,6 @@ private fun MainFloatingNavigationBar(
 @Composable
 internal fun mainFloatingNavigationItems(
     highlightedTab: AppScreenTab,
-    showLiveTv: Boolean,
     onTabSelected: (AppScreenTab) -> Unit,
     onProfileSelected: (NuvioProfile) -> Unit,
     onAddProfileRequested: () -> Unit,
@@ -298,23 +297,12 @@ internal fun mainFloatingNavigationItems(
             label = stringResource(Res.string.compose_nav_calendar),
         ),
     )
-    if (showLiveTv) {
-        add(
-            FloatingNavigationItem(
-                selected = highlightedTab == AppScreenTab.LiveTv,
-                onClick = { onTabSelected(AppScreenTab.LiveTv) },
-                icon = Icons.Filled.Tv,
-                label = stringResource(Res.string.compose_nav_live_tv),
-            ),
-        )
-    }
     // Better Nuvio: Perfil/Ajustes live behind the avatar on Home (TV layout), not in the bar.
 }
 
 @Composable
 internal fun MainClassicNavigationBar(
     highlightedTab: AppScreenTab,
-    showLiveTv: Boolean,
     onTabSelected: (AppScreenTab) -> Unit,
     onProfileSelected: (NuvioProfile) -> Unit,
     onAddProfileRequested: () -> Unit,
@@ -351,21 +339,12 @@ internal fun MainClassicNavigationBar(
             icon = Icons.Rounded.CalendarMonth,
             contentDescription = stringResource(Res.string.compose_nav_calendar),
         )
-        if (showLiveTv) {
-            NavItem(
-                selected = highlightedTab == AppScreenTab.LiveTv,
-                onClick = { onTabSelected(AppScreenTab.LiveTv) },
-                icon = Icons.Filled.Tv,
-                contentDescription = stringResource(Res.string.compose_nav_live_tv),
-            )
-        }
     }
 }
 
 @Composable
 internal fun BoxScope.SettingsRouteNavigationBar(
     isTabletLayout: Boolean,
-    showLiveTv: Boolean,
     backdrop: Backdrop?,
     onTabSelected: (AppScreenTab) -> Unit,
     onProfileSelected: (NuvioProfile) -> Unit,
@@ -393,7 +372,6 @@ internal fun BoxScope.SettingsRouteNavigationBar(
             SideEffect { onBottomOverlayChanged(0.dp) }
             TabletFloatingTopBar(
                 selectedTab = highlightedTab,
-                showLiveTv = showLiveTv,
                 onTabSelected = onTabSelected,
                 onProfileSelected = onProfileSelected,
                 onAddProfileRequested = onAddProfileRequested,
@@ -408,7 +386,6 @@ internal fun BoxScope.SettingsRouteNavigationBar(
             ) {
                 MainClassicNavigationBar(
                     highlightedTab = highlightedTab,
-                    showLiveTv = showLiveTv,
                     onTabSelected = onTabSelected,
                     onProfileSelected = onProfileSelected,
                     onAddProfileRequested = onAddProfileRequested,
@@ -421,7 +398,6 @@ internal fun BoxScope.SettingsRouteNavigationBar(
             FloatingNavigationBar(
                 items = mainFloatingNavigationItems(
                     highlightedTab = highlightedTab,
-                    showLiveTv = showLiveTv,
                     onTabSelected = onTabSelected,
                     onProfileSelected = onProfileSelected,
                     onAddProfileRequested = onAddProfileRequested,

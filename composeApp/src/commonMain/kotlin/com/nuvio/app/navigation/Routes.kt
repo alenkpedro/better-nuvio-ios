@@ -118,7 +118,11 @@ data class LicensesAttributionsSettingsRoute(override val title: String = "") : 
 data class WhatsNewSettingsRoute(override val title: String = "") : SettingsDestinationRoute
 
 @Serializable
-data class ProfileEditRoute(override val title: String = "") : SettingsDestinationRoute
+data class ProfileEditRoute(
+    override val title: String = "",
+    // Better Nuvio: "Adicionar perfil" abre o editor vazio (perfil novo).
+    val createNew: Boolean = false,
+) : SettingsDestinationRoute
 
 @Serializable
 data class CollectionsRoute(override val title: String = "") : SettingsDestinationRoute

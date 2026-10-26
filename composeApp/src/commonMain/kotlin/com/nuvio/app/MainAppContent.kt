@@ -67,6 +67,7 @@ import com.nuvio.app.core.sync.ProfileSettingsSync
 import com.nuvio.app.core.sync.SyncManager
 import com.nuvio.app.core.ui.DisintegrationRequestController
 import com.nuvio.app.core.ui.NativeTabBridge
+import com.nuvio.app.core.ui.nativeSheetCloseTitleValue
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.NuvioCardDepthSurface
 import com.nuvio.app.core.ui.NuvioContinueWatchingActionSheet
@@ -126,8 +127,6 @@ import com.nuvio.app.features.library.librarySectionItemKey
 import com.nuvio.app.features.library.showTrackingMembershipRewriteFeedback
 import com.nuvio.app.features.library.toLibraryItem
 import com.nuvio.app.features.library.toMetaPreview
-import com.nuvio.app.features.livetv.LiveTvChannel
-import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.membership.MemberAccessRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
@@ -270,7 +269,6 @@ internal fun MainAppContent(
         val searchScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val searchListState = rememberLazyListState()
         val libraryScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
-        val liveTvScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val settingsRootActionRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val currentRoute = navBackStack.lastOrNull() as? AppRoute
         LaunchedEffect(currentRoute, posterNavigationEnabled) {
@@ -318,11 +316,6 @@ internal fun MainAppContent(
         LaunchedEffect(libraryUiState.items) {
             warmLibraryReleaseSchedule(libraryUiState.items)
         }
-        val liveTvUiState by remember {
-            LiveTvRepository.ensureLoaded()
-            LiveTvRepository.uiState
-        }.collectAsStateWithLifecycle()
-        val showLiveTvInNavigation = liveTvUiState.showInNavigation
         val authState by AuthRepository.state.collectAsStateWithLifecycle()
         val openPosterActions: (PosterActionTarget) -> Unit = { target ->
             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -392,6 +385,12 @@ internal fun MainAppContent(
     val accountSettingsTitle = stringResource(Res.string.compose_settings_page_account)
     val editProfileTitle = stringResource(Res.string.profile_edit_edit_title)
     val pushEditProfile: () -> Unit = { navController.navigate(ProfileEditRoute(editProfileTitle)) }
+    // Better Nuvio: "Adicionar perfil" do popup do avatar abre a criação de perfil,
+    // não a troca de perfil.
+    val pushAddProfile: () -> Unit = {
+        navController.navigate(ProfileEditRoute(title = nativeAddProfileTitle, createNew = true))
+    }
+    val sheetCloseTitle = stringResource(Res.string.action_close)
     val supportersSettingsTitle = stringResource(Res.string.compose_settings_page_supporters_contributors)
     val licensesSettingsTitle = stringResource(Res.string.compose_settings_page_licenses_attributions)
     val whatsNewSettingsTitle = stringResource(Res.string.compose_settings_page_whats_new)
@@ -432,15 +431,10 @@ internal fun MainAppContent(
     }
 
     fun activateTab(tab: AppScreenTab) {
-        val destination = if (tab == AppScreenTab.LiveTv && !showLiveTvInNavigation) {
-            AppScreenTab.Home
-        } else {
-            tab
-        }
         if (useNativeNavigation && onActivate != null) {
-            onActivate(destination)
+            onActivate(tab)
         } else {
-            selectedTab = destination
+            selectedTab = tab
         }
     }
 
@@ -467,14 +461,7 @@ internal fun MainAppContent(
             AppScreenTab.Discover -> searchScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Library -> libraryScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Calendar -> Unit
-            AppScreenTab.LiveTv -> liveTvScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Settings -> settingsRootActionRequests.tryEmit(Unit)
-        }
-    }
-
-    LaunchedEffect(showLiveTvInNavigation, selectedTab) {
-        if (!showLiveTvInNavigation && selectedTab == AppScreenTab.LiveTv) {
-            activateTab(AppScreenTab.Home)
         }
     }
 
@@ -486,13 +473,9 @@ internal fun MainAppContent(
         initialTab,
         currentRoute,
         selectedTab,
-        showLiveTvInNavigation,
     ) {
         NativeTabBridge.requestedTabs.collectLatest { requestedTab ->
             val requestedAppTab = requestedTab.toAppScreenTab()
-            if (requestedAppTab == AppScreenTab.LiveTv && !showLiveTvInNavigation) {
-                return@collectLatest
-            }
             if (
                 useNativeNavigation &&
                 currentRoute is TabsRoute &&
@@ -518,8 +501,10 @@ internal fun MainAppContent(
         nativeAddProfileTitle,
         nativeTabDiscoverTitle,
         nativeTabCalendarTitle,
+        sheetCloseTitle,
         onTabTitles,
     ) {
+        nativeSheetCloseTitleValue = sheetCloseTitle
         NativeTabBridge.publishTabTitles(
             home = nativeTabHomeTitle,
             search = nativeTabSearchTitle,
@@ -847,6 +832,11 @@ internal fun MainAppContent(
         LaunchedEffect(navController) {
             if (!ownsAppRuntime) return@LaunchedEffect
             AppDeepLinkRepository.pendingDeepLink.collectLatest { deepLink ->
+                if (deepLink == null) return@collectLatest
+                // Better Nuvio: na abertura a frio (notificação, Live Activity, addon) o link
+                // chega antes do app ficar pronto; activateTab/navigate seriam ignorados e o
+                // link se perderia. Espera o app ficar pronto e só marca consumido depois.
+                appGateController?.appReady?.first { it }
                 when (deepLink) {
                     is AppDeepLink.Meta -> {
                         InAppLogger.info("App/DeepLink", "meta type=${deepLink.type} id=${deepLink.id}")
@@ -903,14 +893,12 @@ internal fun MainAppContent(
                     }
 
                     is AppDeepLink.Party -> {
-                        appGateController?.appReady?.first { it }
                         navController.navigate(PartyRoute(code = deepLink.code, title = watchPartyTitle)) {
                             launchSingleTop = true
                         }
                         AppDeepLinkRepository.markConsumed(deepLink)
                     }
 
-                    null -> Unit
                 }
             }
         }
@@ -1510,33 +1498,6 @@ internal fun MainAppContent(
             selectedContinueWatchingForActions = item
         }
 
-        val onLiveTvChannelClick: (LiveTvChannel) -> Unit = { channel ->
-            coroutineScope.launch {
-                val playableChannel = runCatching {
-                    LiveTvRepository.prepareForPlayback(channel)
-                }.getOrDefault(channel)
-                val launchId = PlayerLaunchStore.put(
-                    PlayerLaunch(
-                        profileId = activePlaybackProfileId,
-                        title = playableChannel.name,
-                        sourceUrl = playableChannel.streamUrl,
-                        sourceHeaders = playableChannel.headers,
-                        streamType = playableChannel.streamType,
-                        logo = playableChannel.logoUrl,
-                        streamTitle = playableChannel.name,
-                        streamSubtitle = playableChannel.group,
-                        providerName = "Live TV",
-                        providerAddonId = "live-tv",
-                        contentType = "live",
-                        videoId = playableChannel.id,
-                        parentMetaId = playableChannel.id,
-                        parentMetaType = "live",
-                    ),
-                )
-                navController.navigate(PlayerRoute(launchId = launchId))
-            }
-        }
-
         AppUpdaterHost(
             controller = appUpdaterController,
             modifier = Modifier.fillMaxSize(),
@@ -1596,19 +1557,16 @@ internal fun MainAppContent(
                         useNativeTabBar = useNativeTabBar,
                         liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
                         liquidGlassNativeTabBarEnabled = liquidGlassNativeTabBarEnabled,
-                        showLiveTvInNavigation = showLiveTvInNavigation,
                         requests = remember(
                             homeScrollToTopRequests,
                             searchScrollToTopRequests,
                             libraryScrollToTopRequests,
-                            liveTvScrollToTopRequests,
                             settingsRootActionRequests,
                         ) {
                             AppTabRequests(
                                 homeScrollToTopRequests = homeScrollToTopRequests,
                                 searchScrollToTopRequests = searchScrollToTopRequests,
                                 libraryScrollToTopRequests = libraryScrollToTopRequests,
-                                liveTvScrollToTopRequests = liveTvScrollToTopRequests,
                                 settingsRootActionRequests = settingsRootActionRequests,
                             )
                         },
@@ -1691,10 +1649,10 @@ internal fun MainAppContent(
                                 onDownloadsClick = { navController.navigate(DownloadsRoute(downloadsTitle)) },
                                 onContinueWatchingClick = onContinueWatchingClick,
                                 onContinueWatchingLongPress = onContinueWatchingLongPress,
-                                onLiveTvChannelClick = onLiveTvChannelClick,
                                 onOpenSettings = { activateTab(AppScreenTab.Settings) },
                                 onNavigationProfileSelected = onNavigationProfileSelected,
                                 onSwitchProfile = onSwitchProfile,
+                                onAddProfile = pushAddProfile,
                                 onEditProfile = pushEditProfile,
                                 onSettingsPageClick = if (useNativeNavigation && !isTabletLayout) {
                                     { pageName, title ->
@@ -1773,7 +1731,7 @@ internal fun MainAppContent(
                         },
                         onTabSelected = ::handleRootTabClick,
                         onProfileSelected = onNavigationProfileSelected,
-                        onAddProfileRequested = onSwitchProfile,
+                        onAddProfileRequested = pushAddProfile,
                     )
                 }
                 entry<DetailRoute> { route ->
@@ -1894,7 +1852,7 @@ internal fun MainAppContent(
                 entry<ProfileEditRoute> { route ->
                     SettingsDestination(route, navController) { onBack ->
                         ProfileEditScreen(
-                            profile = ProfileRepository.state.value.activeProfile,
+                            profile = if (route.createNew) null else ProfileRepository.state.value.activeProfile,
                             onBack = onBack,
                             onSaved = onBack,
                         )
@@ -2006,11 +1964,10 @@ internal fun MainAppContent(
                 BoxWithConstraints(Modifier.fillMaxSize()) {
                     SettingsRouteNavigationBar(
                         isTabletLayout = useTabletFloatingTabBar || maxWidth >= 768.dp,
-                        showLiveTv = showLiveTvInNavigation,
                         backdrop = settingsRouteBarBackdrop,
                         onTabSelected = ::selectTabFromSettingsRoute,
                         onProfileSelected = onNavigationProfileSelected,
-                        onAddProfileRequested = onSwitchProfile,
+                        onAddProfileRequested = pushAddProfile,
                         onBottomOverlayChanged = { settingsRouteBarOverlay = it },
                     )
                 }

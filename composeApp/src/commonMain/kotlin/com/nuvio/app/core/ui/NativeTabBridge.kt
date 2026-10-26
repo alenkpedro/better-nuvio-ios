@@ -30,7 +30,6 @@ internal enum class NativeNavigationTab {
     Discover,
     Library,
     Calendar,
-    LiveTv,
     Settings,
     ;
 
@@ -255,6 +254,11 @@ fun nativeTabSelect(tabName: String) {
 fun publishProfileTabIconFrame(xDp: Float, yDp: Float, widthDp: Float, heightDp: Float) {
     NativeTabBridge.receiveProfileTabIconFrame(xDp, yDp, widthDp, heightDp)
 }
+
+// Better Nuvio: rótulo de acessibilidade do X da folha de Ajustes, vindo dos recursos do Compose.
+internal var nativeSheetCloseTitleValue: String = ""
+
+fun nativeSheetCloseTitle(): String = nativeSheetCloseTitleValue
 
 fun nativeTabVisibilityChanged(tabName: String) {
     NativeTabBridge.markActiveTab(NativeNavigationTab.fromName(tabName))
