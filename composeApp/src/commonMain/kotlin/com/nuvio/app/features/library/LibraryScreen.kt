@@ -1029,7 +1029,7 @@ private fun LibrarySourceSwitch(
         // Better Nuvio: com Fila e Histórico os chips podem não caber; rolam de lado.
         Row(
             modifier = Modifier
-                .weight(1f, fill = false)
+                .weight(1f)
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -1064,7 +1064,6 @@ private fun LibrarySourceSwitch(
             onClick = { onModeSelected(LibraryViewMode.History) },
         )
         }
-        Spacer(modifier = Modifier.weight(1f))
         Row(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically,

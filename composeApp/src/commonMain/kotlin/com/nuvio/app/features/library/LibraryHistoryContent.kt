@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.nuvio.app.features.details.MetaDetails
+import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.home.components.HomeEmptyStateCard
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -281,6 +284,21 @@ private fun WatchHistoryRow(
     onClick: () -> Unit,
 ) {
     val entry = feedEntry.entry
+    // Progresso que veio da sincronização pode chegar só com o id: busca nome e pôster no meta.
+    val needsMeta = entry.poster == null || entry.title.isBlank() || entry.title == entry.parentMetaId
+    val meta by produceState<MetaDetails?>(initialValue = null, entry.parentMetaId, needsMeta) {
+        if (needsMeta) {
+            value = try {
+                MetaDetailsRepository.fetch(type = entry.parentMetaType, id = entry.parentMetaId)
+            } catch (cancel: kotlinx.coroutines.CancellationException) {
+                throw cancel
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+    val title = meta?.name?.takeIf { needsMeta && it.isNotBlank() } ?: entry.title
+    val poster = entry.poster ?: meta?.poster ?: entry.background ?: meta?.background ?: entry.episodeThumbnail
     val subtitle = when {
         entry.isEpisode && !entry.episodeTitle.isNullOrBlank() -> stringResource(
             Res.string.bn_history_episode_named,
@@ -307,8 +325,8 @@ private fun WatchHistoryRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AsyncImage(
-                model = entry.poster ?: entry.background ?: entry.episodeThumbnail,
-                contentDescription = entry.title,
+                model = poster,
+                contentDescription = title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(width = 44.dp, height = 66.dp)
@@ -318,7 +336,7 @@ private fun WatchHistoryRow(
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = entry.title,
+                    text = title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
