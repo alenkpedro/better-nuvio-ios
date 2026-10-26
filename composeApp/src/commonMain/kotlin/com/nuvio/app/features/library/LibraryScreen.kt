@@ -237,6 +237,19 @@ fun LibraryScreen(
         com.nuvio.app.features.queue.QueueRepository.ensureLoaded()
         com.nuvio.app.features.queue.QueueRepository.uiState
     }.collectAsStateWithLifecycle()
+    val watchProgressUiState by remember {
+        com.nuvio.app.features.watchprogress.WatchProgressRepository.ensureLoaded()
+        com.nuvio.app.features.watchprogress.WatchProgressRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val watchStatsState by remember {
+        WatchStatsRepository.ensureLoaded()
+        WatchStatsRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val historyToday = remember(watchProgressUiState.entries, watchStatsState) { todayLocalDate() }
+    val historyStats = remember(watchProgressUiState.entries, watchStatsState, historyToday) {
+        computeWatchHistoryStats(watchProgressUiState.entries, watchStatsState.secondsByDay, historyToday)
+    }
+    val historyFeed = remember(watchProgressUiState.entries) { buildWatchHistoryFeed(watchProgressUiState.entries) }
     val releaseCalendarCacheState by LibraryReleaseCalendarCache.state.collectAsStateWithLifecycle()
     val releaseCalendarCacheKey = remember(uiState.items) {
         LibraryReleaseCalendarCache.cacheKeyFor(uiState.items)
@@ -590,6 +603,26 @@ fun LibraryScreen(
                 libraryQueueContent(
                     queue = queueState,
                     onItemClick = { item -> onPosterClick?.invoke(item.toLibraryItem()) },
+                )
+            } else if (sourceMode == LibraryViewMode.History) {
+                libraryHistoryContent(
+                    stats = historyStats,
+                    feed = historyFeed,
+                    today = historyToday,
+                    onEntryClick = { feedEntry ->
+                        val entry = feedEntry.entry
+                        onPosterClick?.invoke(
+                            LibraryItem(
+                                id = entry.parentMetaId,
+                                type = entry.parentMetaType,
+                                name = entry.title,
+                                poster = entry.poster,
+                                banner = entry.background,
+                                logo = entry.logo,
+                                savedAtEpochMs = entry.lastUpdatedEpochMs,
+                            ),
+                        )
+                    },
                 )
             } else if (sourceMode == LibraryViewMode.Servers) {
                 serverLibraryContent(
@@ -1023,6 +1056,12 @@ private fun LibrarySourceSwitch(
             label = stringResource(Res.string.bn_library_queue),
             selected = selectedMode == LibraryViewMode.Queue,
             onClick = { onModeSelected(LibraryViewMode.Queue) },
+        )
+        // Better Nuvio: o histórico com os números do perfil (historico.c na TV).
+        LibraryChip(
+            label = stringResource(Res.string.bn_library_history),
+            selected = selectedMode == LibraryViewMode.History,
+            onClick = { onModeSelected(LibraryViewMode.History) },
         )
         }
         Spacer(modifier = Modifier.weight(1f))
@@ -3248,6 +3287,7 @@ private enum class LibraryViewMode {
     Cloud,
     Servers,
     Queue,
+    History,
 }
 
 private const val LIBRARY_SECTION_PREVIEW_LIMIT = 18

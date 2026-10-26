@@ -426,6 +426,20 @@ internal fun PlayerScreenRuntime.scheduleProgressSyncAfterSeek() {
     }
 }
 
+// Better Nuvio: o contador de minutos por dia do Histórico (historico_somar na TV). Soma o
+// tempo de relógio entre dois passos enquanto o vídeo toca; parado, o relógio zera.
+internal fun PlayerScreenRuntime.countWatchTimeTick() {
+    val now = WatchProgressClock.nowEpochMs()
+    val last = watchStatsLastTickEpochMs
+    val playing = playbackSnapshot.isPlaying && !playbackSnapshot.isLoading && !isLiveTvPlayback
+    watchStatsLastTickEpochMs = if (playing) now else 0L
+    if (playing && last > 0L) {
+        com.nuvio.app.features.library.WatchStatsRepository.addPlayedMs(now - last)
+    } else if (!playing && last > 0L) {
+        com.nuvio.app.features.library.WatchStatsRepository.flush()
+    }
+}
+
 internal fun PlayerScreenRuntime.persistPlaybackProgressTick() {
     if (!shouldTrackWatchProgress) return
     val now = WatchProgressClock.nowEpochMs()

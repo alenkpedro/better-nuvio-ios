@@ -524,6 +524,7 @@ private fun PlayerScreenRuntime.BindPlayerUiVisibilityEffects() {
         if (playbackSnapshot.isPlaying) {
             persistPlaybackProgressTick()
         }
+        countWatchTimeTick()
     }
 }
 

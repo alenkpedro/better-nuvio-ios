@@ -197,6 +197,7 @@ object ProfileRepository {
         MetaScreenSettingsRepository.onProfileChanged()
         com.nuvio.app.features.shuffle.EpisodeShuffleRepository.onProfileChanged()
         com.nuvio.app.features.queue.QueueRepository.onProfileChanged()
+        com.nuvio.app.features.library.WatchStatsRepository.onProfileChanged()
         ContinueWatchingPreferencesRepository.onProfileChanged()
         com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentCache.onProfileChanged()
         EpisodeReleaseNotificationsRepository.onProfileChanged()
