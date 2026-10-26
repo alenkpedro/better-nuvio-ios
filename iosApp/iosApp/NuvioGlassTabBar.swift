@@ -79,8 +79,10 @@ struct NuvioGlassTabBar: View {
         isExpanded ? expandedMetrics?.height : nil
     }
 
+    /// Better Nuvio: com a folha de Ajustes aberta, destaca a aba de baixo (lastBarTab),
+    /// não Início, e o pill recolhido mostra essa aba em vez do avatar.
     private var selectedTab: NuvioAppTab {
-        appCoordinator.selectedTab
+        appCoordinator.highlightedBarTab
     }
 
     private var isExpanded: Bool {
@@ -165,10 +167,7 @@ struct NuvioGlassTabBar: View {
                 guard tabs.indices.contains(index) else { return }
                 NativeTabBridgeKt.nativeTabSelect(tabName: tabs[index].rawValue)
             },
-            onLongPress: { index in
-                guard tabs.indices.contains(index), tabs[index] == .settings, appCoordinator.isAppReady else { return }
-                appCoordinator.isProfileSwitcherPresented = true
-            },
+            onLongPress: { _ in },
             onCollapsedTap: {
                 if Self.tapHapticsEnabled {
                     Self.tapFeedback.impactOccurred()
@@ -220,19 +219,7 @@ struct NuvioGlassTabBar: View {
         .accessibilityLabel(Text(appCoordinator.title(for: tab)))
         .accessibilityAddTraits(selected ? [.isSelected] : [])
 
-        return Group {
-            if tab == .settings {
-                button.simultaneousGesture(
-                    LongPressGesture(minimumDuration: 0.45)
-                        .onEnded { _ in
-                            guard appCoordinator.isAppReady else { return }
-                            appCoordinator.isProfileSwitcherPresented = true
-                        }
-                )
-            } else {
-                button
-            }
-        }
+        return button
     }
 
     private func mirroredContent(

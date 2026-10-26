@@ -336,16 +336,10 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
     case discover = "Discover"
     case library = "Library"
     case calendar = "Calendar"
-    case liveTv = "LiveTv"
     case settings = "Settings"
 
     var fallbackTitle: String {
-        switch self {
-        case .liveTv:
-            return "Live TV"
-        default:
-            return String(localized: String.LocalizationValue(rawValue))
-        }
+        String(localized: String.LocalizationValue(rawValue))
     }
 
     static func from(kotlinName: String?) -> NuvioAppTab? {
@@ -355,7 +349,6 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
         case "discover": return .discover
         case "library": return .library
         case "calendar": return .calendar
-        case "livetv", "live_tv", "live tv": return .liveTv
         case "settings", "profile": return .settings
         default: return nil
         }
@@ -368,7 +361,6 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
         case .discover: return "NuvioTabDiscover"
         case .calendar: return "NuvioTabCalendar"
         case .library: return "NuvioTabLibrary"
-        case .liveTv: return "NuvioTabLiveTv"
         case .settings: return "NuvioTabProfile"
         }
     }
@@ -380,7 +372,6 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
         case .discover: return "safari.fill"
         case .calendar: return "calendar"
         case .library: return "rectangle.stack.fill"
-        case .liveTv: return "tv.fill"
         case .settings: return "person.crop.circle.fill"
         }
     }
@@ -642,7 +633,6 @@ final class NativeProfileTabInteractionCoordinator: NSObject, UIGestureRecognize
         self.tabBarController?.tabBar.removeGestureRecognizer(recognizer)
         tabBarController.tabBar.addGestureRecognizer(recognizer)
         self.tabBarController = tabBarController
-        publishIconFrame()
         onAttached?()
     }
 
@@ -764,25 +754,14 @@ final class NativeProfileTabInteractionCoordinator: NSObject, UIGestureRecognize
         return best
     }
 
-    func publishIconFrame() {
-        guard #available(iOS 17.0, *),
-              let tabBar = tabBarController?.tabBar,
-              let profileItem = tabBar.items?.last,
-              let itemFrame = profileItem.frame(in: tabBar) else { return }
-        let windowFrame = tabBar.convert(itemFrame, to: nil)
-        NativeTabBridgeKt.publishProfileTabIconFrame(
-            xDp: Float(windowFrame.origin.x),
-            yDp: Float(windowFrame.origin.y),
-            widthDp: Float(windowFrame.width),
-            heightDp: Float(windowFrame.height)
-        )
-    }
-
     func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldReceive touch: UITouch
     ) -> Bool {
+        // Better Nuvio: sem ação de toque longo (o último item não é mais Perfil), o
+        // reconhecedor não pode receber toques: dava háptico, não fazia nada e desfazia a seleção.
         guard gestureRecognizer === recognizer,
+              onLongPress != nil,
               let tabBar = tabBarController?.tabBar,
               let profileItem = tabBar.items?.last else {
             return false
@@ -842,7 +821,6 @@ final class NativeProfileTabInteractionCoordinator: NSObject, UIGestureRecognize
 @MainActor
 final class AppNavigationCoordinator: ObservableObject {
     private static let nativeTabBarVisibleKey = "NuvioNativeTabBarVisible"
-    private static let liveTvTabVisibleKey = "NuvioLiveTvNavigationVisible"
 
     @Published var selectedTab: NuvioAppTab = .home {
         didSet {
@@ -877,11 +855,7 @@ final class AppNavigationCoordinator: ObservableObject {
     }
     @Published private(set) var tabBarBehavior: NuvioTabBarBehavior = NuvioTabBarBehavior.current()
     @Published private(set) var isSelectedTabAtRoot = true
-    @Published private(set) var isLiveTvTabVisible = false
     @Published private var localizedTabTitles: [NuvioAppTab: String] = [:]
-    @Published private(set) var localizedSwitchProfileTitle = ""
-    @Published private(set) var localizedAddProfileTitle = ""
-    @Published var isProfileSwitcherPresented = false
 
     private var tabBarTransitionTask: Task<Void, Never>?
 
@@ -890,7 +864,6 @@ final class AppNavigationCoordinator: ObservableObject {
     let libraryCoordinator = TabNavigationCoordinator()
     let discoverCoordinator = TabNavigationCoordinator()
     let calendarCoordinator = TabNavigationCoordinator()
-    let liveTvCoordinator = TabNavigationCoordinator()
     let settingsCoordinator = TabNavigationCoordinator()
     let appGateController = AppGateController()
     let profileSwitcherController = NativeProfileSwitcherController()
@@ -900,7 +873,6 @@ final class AppNavigationCoordinator: ObservableObject {
         PlayerPictureInPictureParking.shared.appCoordinator = self
         setTabBarVisible(true)
         reloadTabBarBehavior()
-        reloadLiveTvTabVisibility()
         NativeTabBridgeKt.observeNativePopToRoot { [weak self] tabName in
             guard let self, let tab = NuvioAppTab.from(kotlinName: tabName) else { return }
             self.coordinator(for: tab).popToRoot()
@@ -928,18 +900,30 @@ final class AppNavigationCoordinator: ObservableObject {
     private var allCoordinators: [TabNavigationCoordinator] {
         [
             homeCoordinator, searchCoordinator, discoverCoordinator, libraryCoordinator,
-            calendarCoordinator, liveTvCoordinator, settingsCoordinator,
+            calendarCoordinator, settingsCoordinator,
         ]
     }
 
-    /// Tabs shown in the bar: Início, Busca, Explorar, Biblioteca, Agenda (TV names), plus Live TV
-    /// when enabled. Perfil/Ajustes is not a tab anymore: it opens as a sheet from the avatar on Home.
+    /// Tabs shown in the bar: Início, Busca, Explorar, Biblioteca, Agenda (TV names).
+    /// Perfil/Ajustes is not a tab anymore: it opens as a sheet from the avatar on Home.
+    /// Better Nuvio: Live TV saiu do app (como na TV 1.6.11).
     var availableTabs: [NuvioAppTab] {
-        NuvioAppTab.allCases.filter { $0 != .settings && ($0 != .liveTv || isLiveTvTabVisible) }
+        NuvioAppTab.allCases.filter { $0 != .settings }
     }
 
     /// Last bar tab the user was on, shown underneath the Settings sheet.
     @Published private(set) var lastBarTab: NuvioAppTab = .home
+
+    /// Better Nuvio: com a folha de Ajustes aberta, selectedTab == .settings, mas a aba de
+    /// baixo (lastBarTab) continua visível atrás da folha e não pode virar Color.clear.
+    func isTabOnScreen(_ tab: NuvioAppTab) -> Bool {
+        selectedTab == tab || (selectedTab == .settings && lastBarTab == tab)
+    }
+
+    /// Tab highlighted in the bar: the one under the Settings sheet while it is open.
+    var highlightedBarTab: NuvioAppTab {
+        selectedTab == .settings ? lastBarTab : selectedTab
+    }
 
     var isSettingsPresented: Bool {
         get { selectedTab == .settings }
@@ -990,9 +974,6 @@ final class AppNavigationCoordinator: ObservableObject {
 
     private func setTabBarVisible(_ visible: Bool, animated: Bool = false) {
         UserDefaults.standard.set(visible, forKey: Self.nativeTabBarVisibleKey)
-        if visible {
-            profileTabInteraction.publishIconFrame()
-        }
 
         tabBarTransitionTask?.cancel()
         tabBarTransitionTask = nil
@@ -1010,15 +991,6 @@ final class AppNavigationCoordinator: ObservableObject {
         isTabBarVisible = visible
     }
 
-    func reloadLiveTvTabVisibility() {
-        let visible = UserDefaults.standard.bool(forKey: Self.liveTvTabVisibleKey)
-        guard isLiveTvTabVisible != visible else { return }
-        if !visible && selectedTab == .liveTv {
-            selectedTab = .home
-        }
-        isLiveTvTabVisible = visible
-    }
-
     func coordinator(for tab: NuvioAppTab) -> TabNavigationCoordinator {
         switch tab {
         case .home: return homeCoordinator
@@ -1026,17 +998,12 @@ final class AppNavigationCoordinator: ObservableObject {
         case .discover: return discoverCoordinator
         case .library: return libraryCoordinator
         case .calendar: return calendarCoordinator
-        case .liveTv: return liveTvCoordinator
         case .settings: return settingsCoordinator
         }
     }
 
     func activateTab(named tabName: String) {
         guard let tab = NuvioAppTab.from(kotlinName: tabName) else { return }
-        guard tab != .liveTv || isLiveTvTabVisible else {
-            selectedTab = .home
-            return
-        }
         if tab == .home || isAppReady {
             selectedTab = tab
         }
@@ -1062,17 +1029,13 @@ final class AppNavigationCoordinator: ObservableObject {
             .discover: discover,
             .library: library,
             .calendar: calendar,
-            .liveTv: NuvioAppTab.liveTv.fallbackTitle,
             .settings: profile,
         ]
-        localizedSwitchProfileTitle = switchProfile
-        localizedAddProfileTitle = addProfile
     }
 
     func updateAppReady(_ ready: Bool) {
         isAppReady = ready
         if !ready {
-            isProfileSwitcherPresented = false
             setTabBarVisible(true)
             selectedTab = .home
             allCoordinators.forEach { $0.popToRoot() }
@@ -1089,11 +1052,6 @@ final class AppNavigationCoordinator: ObservableObject {
 
     func setMainContentVisible(_ visible: Bool) {
         isMainContentVisible = visible
-    }
-
-    func openProfileManagement() {
-        isProfileSwitcherPresented = false
-        profileSwitcherController.requestManageProfiles()
     }
 
     func tab(for target: TabNavigationCoordinator) -> NuvioAppTab? {
@@ -1115,7 +1073,7 @@ final class AppNavigationCoordinator: ObservableObject {
         let requestedTab = NuvioAppTab.from(kotlinName: route.preferredTabName)
             ?? tab(for: origin)
             ?? selectedTab
-        var targetTab = requestedTab == .liveTv && !isLiveTvTabVisible ? .home : requestedTab
+        var targetTab = requestedTab
         // Better Nuvio: um título (ou fontes, player, catálogo) aberto de dentro dos Ajustes
         // fecha a folha e abre na aba de baixo, em vez de ficar preso dentro da folha.
         if targetTab == .settings && Self.opensOutsideSettingsSheet(route) {
@@ -1329,7 +1287,7 @@ struct TabContentView: View {
             .navigationTitle(appCoordinator.title(for: tab))
             .navigationBarHidden(true)
             .navigationDestination(for: RouteWrapper.self) { wrapper in
-                if appCoordinator.selectedTab == tab {
+                if appCoordinator.isTabOnScreen(tab) {
                     DetailDestinationView(
                         wrapper: wrapper,
                         usesNativeTabBar: usesNativeTabBar,
@@ -1457,276 +1415,6 @@ private struct DetailDestinationView: View {
     }
 }
 
-@available(iOS 26.0, *)
-private struct NativeProfileItem: Identifiable, Equatable {
-    let id: Int32
-    let name: String
-    let avatarColor: UIColor
-    let avatarBackgroundColor: UIColor
-    let avatarURL: URL?
-    let pinEnabled: Bool
-    let active: Bool
-
-    init(_ option: NativeProfileOption) {
-        id = option.profileIndex
-        name = option.name
-        avatarColor = UIColor(hexString: option.avatarColorHex)
-            ?? UIColor(red: 30 / 255, green: 136 / 255, blue: 229 / 255, alpha: 1)
-        avatarBackgroundColor = UIColor(hexString: option.avatarBackgroundColorHex)
-            ?? avatarColor.withAlphaComponent(0.16)
-        avatarURL = option.avatarImageUrl.flatMap(URL.init(string:))
-        pinEnabled = option.pinEnabled
-        active = option.active
-    }
-}
-
-@available(iOS 26.0, *)
-@MainActor
-private final class NativeProfileSwitcherViewModel: ObservableObject {
-    @Published private(set) var profiles: [NativeProfileItem] = []
-    @Published private(set) var isLoaded = false
-    @Published private(set) var canAddProfile = false
-    @Published var lockedProfile: NativeProfileItem?
-    @Published var pin = ""
-    @Published var errorMessage: String?
-    @Published private(set) var isSubmitting = false
-
-    private let controller: NativeProfileSwitcherController
-
-    init(controller: NativeProfileSwitcherController) {
-        self.controller = controller
-        apply(controller.currentState())
-    }
-
-    func startObserving() {
-        controller.observeState { [weak self] state in
-            self?.apply(state)
-        }
-    }
-
-    func stopObserving() {
-        controller.stopObserving()
-    }
-
-    func choose(_ profile: NativeProfileItem, onComplete: @escaping () -> Void) {
-        if profile.pinEnabled && !profile.active {
-            lockedProfile = profile
-            pin = ""
-            errorMessage = nil
-        } else {
-            submit(profile, pin: nil, onComplete: onComplete)
-        }
-    }
-
-    func updatePin(_ value: String) {
-        pin = String(value.filter(\.isNumber).prefix(4))
-        errorMessage = nil
-    }
-
-    func unlock(onComplete: @escaping () -> Void) {
-        guard let lockedProfile, pin.count == 4 else { return }
-        submit(lockedProfile, pin: pin, onComplete: onComplete)
-    }
-
-    func cancelUnlock() {
-        lockedProfile = nil
-        pin = ""
-        errorMessage = nil
-    }
-
-    private func apply(_ state: NativeProfileSwitcherState) {
-        profiles = state.profiles.map(NativeProfileItem.init)
-        isLoaded = state.isLoaded
-        canAddProfile = state.canAddProfile
-    }
-
-    private func submit(
-        _ profile: NativeProfileItem,
-        pin: String?,
-        onComplete: @escaping () -> Void
-    ) {
-        guard !isSubmitting else { return }
-        isSubmitting = true
-        errorMessage = nil
-        controller.chooseProfile(profileIndex: profile.id, pin: pin) { [weak self] result in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.isSubmitting = false
-                if result.unlocked {
-                    onComplete()
-                } else if let message = result.message, !message.isEmpty {
-                    self.errorMessage = message
-                } else if result.retryAfterSeconds > 0 {
-                    self.errorMessage = "Try again in \(result.retryAfterSeconds) seconds."
-                } else {
-                    self.errorMessage = "Incorrect PIN."
-                }
-            }
-        }
-    }
-}
-
-@available(iOS 26.0, *)
-private struct NativeProfileAvatarView: View {
-    let profile: NativeProfileItem
-
-    var body: some View {
-        ZStack {
-            Circle().fill(Color(uiColor: profile.avatarBackgroundColor))
-            if let avatarURL = profile.avatarURL {
-                AsyncImage(url: avatarURL) { phase in
-                    if let image = phase.image {
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    } else {
-                        initial
-                    }
-                }
-            } else {
-                initial
-            }
-        }
-        .clipShape(Circle())
-        .overlay {
-            Circle().strokeBorder(
-                Color(uiColor: profile.avatarColor).opacity(profile.active ? 1 : 0.45),
-                lineWidth: profile.active ? 2.5 : 1.5
-            )
-        }
-    }
-
-    private var initial: some View {
-        Text(profile.name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(1).uppercased())
-            .font(.system(size: 20, weight: .bold, design: .rounded))
-            .foregroundStyle(Color(uiColor: profile.avatarColor))
-    }
-}
-
-@available(iOS 26.0, *)
-private struct NativeProfileSwitcherView: View {
-    @Environment(\.dismiss) private var dismiss
-    @StateObject private var model: NativeProfileSwitcherViewModel
-    let title: String
-    let addProfileTitle: String
-    let onManageProfiles: () -> Void
-
-    init(
-        controller: NativeProfileSwitcherController,
-        title: String,
-        addProfileTitle: String,
-        onManageProfiles: @escaping () -> Void
-    ) {
-        _model = StateObject(
-            wrappedValue: NativeProfileSwitcherViewModel(controller: controller)
-        )
-        self.title = title
-        self.addProfileTitle = addProfileTitle
-        self.onManageProfiles = onManageProfiles
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(title)
-                .font(.headline)
-
-            if model.isLoaded {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(alignment: .top, spacing: 14) {
-                        ForEach(model.profiles) { profile in
-                            Button {
-                                model.choose(profile, onComplete: dismiss.callAsFunction)
-                            } label: {
-                                VStack(spacing: 6) {
-                                    NativeProfileAvatarView(profile: profile)
-                                        .frame(width: 52, height: 52)
-                                        .overlay(alignment: .bottomTrailing) {
-                                            if profile.pinEnabled {
-                                                Image(systemName: "lock.fill")
-                                                    .font(.system(size: 9, weight: .bold))
-                                                    .foregroundStyle(.white)
-                                                    .frame(width: 18, height: 18)
-                                                    .background(.black.opacity(0.72), in: Circle())
-                                            }
-                                        }
-
-                                    Text(profile.name)
-                                        .font(.caption)
-                                        .lineLimit(1)
-                                        .frame(width: 64)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(model.isSubmitting)
-                        }
-
-                        if model.canAddProfile {
-                            Button {
-                                onManageProfiles()
-                            } label: {
-                                VStack(spacing: 6) {
-                                    Image(systemName: "plus")
-                                        .font(.system(size: 19, weight: .semibold))
-                                        .frame(width: 52, height: 52)
-                                        .background(.secondary.opacity(0.12), in: Circle())
-                                    Text(addProfileTitle)
-                                        .font(.caption)
-                                        .multilineTextAlignment(.center)
-                                        .frame(width: 64)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-            }
-
-            if let lockedProfile = model.lockedProfile {
-                Divider()
-                Text("Enter PIN for \(lockedProfile.name)")
-                    .font(.subheadline.weight(.semibold))
-
-                SecureField("4-digit PIN", text: Binding(
-                    get: { model.pin },
-                    set: model.updatePin
-                ))
-                .keyboardType(.numberPad)
-                .textContentType(.password)
-                .multilineTextAlignment(.center)
-                .font(.title3.monospacedDigit())
-                .padding(.horizontal, 12)
-                .frame(height: 42)
-                .background(.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
-
-                if let errorMessage = model.errorMessage {
-                    Text(errorMessage)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                HStack {
-                    Button("Cancel", action: model.cancelUnlock)
-                    Spacer()
-                    Button("Unlock") {
-                        model.unlock(onComplete: dismiss.callAsFunction)
-                    }
-                    .disabled(model.pin.count != 4 || model.isSubmitting)
-                }
-            }
-        }
-        .padding(18)
-        .frame(minWidth: 250, idealWidth: 330, maxWidth: 360)
-        .presentationCompactAdaptation(.popover)
-        .presentationSizing(.fitted)
-        .onAppear(perform: model.startObserving)
-        .onDisappear(perform: model.stopObserving)
-    }
-}
-
 @available(iOS 16.0, *)
 struct NativeNavContentView: View {
     @StateObject private var appCoordinator = AppNavigationCoordinator()
@@ -1783,10 +1471,10 @@ struct NativeNavContentView: View {
                         coordinator: appCoordinator.coordinator(for: tab),
                         appCoordinator: appCoordinator
                     )
-                    .opacity(appCoordinator.selectedTab == tab ? 1 : 0)
+                    .opacity(appCoordinator.isTabOnScreen(tab) ? 1 : 0)
                     .allowsHitTesting(appCoordinator.selectedTab == tab)
                     .accessibilityHidden(appCoordinator.selectedTab != tab)
-                    .zIndex(appCoordinator.selectedTab == tab ? 1 : 0)
+                    .zIndex(appCoordinator.isTabOnScreen(tab) ? 1 : 0)
                 }
             }
         }
@@ -1802,72 +1490,32 @@ struct NativeNavContentView: View {
     private var nativeTabs: some View {
         TabView(selection: tabSelection) {
             ForEach(appCoordinator.availableTabs, id: \.self) { tab in
-                if tab == .settings {
-                    Tab(value: tab) {
-                        TabContentView(
-                            tab: tab,
-                            usesNativeTabBar: usesNativeTabBar,
-                            usesTabletFloatingTabBar: usesTabletFloatingTabBar,
-                            coordinator: appCoordinator.coordinator(for: tab),
-                            appCoordinator: appCoordinator
+                Tab(value: tab) {
+                    TabContentView(
+                        tab: tab,
+                        usesNativeTabBar: usesNativeTabBar,
+                        usesTabletFloatingTabBar: usesTabletFloatingTabBar,
+                        coordinator: appCoordinator.coordinator(for: tab),
+                        appCoordinator: appCoordinator
+                    )
+                } label: {
+                    Label {
+                        Text(appCoordinator.title(for: tab))
+                    } icon: {
+                        Image(
+                            uiImage: iconStore.image(
+                                for: tab,
+                                selected: appCoordinator.highlightedBarTab == tab
+                            )
                         )
-                    } label: {
-                        Label {
-                            Text(appCoordinator.title(for: tab))
-                        } icon: {
-                            Image(
-                                uiImage: iconStore.image(
-                                    for: tab,
-                                    selected: appCoordinator.selectedTab == tab
-                                )
-                            )
-                            .id(
-                                "\(tab.rawValue)-\(iconStore.revision)-" +
-                                    "\(appCoordinator.selectedTab == tab)"
-                            )
-                        }
-                    }
-                    .popover(
-                        isPresented: $appCoordinator.isProfileSwitcherPresented,
-                        attachmentAnchor: .rect(.bounds),
-                        arrowEdge: .bottom
-                    ) {
-                        NativeProfileSwitcherView(
-                            controller: appCoordinator.profileSwitcherController,
-                            title: appCoordinator.localizedSwitchProfileTitle,
-                            addProfileTitle: appCoordinator.localizedAddProfileTitle,
-                            onManageProfiles: appCoordinator.openProfileManagement
+                        .id(
+                            "\(tab.rawValue)-\(iconStore.revision)-" +
+                                "\(appCoordinator.highlightedBarTab == tab)"
                         )
-                    }
-                } else {
-                    Tab(value: tab) {
-                        TabContentView(
-                            tab: tab,
-                            usesNativeTabBar: usesNativeTabBar,
-                            usesTabletFloatingTabBar: usesTabletFloatingTabBar,
-                            coordinator: appCoordinator.coordinator(for: tab),
-                            appCoordinator: appCoordinator
-                        )
-                    } label: {
-                        Label {
-                            Text(appCoordinator.title(for: tab))
-                        } icon: {
-                            Image(
-                                uiImage: iconStore.image(
-                                    for: tab,
-                                    selected: appCoordinator.selectedTab == tab
-                                )
-                            )
-                            .id(
-                                "\(tab.rawValue)-\(iconStore.revision)-" +
-                                    "\(appCoordinator.selectedTab == tab)"
-                            )
-                        }
                     }
                 }
             }
         }
-        .id(appCoordinator.isLiveTvTabVisible)
         .tint(Color(uiColor: iconStore.accentColor))
         .tabBarMinimizeBehavior(
             appCoordinator.tabBarBehavior == .autoHide ? .onScrollDown : .never
@@ -1942,13 +1590,6 @@ struct NativeNavContentView: View {
         ) { _ in
             appCoordinator.reloadTabBarBehavior()
             appCoordinator.reloadTabBarVisibility()
-        }
-        .onReceive(
-            NotificationCenter.default.publisher(
-                for: Notification.Name("NuvioLiveTvNavigationVisibilityDidChange")
-            )
-        ) { _ in
-            appCoordinator.reloadLiveTvTabVisibility()
         }
     }
 }
@@ -2037,6 +1678,11 @@ private struct BetterNuvioSheetCloseButton: View {
         }
     }
 
+    private static var closeTitle: String {
+        let title = NativeTabBridgeKt.nativeSheetCloseTitle()
+        return title.isEmpty ? NSLocalizedString("Close", comment: "Close the Settings sheet") : title
+    }
+
     private var button: some View {
         Button(action: action) {
             Image(systemName: "xmark")
@@ -2048,7 +1694,7 @@ private struct BetterNuvioSheetCloseButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Fechar"))
+        .accessibilityLabel(Text(Self.closeTitle))
     }
 }
 

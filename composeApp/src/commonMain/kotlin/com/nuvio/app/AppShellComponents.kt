@@ -31,7 +31,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material3.Icon
@@ -77,8 +76,6 @@ import com.nuvio.app.features.library.LibraryCalendarTabScreen
 import com.nuvio.app.features.library.LibraryScreen
 import com.nuvio.app.features.library.LibrarySection
 import com.nuvio.app.features.library.LibrarySortOption
-import com.nuvio.app.features.livetv.LiveTvChannel
-import com.nuvio.app.features.livetv.LiveTvScreen
 import com.nuvio.app.features.profiles.AvatarRepository
 import com.nuvio.app.features.profiles.NuvioProfile
 import com.nuvio.app.features.profiles.ProfileBackgroundBackdrop
@@ -101,7 +98,6 @@ import nuvio.composeapp.generated.resources.compose_nav_calendar
 import nuvio.composeapp.generated.resources.compose_nav_discover
 import nuvio.composeapp.generated.resources.compose_nav_home
 import nuvio.composeapp.generated.resources.compose_nav_library
-import nuvio.composeapp.generated.resources.compose_nav_live_tv
 import nuvio.composeapp.generated.resources.compose_nav_profile
 import nuvio.composeapp.generated.resources.compose_nav_search
 import nuvio.composeapp.generated.resources.sidebar_library
@@ -144,7 +140,6 @@ internal data class AppTabRequests(
     val homeScrollToTopRequests: Flow<Unit>,
     val searchScrollToTopRequests: Flow<Unit>,
     val libraryScrollToTopRequests: Flow<Unit>,
-    val liveTvScrollToTopRequests: Flow<Unit>,
     val settingsRootActionRequests: Flow<Unit>,
 )
 
@@ -164,8 +159,8 @@ internal data class AppTabActions(
     val onDownloadsClick: () -> Unit = {},
     val onContinueWatchingClick: ((ContinueWatchingItem) -> Unit)? = null,
     val onContinueWatchingLongPress: ((ContinueWatchingItem) -> Unit)? = null,
-    val onLiveTvChannelClick: (LiveTvChannel) -> Unit = {},
     val onSwitchProfile: (() -> Unit)? = null,
+    val onAddProfile: (() -> Unit)? = null,
     val onEditProfile: (() -> Unit)? = null,
     val onSettingsPageClick: ((pageName: String, title: String) -> Unit)? = null,
     val onHomescreenSettingsClick: () -> Unit = {},
@@ -218,7 +213,7 @@ internal fun AppTabHost(
                         onFirstCatalogRendered = actions.onInitialHomeContentRendered,
                         onProfileClick = actions.onOpenSettings,
                         onProfileSelected = actions.onNavigationProfileSelected,
-                        onAddProfileRequested = actions.onSwitchProfile,
+                        onAddProfileRequested = actions.onAddProfile ?: actions.onSwitchProfile,
                     )
                     }
                 }
@@ -281,13 +276,6 @@ internal fun AppTabHost(
                 }
             }
 
-            AppScreenTab.LiveTv -> {
-                LiveTvScreen(
-                    scrollToTopRequests = requests.liveTvScrollToTopRequests,
-                    onChannelClick = actions.onLiveTvChannelClick,
-                )
-            }
-
             AppScreenTab.Settings -> {
                 SettingsScreen(
                     modifier = Modifier.fillMaxSize(),
@@ -322,7 +310,6 @@ internal fun AppTabHost(
 @Composable
 internal fun TabletFloatingTopBar(
     selectedTab: AppScreenTab,
-    showLiveTv: Boolean,
     onTabSelected: (AppScreenTab) -> Unit,
     onProfileSelected: (NuvioProfile) -> Unit,
     onAddProfileRequested: () -> Unit,
@@ -434,25 +421,6 @@ internal fun TabletFloatingTopBar(
                         )
                     },
                 )
-                if (showLiveTv) {
-                    TabletTopPillItem(
-                        label = stringResource(Res.string.compose_nav_live_tv),
-                        selected = selectedTab == AppScreenTab.LiveTv,
-                        onClick = { onTabSelected(AppScreenTab.LiveTv) },
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Filled.Tv,
-                                contentDescription = stringResource(Res.string.compose_nav_live_tv),
-                                modifier = Modifier.size(18.dp),
-                                tint = if (selectedTab == AppScreenTab.LiveTv) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            )
-                        },
-                    )
-                }
                 // Better Nuvio: Perfil/Ajustes moved to the avatar on Home (TV layout).
             }
         }
@@ -574,10 +542,9 @@ internal fun AppLoadingContent(
 
     LaunchedEffect(exitTowardProfileTab) {
         if (!exitTowardProfileTab) return@LaunchedEffect
-        // Prefer the real Profile tab icon's on-screen frame, pushed live from Swift (see
-        // NativeTabBridge.publishProfileTabIconFrame) — lands pixel-perfect on the actual icon.
-        // Falls back to an approximated bottom-right corner if that frame isn't known yet (e.g.
-        // this ran before Swift ever attached the tab bar coordinator).
+        // Better Nuvio: prefer the Home top-right avatar's on-screen frame, published by
+        // HomeScreen (NativeTabBridge.receiveProfileTabIconFrame) — lands on the actual avatar.
+        // Falls back to an approximated top-right corner if Home hasn't laid it out yet.
         val frame = profileTabIconFrame
         val targetX: Float
         val targetY: Float
@@ -587,9 +554,10 @@ internal fun AppLoadingContent(
             targetX = iconCenterXPx - containerSize.width / 2f
             targetY = iconCenterYPx - containerSize.height / 2f
         } else {
-            val marginPx = with(density) { 24.dp.toPx() }
-            targetX = (containerSize.width / 2f - marginPx).coerceAtLeast(0f)
-            targetY = (containerSize.height / 2f - marginPx).coerceAtLeast(0f)
+            val marginXPx = with(density) { 36.dp.toPx() }
+            val marginYPx = with(density) { 80.dp.toPx() }
+            targetX = (containerSize.width / 2f - marginXPx).coerceAtLeast(0f)
+            targetY = -(containerSize.height / 2f - marginYPx).coerceAtLeast(0f)
         }
         // The tab bar is already visible underneath by this point, so the emblem stays fully
         // opaque for almost the whole trip, only dissolving right at the very end — reading as the
