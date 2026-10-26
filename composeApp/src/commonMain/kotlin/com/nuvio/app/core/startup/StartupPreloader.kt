@@ -4,7 +4,6 @@ import com.nuvio.app.core.logging.InAppLogger
 import com.nuvio.app.features.details.MetaScreenSettingsRepository
 import com.nuvio.app.features.home.HomeRepository
 import com.nuvio.app.features.library.LibraryRepository
-import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.player.PlayerSettingsRepository
@@ -55,7 +54,6 @@ object StartupPreloader {
             step("servers") { ServerRepository.ensureLoaded() }
             step("metaScreen") { MetaScreenSettingsRepository.ensureLoaded() }
             step("releaseNotifications") { EpisodeReleaseNotificationsRepository.ensureLoaded() }
-            step("liveTv") { LiveTvRepository.ensureLoaded() }
             step("homeSnapshot") { HomeRepository.preloadSnapshot() }
         }
         InAppLogger.info(LogTag, "preloaded in ${started.elapsedNow().inWholeMilliseconds}ms")

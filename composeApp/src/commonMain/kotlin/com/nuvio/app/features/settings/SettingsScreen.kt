@@ -74,7 +74,6 @@ import com.nuvio.app.features.home.HomeCatalogSettingsItem
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.home.buildAddonCatalogRefreshSignature
-import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.mdblist.MdbListSettings
 import com.nuvio.app.features.mdblist.MdbListSettingsRepository
 import com.nuvio.app.features.mdblist.MdbListTracker
@@ -265,10 +264,6 @@ fun SettingsScreen(
         }.collectAsStateWithLifecycle()
         val profileSettingsState by remember {
             ProfileRepository.state
-        }.collectAsStateWithLifecycle()
-        val liveTvUiState by remember {
-            LiveTvRepository.ensureLoaded()
-            LiveTvRepository.uiState
         }.collectAsStateWithLifecycle()
 
         LaunchedEffect(homescreenCatalogRefreshKey) {
@@ -462,7 +457,6 @@ fun SettingsScreen(
                         omdbApiKey = omdbApiKey,
                         mdbListSettings = mdbListSettings,
                         debridSettings = debridSettings,
-                        liveTvUiState = liveTvUiState,
                         traktAuthUiState = traktAuthUiState,
                         simklAuthUiState = simklAuthUiState,
                         traktCommentsEnabled = traktCommentsEnabled,
@@ -541,7 +535,6 @@ fun SettingsScreen(
                         omdbApiKey = omdbApiKey,
                         mdbListSettings = mdbListSettings,
                         debridSettings = debridSettings,
-                        liveTvUiState = liveTvUiState,
                         traktAuthUiState = traktAuthUiState,
                         simklAuthUiState = simklAuthUiState,
                         traktCommentsEnabled = traktCommentsEnabled,
@@ -632,7 +625,6 @@ private fun MobileSettingsScreen(
     omdbApiKey: String,
     mdbListSettings: MdbListSettings,
     debridSettings: DebridSettings,
-    liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
     traktAuthUiState: TraktAuthUiState,
     simklAuthUiState: SimklAuthUiState,
     traktCommentsEnabled: Boolean,
@@ -962,7 +954,6 @@ private fun MobileSettingsScreen(
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                     onOmdbClick = { onPageChange(SettingsPage.Omdb) },
-                    onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
                     onDiscordClick = { onPageChange(SettingsPage.DiscordRpc) },
                 )
                 SettingsPage.Debrid -> debridSettingsContent(
@@ -989,10 +980,6 @@ private fun MobileSettingsScreen(
                 SettingsPage.Omdb -> omdbSettingsContent(
                     isTablet = false,
                     apiKey = omdbApiKey,
-                )
-                SettingsPage.LiveTv -> liveTvSettingsContent(
-                    isTablet = false,
-                    uiState = liveTvUiState,
                 )
                 SettingsPage.DiscordRpc -> discordRpcSettingsContent(
                     isTablet = false,
@@ -1096,7 +1083,6 @@ private fun TabletSettingsScreen(
     omdbApiKey: String,
     mdbListSettings: MdbListSettings,
     debridSettings: DebridSettings,
-    liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
     traktAuthUiState: TraktAuthUiState,
     simklAuthUiState: SimklAuthUiState,
     traktCommentsEnabled: Boolean,
@@ -1462,7 +1448,6 @@ private fun TabletSettingsScreen(
                         onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                         onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                         onOmdbClick = { onPageChange(SettingsPage.Omdb) },
-                        onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
                         onDiscordClick = { onPageChange(SettingsPage.DiscordRpc) },
                     )
                     SettingsPage.Debrid -> debridSettingsContent(
@@ -1489,10 +1474,6 @@ private fun TabletSettingsScreen(
                     SettingsPage.Omdb -> omdbSettingsContent(
                         isTablet = true,
                         apiKey = omdbApiKey,
-                    )
-                    SettingsPage.LiveTv -> liveTvSettingsContent(
-                        isTablet = true,
-                        uiState = liveTvUiState,
                     )
                     SettingsPage.DiscordRpc -> discordRpcSettingsContent(
                         isTablet = true,
