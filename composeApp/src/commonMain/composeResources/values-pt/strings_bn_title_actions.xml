@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bn_action_remind">Lembrar</string>
+    <string name="bn_remind_on">Lembrete ativo</string>
+    <string name="bn_remind_off">Lembrar-me</string>
+    <string name="bn_remind_enabled">Vais ser avisado quando sair um episódio novo</string>
+    <string name="bn_remind_disabled">Lembrete desligado</string>
+    <string name="bn_remind_permission_denied">Ativa as notificações nas Definições para receber o lembrete</string>
+    <string name="bn_action_recommend">Recomendar</string>
+    <string name="bn_recommend_label">Recomendar a um amigo</string>
+    <string name="bn_recommend_share_text">Recomendo %1$s</string>
+    <string name="bn_action_artwork">Arte</string>
+    <string name="bn_artwork_title">Trocar arte</string>
+    <string name="bn_artwork_backgrounds">Fundos</string>
+    <string name="bn_artwork_logos">Logos</string>
+    <string name="bn_artwork_automatic">Automático</string>
+    <string name="bn_artwork_empty">O TMDB não tem outras imagens para este título</string>
+    <string name="bn_person_follow">Seguir</string>
+    <string name="bn_person_following">A seguir</string>
+    <string name="bn_person_followed_people">Pessoas que segues</string>
+</resources>

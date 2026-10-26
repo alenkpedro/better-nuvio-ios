@@ -67,6 +67,14 @@ object EpisodeReleaseNotificationsRepository {
                     }
             }
         }
+        // Better Nuvio: o "Lembrar-me" da página do título entra no mesmo agendamento.
+        scope.launch {
+            SeriesReminderRepository.uiState.collectLatest {
+                if (!hasLoaded) return@collectLatest
+                if (reconcileTrackedShows(LibraryRepository.uiState.value)) persist()
+                requestRefresh()
+            }
+        }
         scope.launch {
             LibraryRepository.uiState.collectLatest { state ->
                 if (!hasLoaded) return@collectLatest
@@ -335,6 +343,18 @@ object EpisodeReleaseNotificationsRepository {
                     followedOnIsoDate = inferFollowedOnIsoDate(item),
                 )
         }
+        SeriesReminderRepository.ensureLoaded()
+        SeriesReminderRepository.uiState.value.forEach { reminder ->
+            val key = buildTrackedShowKey(reminder.type, reminder.id)
+            if (key !in nextTrackedShows) {
+                nextTrackedShows[key] = trackedShowsByKey[key]
+                    ?: TrackedFollowedShow(
+                        contentId = reminder.id,
+                        contentType = reminder.type,
+                        followedOnIsoDate = reminder.sinceIsoDate,
+                    )
+            }
+        }
 
         val changed = nextTrackedShows != trackedShowsByKey
         if (changed) {
@@ -367,7 +387,14 @@ object EpisodeReleaseNotificationsRepository {
                 }
                 .getOrDefault(false)
 
-            if (!_uiState.value.isEnabled || !permissionGranted) {
+            // Better Nuvio: com o aviso geral desligado, só as séries com "Lembrar-me".
+            val reminderKeys = SeriesReminderRepository.trackedKeys()
+            val showsToSchedule = if (_uiState.value.isEnabled) {
+                trackedShowsByKey
+            } else {
+                trackedShowsByKey.filterKeys { it in reminderKeys }
+            }
+            if ((!_uiState.value.isEnabled && reminderKeys.isEmpty()) || !permissionGranted) {
                 runCatching { EpisodeReleaseNotificationPlatform.clearScheduledEpisodeReleaseNotifications() }
                     .onFailure { error ->
                         log.w { "Failed to clear scheduled episode release notifications: ${error.message}" }
@@ -392,7 +419,7 @@ object EpisodeReleaseNotificationsRepository {
                 errorMessage = null,
             )
 
-            if (trackedShowsByKey.isEmpty()) {
+            if (showsToSchedule.isEmpty()) {
                 runCatching { EpisodeReleaseNotificationPlatform.clearScheduledEpisodeReleaseNotifications() }
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -410,7 +437,7 @@ object EpisodeReleaseNotificationsRepository {
 
             val todayIso = CurrentDateProvider.todayIsoDate()
             val semaphore = Semaphore(metadataFetchConcurrency)
-            val requestsByShowKey = trackedShowsByKey.map { (showKey, trackedShow) ->
+            val requestsByShowKey = showsToSchedule.map { (showKey, trackedShow) ->
                 scope.async {
                     val built = semaphore.withPermit {
                         buildRequestsForShow(trackedShow)

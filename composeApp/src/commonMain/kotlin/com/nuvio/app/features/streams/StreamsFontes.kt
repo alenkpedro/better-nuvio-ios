@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -47,6 +49,10 @@ import nuvio.composeapp.generated.resources.bn_streams_found_count
 import nuvio.composeapp.generated.resources.bn_streams_recommended
 import nuvio.composeapp.generated.resources.bn_streams_recommended_usual
 import nuvio.composeapp.generated.resources.bn_streams_resolution_all
+import nuvio.composeapp.generated.resources.bn_streams_section_other
+import nuvio.composeapp.generated.resources.bn_streams_section_sd
+import nuvio.composeapp.generated.resources.bn_streams_type_direct
+import nuvio.composeapp.generated.resources.bn_streams_type_torrent
 import nuvio.composeapp.generated.resources.bn_streams_title
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -193,6 +199,129 @@ internal fun StreamsUiState.withResolutionFilter(resolution: String?): StreamsUi
 }
 
 // ---------------------------------------------------------------------------
+// Tipo (streams.c: "Todas / Torrent / Diretas") e grupos por resolução × imagem
+// ---------------------------------------------------------------------------
+
+/** Filtro de tipo da folha, como na TV: 0 Todas, 1 Torrent, 2 Diretas. */
+internal const val BnTypeAll = 0
+internal const val BnTypeTorrent = 1
+internal const val BnTypeDirect = 2
+
+/**
+ * Torrent na TV é a fonte com infoHash, mesmo depois que o debrid devolve a url;
+ * aqui também conta o magnet/torrent:// sem infoHash declarado.
+ */
+internal val StreamItem.bnIsTorrent: Boolean
+    get() = !p2pInfoHash.isNullOrBlank() || !infoHash.isNullOrBlank() || isTorrentStream
+
+internal fun StreamItem.matchesBnType(type: Int): Boolean = when (type) {
+    BnTypeTorrent -> bnIsTorrent
+    BnTypeDirect -> !bnIsTorrent
+    else -> true
+}
+
+internal fun StreamsUiState.withTypeFilter(type: Int): StreamsUiState {
+    if (type == BnTypeAll) return this
+    return copy(groups = groups.map { group -> group.copy(streams = group.streams.filter { it.matchesBnType(type) }) })
+}
+
+/**
+ * Grupo da fonte como em streams.c (grupoRes): resolução 4K, 1080p, 720p, SD e
+ * sem dado; dentro de cada uma Dolby Vision, depois HDR (HDR10, HDR10+ e HLG
+ * juntos), depois a imagem comum. Fonte DV com camada HDR10 fica no DV.
+ * Devolve 1..15 na ordem de desenho.
+ */
+internal fun StreamItem.bnQualityGroup(): Int {
+    val res = when (bnResolution()) {
+        "4K" -> 1
+        "1080p" -> 2
+        "720p" -> 3
+        "480p" -> 4
+        else -> 5
+    }
+    val tags = bnQualityTags()
+    val img = when {
+        "DV" in tags -> 0
+        tags.any { it.startsWith("HDR") } -> 1
+        else -> 2
+    }
+    return (res - 1) * 3 + img + 1
+}
+
+internal data class BnQualitySection(
+    val group: Int,
+    val streams: List<StreamItem>,
+)
+
+/** As fontes agrupadas por resolução × imagem; dentro do grupo segue a ordem de sempre. */
+internal fun bnQualitySections(streams: List<StreamItem>): List<BnQualitySection> =
+    streams.groupBy { it.bnQualityGroup() }
+        .entries
+        .sortedBy { it.key }
+        .map { entry -> BnQualitySection(entry.key, entry.value) }
+
+@Composable
+internal fun bnQualityGroupLabel(group: Int): String {
+    val res = when ((group - 1) / 3 + 1) {
+        1 -> "4K"
+        2 -> "1080p"
+        3 -> "720p"
+        4 -> stringResource(Res.string.bn_streams_section_sd)
+        else -> stringResource(Res.string.bn_streams_section_other)
+    }
+    return when ((group - 1) % 3) {
+        0 -> "$res · Dolby Vision"
+        1 -> "$res · HDR"
+        else -> res
+    }
+}
+
+/** Título de seção: "4K · Dolby Vision", a contagem e a seta de recolher (streams.c). */
+@Composable
+internal fun QualitySectionHeader(
+    group: Int,
+    count: Int,
+    collapsed: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 8.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = bnQualityGroupLabel(group),
+            style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+        )
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium),
+            color = MaterialTheme.nuvio.colors.textMuted,
+            maxLines = 1,
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(Color.White.copy(alpha = 0.10f)),
+        )
+        Icon(
+            imageVector = if (collapsed) Icons.AutoMirrored.Rounded.KeyboardArrowRight else Icons.Rounded.KeyboardArrowDown,
+            contentDescription = null,
+            tint = MaterialTheme.nuvio.colors.textMuted,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Recomendada
 // ---------------------------------------------------------------------------
 
@@ -303,6 +432,45 @@ internal fun ResolutionFilterRow(
     onSelected: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val all = stringResource(Res.string.bn_streams_resolution_all)
+    BnSegmentedFilterRow(
+        options = listOf<String?>(null) + BnResolutionFilters,
+        label = { it ?: all },
+        selected = selected,
+        onSelected = onSelected,
+        modifier = modifier,
+    )
+}
+
+/** Better Nuvio: "Todas / Torrent / Diretas", o filtro de tipo da folha da TV. */
+@Composable
+internal fun StreamTypeFilterRow(
+    selected: Int,
+    onSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val labels = mapOf(
+        BnTypeAll to stringResource(Res.string.bn_streams_resolution_all),
+        BnTypeTorrent to stringResource(Res.string.bn_streams_type_torrent),
+        BnTypeDirect to stringResource(Res.string.bn_streams_type_direct),
+    )
+    BnSegmentedFilterRow(
+        options = listOf(BnTypeAll, BnTypeTorrent, BnTypeDirect),
+        label = { labels.getValue(it) },
+        selected = selected,
+        onSelected = onSelected,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun <T> BnSegmentedFilterRow(
+    options: List<T>,
+    label: (T) -> String,
+    selected: T,
+    onSelected: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -311,7 +479,7 @@ internal fun ResolutionFilterRow(
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        (listOf<String?>(null) + BnResolutionFilters).forEach { option ->
+        options.forEach { option ->
             val isSelected = option == selected
             Box(
                 modifier = Modifier
@@ -323,7 +491,7 @@ internal fun ResolutionFilterRow(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = option ?: stringResource(Res.string.bn_streams_resolution_all),
+                    text = label(option),
                     style = MaterialTheme.typography.labelLarge.copy(
                         fontSize = 13.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,

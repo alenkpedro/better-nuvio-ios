@@ -74,6 +74,36 @@ object TmdbMetadataService {
             }
         }
 
+    /**
+     * Better Nuvio ("Trocar arte", trocaarte.c): todos os fundos e logos do TMDB
+     * para o título, na ordem do TMDB, no idioma do app, em inglês e sem idioma.
+     * Teto de 28 fundos e 16 logos, como na TV.
+     */
+    suspend fun fetchArtworkOptions(id: String, type: String): TmdbArtworkOptions? =
+        withContext(Dispatchers.Default) {
+            val mediaType = TmdbService.normalizeMediaType(type)
+            if (mediaType != "movie" && mediaType != "tv") return@withContext null
+            val language = normalizeTmdbLanguage(TmdbSettingsRepository.snapshot().language)
+            val tmdbId = TmdbService.ensureTmdbId(id, mediaType) ?: return@withContext null
+            val images = fetch<TmdbImagesResponse>(
+                endpoint = "$mediaType/$tmdbId/images",
+                query = mapOf("include_image_language" to tmdbImageLanguages(language)),
+            ) ?: return@withContext null
+            fun List<TmdbImage>.options(size: String, thumbSize: String, max: Int) =
+                mapNotNull { image ->
+                    val url = buildImageUrl(image.filePath, size) ?: return@mapNotNull null
+                    TmdbArtworkOption(
+                        url = url,
+                        thumbnail = buildImageUrl(image.filePath, thumbSize) ?: url,
+                        language = image.iso6391,
+                    )
+                }.distinctBy { it.url }.take(max)
+            TmdbArtworkOptions(
+                backdrops = images.backdrops.options("w1280", "w300", 28),
+                logos = images.logos.options("w500", "w300", 16),
+            )
+        }
+
     suspend fun fetchPersonDetail(
         personId: Int,
         preferCrewCredits: Boolean? = null,
@@ -2287,4 +2317,16 @@ internal data class TmdbDiscoverResult(
     @SerialName("first_air_date") val firstAirDate: String? = null,
     @SerialName("vote_average") val voteAverage: Double? = null,
     @SerialName("vote_count") val voteCount: Int? = null,
+)
+
+/** Better Nuvio: uma imagem do /images do TMDB para a tela "Trocar arte". */
+data class TmdbArtworkOption(
+    val url: String,
+    val thumbnail: String,
+    val language: String?,
+)
+
+data class TmdbArtworkOptions(
+    val backdrops: List<TmdbArtworkOption>,
+    val logos: List<TmdbArtworkOption>,
 )

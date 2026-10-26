@@ -70,6 +70,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.features.artwork.withArtworkChoice
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
@@ -215,6 +216,13 @@ internal fun HomeHeroSection(
     tabAccentActive: Boolean = false,
 ) {
     if (items.isEmpty()) return
+    // Better Nuvio: o fundo e o logo de "Trocar arte" valem também no destaque (arteescolha.h).
+    val artworkChoices by remember {
+        com.nuvio.app.features.artwork.ArtworkChoiceRepository.ensureLoaded()
+        com.nuvio.app.features.artwork.ArtworkChoiceRepository.uiState
+    }.collectAsStateWithLifecycle()
+    @Suppress("NAME_SHADOWING")
+    val items = remember(items, artworkChoices) { items.map { it.withArtworkChoice(artworkChoices) } }
 
     val pagerState = key(items.size) {
         rememberPagerState(
@@ -358,7 +366,8 @@ internal fun HomeHeroSection(
             val targetDetails = rememberHeroMetaDetails(targetItem)
             val heroCorVivaTarget = rememberTitleCorVivaTarget(
                 logoUrl = heroLogoUrl(targetItem, targetDetails),
-                artUrl = targetDetails?.let { it.background ?: it.poster }
+                artUrl = com.nuvio.app.features.artwork.ArtworkChoiceRepository.backgroundFor(targetItem.id)
+                    ?: targetDetails?.let { it.background ?: it.poster }
                     ?: heroArtworkUrl(targetItem, effectiveArtworkSource),
             )
             val heroCorViva by animateColorAsState(
@@ -853,7 +862,9 @@ private fun HeroContentBlock(
     // TMDB), senão o do catálogo. Sem logo, o nome em texto. A cor viva sai deste mesmo logo.
     // Se um logo não carrega, tenta o outro (meta do addon ou catálogo) antes do nome em texto.
     var failedLogos by remember(item.type, item.id) { mutableStateOf(emptySet<String>()) }
+    val chosenLogo = com.nuvio.app.features.artwork.ArtworkChoiceRepository.logoFor(item.id)
     val logoUrl = listOfNotNull(
+        chosenLogo,
         details?.logo?.takeIf { it.isNotBlank() },
         item.logo?.takeIf { it.isNotBlank() },
     ).firstOrNull { it !in failedLogos }
@@ -1262,5 +1273,6 @@ private suspend fun loadHeroMetaOnce(
 private val heroLog = co.touchlab.kermit.Logger.withTag("HomeHero")
 
 private fun heroLogoUrl(item: MetaPreview, details: MetaDetails?): String? =
-    details?.logo?.takeIf { it.isNotBlank() }
+    com.nuvio.app.features.artwork.ArtworkChoiceRepository.logoFor(item.id)
+        ?: details?.logo?.takeIf { it.isNotBlank() }
         ?: item.logo?.takeIf { it.isNotBlank() }
