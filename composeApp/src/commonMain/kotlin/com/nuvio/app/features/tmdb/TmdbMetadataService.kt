@@ -758,6 +758,26 @@ object TmdbMetadataService {
         )
     }
 
+    /**
+     * Better Nuvio: só a classificação indicativa de um título (release_dates no
+     * filme, content_ratings na série), para a restrição do perfil (restricao.c)
+     * conferir itens de catálogo, que não trazem classificação. Brasil primeiro,
+     * depois EUA e Reino Unido. Null quando o TMDB não sabe ou não respondeu.
+     */
+    suspend fun fetchAgeRating(id: String, type: String, language: String = "pt-BR"): String? =
+        withContext(Dispatchers.Default) {
+            val tmdbType = normalizeMetaType(type)
+            val tmdbId = TmdbService.ensureTmdbId(id, tmdbType)?.toIntOrNull() ?: return@withContext null
+            val normalizedLanguage = normalizeTmdbLanguage(language)
+            if (tmdbType == "tv") {
+                fetch<TmdbTvContentRatingsResponse>(endpoint = "tv/$tmdbId/content_ratings")
+                    ?.results.orEmpty().selectTvAgeRating(normalizedLanguage)
+            } else {
+                fetch<TmdbMovieReleaseDatesResponse>(endpoint = "movie/$tmdbId/release_dates")
+                    ?.results.orEmpty().selectMovieAgeRating(normalizedLanguage)
+            }
+        }
+
     suspend fun fetchStandaloneMeta(
         type: String,
         id: String,

@@ -106,6 +106,7 @@ internal object LocalAccountDataCleaner {
         com.nuvio.app.features.artwork.ArtworkChoiceRepository.clearLocalState()
         com.nuvio.app.features.notifications.SeriesReminderRepository.clearLocalState()
         com.nuvio.app.features.follow.FollowedPeopleRepository.clearLocalState()
+        com.nuvio.app.features.profiles.ProfileRestrictionRepository.clearLocalState()
         com.nuvio.app.features.library.WatchStatsRepository.clearLocalState()
         LibraryRepository.clearLocalState()
         LibraryDisplaySettingsRepository.clearLocalState()

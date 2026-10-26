@@ -82,7 +82,10 @@ fun CatalogScreen(
     onPosterLongClick: ((MetaPreview) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val uiState by CatalogRepository.uiState.collectAsStateWithLifecycle()
+    val uiStateRaw by CatalogRepository.uiState.collectAsStateWithLifecycle()
+    // Better Nuvio: o catálogo aberto também respeita a restrição do perfil.
+    val restrictedCatalogItems = com.nuvio.app.features.profiles.rememberRestrictedItems(uiStateRaw.items)
+    val uiState = uiStateRaw.copy(items = restrictedCatalogItems)
     val homeCatalogSettingsUiState by HomeCatalogSettingsRepository.uiState.collectAsStateWithLifecycle()
     val posterCardStyle = rememberPosterCardStyleUiState()
     val networkStatusUiState by NetworkStatusRepository.uiState.collectAsStateWithLifecycle()

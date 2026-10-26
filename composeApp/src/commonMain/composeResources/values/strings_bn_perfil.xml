@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Better Nuvio: restrição do perfil (restricao.c na TV) -->
+    <string name="bn_profile_restriction_title">Content restriction</string>
+    <string name="bn_profile_kids">Kids profile</string>
+    <string name="bn_profile_kids_description">Only shows titles rated 10 or lower; unrated titles appear only when they are animation, family or kids.</string>
+    <string name="bn_profile_max_rating">Maximum rating</string>
+    <string name="bn_profile_max_rating_description">Titles above this rating disappear from Home, catalogs, Search and Explore, and can't be opened. Saved on this device.</string>
+    <string name="bn_profile_rating_free">All ages</string>
+    <string name="bn_profile_rating_no_limit">No limit</string>
+    <string name="bn_restriction_blocked_title">Not available on this profile</string>
+    <string name="bn_restriction_blocked_message">This title is above the rating allowed for this profile.</string>
+    <string name="bn_restriction_blocked_message_rating">This title is rated %1$s, above what this profile allows.</string>
+</resources>

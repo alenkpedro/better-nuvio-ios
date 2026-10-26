@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Better Nuvio: avisos do canal do dono (avisos.c na TV) -->
+    <string name="bn_notices_lang">pt</string>
+    <string name="bn_settings_page_notices">Avisos</string>
+    <string name="bn_settings_notices_description">Novidades e alertas do Better Nuvio</string>
+    <string name="bn_notices_empty">Nenhum aviso no momento.</string>
+    <string name="bn_notices_new_badge">NOVO</string>
+    <string name="bn_notices_toast_one">%1$s: %2$s</string>
+    <string name="bn_notices_toast_many">%1$d avisos novos em Ajustes › Avisos</string>
+</resources>

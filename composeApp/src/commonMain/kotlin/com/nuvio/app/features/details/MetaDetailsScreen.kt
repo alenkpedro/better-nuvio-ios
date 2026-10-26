@@ -83,6 +83,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.touchlab.kermit.Logger
 import coil3.compose.AsyncImage
@@ -228,6 +229,26 @@ fun MetaDetailsScreen(
         uiState.meta?.takeIf { it.type == type && it.id == id }
             ?: MetaDetailsRepository.peek(type, id)
         )?.withArtworkChoice(artworkChoices)
+    // Better Nuvio: perfil infantil / classificação máxima (restricao.c) não abre título acima do limite.
+    val profileRestriction = com.nuvio.app.features.profiles.rememberActiveProfileRestriction()
+    val knownAgeRatings by com.nuvio.app.features.profiles.ProfileRestrictionRepository.ratings
+        .collectAsStateWithLifecycle()
+    LaunchedEffect(displayedMeta?.type, displayedMeta?.id, displayedMeta?.ageRating, profileRestriction) {
+        val meta = displayedMeta ?: return@LaunchedEffect
+        com.nuvio.app.features.profiles.ProfileRestrictionRepository.recordCertification(meta.type, meta.id, meta.ageRating)
+        if (meta.ageRating.isNullOrBlank()) {
+            com.nuvio.app.features.profiles.ProfileRestrictionRepository.request(listOf(meta.toMetaPreview()))
+        }
+    }
+    val restrictionBlocksTitle = displayedMeta != null &&
+        com.nuvio.app.features.profiles.ProfileRestrictionRepository.blocksTitle(
+            type = displayedMeta.type,
+            id = displayedMeta.id,
+            certification = displayedMeta.ageRating,
+            genres = displayedMeta.genres,
+            restriction = profileRestriction,
+            knownRatings = knownAgeRatings,
+        )
     val metaScreenSettingsUiState by remember {
         MetaScreenSettingsRepository.ensureLoaded()
         MetaScreenSettingsRepository.uiState
@@ -491,6 +512,35 @@ fun MetaDetailsScreen(
                         },
                     ) {
                         Text(stringResource(Res.string.action_retry))
+                    }
+                }
+            }
+
+            displayedMeta != null && restrictionBlocksTitle -> {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.bn_restriction_blocked_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = displayedMeta.ageRating?.takeIf(String::isNotBlank)?.let {
+                            stringResource(Res.string.bn_restriction_blocked_message_rating, it)
+                        } ?: stringResource(Res.string.bn_restriction_blocked_message),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = onBack) {
+                        Text(stringResource(Res.string.action_back))
                     }
                 }
             }

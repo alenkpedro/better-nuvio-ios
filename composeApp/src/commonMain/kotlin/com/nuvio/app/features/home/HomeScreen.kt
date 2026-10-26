@@ -155,7 +155,9 @@ fun HomeScreen(
     }
 
     val addonsUiState by AddonRepository.uiState.collectAsStateWithLifecycle()
-    val homeUiState by HomeRepository.uiState.collectAsStateWithLifecycle()
+    val homeUiStateRaw by HomeRepository.uiState.collectAsStateWithLifecycle()
+    // Better Nuvio: perfil infantil / classificação máxima (restricao.c) tira títulos do destaque e das fileiras.
+    val homeUiState = com.nuvio.app.features.profiles.rememberRestrictedHome(homeUiStateRaw)
     val homeSettingsUiState by remember {
         HomeCatalogSettingsRepository.snapshot()
         HomeCatalogSettingsRepository.uiState

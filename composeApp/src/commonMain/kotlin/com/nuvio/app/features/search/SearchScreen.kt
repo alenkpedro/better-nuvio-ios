@@ -125,8 +125,13 @@ fun SearchScreen(
     }
 
     val addonsUiState by AddonRepository.uiState.collectAsStateWithLifecycle()
-    val uiState by SearchRepository.uiState.collectAsStateWithLifecycle()
-    val discoverUiState by SearchRepository.discoverUiState.collectAsStateWithLifecycle()
+    val uiStateRaw by SearchRepository.uiState.collectAsStateWithLifecycle()
+    val discoverUiStateRaw by SearchRepository.discoverUiState.collectAsStateWithLifecycle()
+    // Better Nuvio: Busca e Explorar sem o que o perfil não pode ver (busca.c/discover.c na TV).
+    val restrictedSearchSections = com.nuvio.app.features.profiles.rememberRestrictedSections(uiStateRaw.sections)
+    val uiState = uiStateRaw.copy(sections = restrictedSearchSections)
+    val restrictedDiscoverItems = com.nuvio.app.features.profiles.rememberRestrictedItems(discoverUiStateRaw.items)
+    val discoverUiState = discoverUiStateRaw.copy(items = restrictedDiscoverItems)
     val homeCatalogSettingsUiState by remember {
         HomeCatalogSettingsRepository.snapshot()
         HomeCatalogSettingsRepository.uiState
