@@ -206,7 +206,7 @@ object StreamAutoPlaySelector {
     private fun StreamItem.isAutoPlayable(
         debridEnabled: Boolean,
         activeResolverProviderId: String?,
-    ): Boolean =
+    ): Boolean = !debridNoPlan && (
         playableDirectUrl != null ||
             serverTarget != null ||
             (
@@ -216,6 +216,7 @@ object StreamAutoPlaySelector {
                     !isPendingDebridAutoPlay(debridEnabled, activeResolverProviderId)
             ) ||
             (debridEnabled && isAddonDebridCandidate && isReadyDebridAutoPlay(activeResolverProviderId))
+    )
 
     private fun StreamItem.isReadyDebridAutoPlay(activeResolverProviderId: String?): Boolean =
         when {

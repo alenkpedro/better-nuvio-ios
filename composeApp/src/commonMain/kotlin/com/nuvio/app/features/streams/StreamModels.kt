@@ -33,6 +33,8 @@ data class StreamItem(
     val externalSubtitles: List<StreamSubtitle> = emptyList(),
     val badges: List<StreamBadge> = emptyList(),
     val serverTarget: ServerPlaybackTarget? = null,
+    /** Better Nuvio: fonte de um debrid sem plano pago (como a TV, semAssinatura). Fica na lista apagada e não toca. */
+    val debridNoPlan: Boolean = false,
 ) {
     val streamLabel: String
         get() = name?.takeIf { it.isNotBlank() } ?: "Stream"
@@ -195,13 +197,14 @@ private fun String?.extractBtihInfoHash(): String? {
         .takeIf { it.isNotEmpty() }
 }
 
-fun StreamItem.isSelectableForPlayback(debridEnabled: Boolean): Boolean =
+fun StreamItem.isSelectableForPlayback(debridEnabled: Boolean): Boolean = !debridNoPlan && (
     playableDirectUrl != null ||
         serverTarget != null ||
         shouldOpenExternally ||
         youTubeIdToResolve != null ||
         (AppFeaturePolicy.p2pEnabled && needsLocalDebridResolve && p2pInfoHash != null) ||
         (debridEnabled && isAddonDebridCandidate)
+    )
 
 data class StreamBehaviorHints(
     val bingeGroup: String? = null,

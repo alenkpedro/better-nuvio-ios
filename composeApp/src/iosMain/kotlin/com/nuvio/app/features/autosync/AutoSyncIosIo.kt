@@ -42,8 +42,8 @@ internal object AutoSyncIosIo {
             expectSuccess = false
             install(HttpTimeout) {
                 connectTimeoutMillis = 10_000
-                requestTimeoutMillis = 30_000
-                socketTimeoutMillis = 15_000
+                requestTimeoutMillis = 60_000
+                socketTimeoutMillis = 45_000
             }
         }
     }

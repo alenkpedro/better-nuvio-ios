@@ -1115,10 +1115,21 @@ final class AppNavigationCoordinator: ObservableObject {
         let requestedTab = NuvioAppTab.from(kotlinName: route.preferredTabName)
             ?? tab(for: origin)
             ?? selectedTab
-        let targetTab = requestedTab == .liveTv && !isLiveTvTabVisible ? .home : requestedTab
+        var targetTab = requestedTab == .liveTv && !isLiveTvTabVisible ? .home : requestedTab
+        // Better Nuvio: um título (ou fontes, player, catálogo) aberto de dentro dos Ajustes
+        // fecha a folha e abre na aba de baixo, em vez de ficar preso dentro da folha.
+        if targetTab == .settings && Self.opensOutsideSettingsSheet(route) {
+            targetTab = lastBarTab
+        }
         let target = coordinator(for: targetTab)
         selectedTab = targetTab
         target.push(route, launchSingleTop: launchSingleTop)
+    }
+
+    private static func opensOutsideSettingsSheet(_ route: AppRoute) -> Bool {
+        route is DetailRoute || route is StreamRoute || route is PlayerRoute ||
+            route is CatalogRoute || route is PersonDetailRoute ||
+            route is EntityBrowseRoute || route is FolderDetailRoute
     }
 
     func showParkedPlayerRoute(_ route: AppRoute, in target: TabNavigationCoordinator) {
@@ -1906,6 +1917,15 @@ struct NativeNavContentView: View {
                 .ignoresSafeArea(.all)
                 // Better Nuvio: fundo da folha dos Ajustes = #0A0A0B (sem o material azulado do sistema).
                 .background(Color(red: 10 / 255, green: 10 / 255, blue: 11 / 255).ignoresSafeArea())
+                // A tela Compose segura o arrastar para baixo, então a folha precisa de um X para fechar.
+                .overlay(alignment: .topTrailing) {
+                    BetterNuvioSheetCloseButton(coordinator: appCoordinator.coordinator(for: .settings)) {
+                        appCoordinator.isSettingsPresented = false
+                    }
+                    .padding(.top, 20)
+                    .padding(.trailing, 16)
+                }
+                .presentationDragIndicator(.visible)
                 .modifier(BetterNuvioSheetBackground())
             }
 
@@ -2003,6 +2023,32 @@ private extension UIColor {
             blue: CGFloat(rgb & 0xFF) / 255,
             alpha: 1
         )
+    }
+}
+
+/// X redondo no canto da folha dos Ajustes, só na raiz: as páginas de dentro têm a própria barra.
+private struct BetterNuvioSheetCloseButton: View {
+    @ObservedObject var coordinator: TabNavigationCoordinator
+    let action: () -> Void
+
+    var body: some View {
+        if coordinator.path.isEmpty {
+            button
+        }
+    }
+
+    private var button: some View {
+        Button(action: action) {
+            Image(systemName: "xmark")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(Circle().fill(Color.white.opacity(0.14)))
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Fechar"))
     }
 }
 

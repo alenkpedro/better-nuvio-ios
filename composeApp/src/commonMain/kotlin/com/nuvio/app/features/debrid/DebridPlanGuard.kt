@@ -98,7 +98,14 @@ object DebridPlanGuard {
 
     fun isBlocked(stream: StreamItem, blocked: Set<DebridPlanService> = blockedServices()): Boolean {
         if (blocked.isEmpty()) return false
-        return servicesOf(stream.name, stream.playableDirectUrl ?: stream.url).any { it in blocked }
+        // Fontes resolvidas pela conta (ex.: "4K TB Instant", só infoHash) dizem o serviço no
+        // debridCacheStatus/clientResolve, não no nome nem na URL.
+        val accountServices = listOfNotNull(
+            stream.debridCacheStatus?.providerId?.let(::serviceFromName),
+            stream.clientResolve?.service?.let(::serviceFromName),
+        )
+        return accountServices.any { it in blocked } ||
+            servicesOf(stream.name, stream.playableDirectUrl ?: stream.url).any { it in blocked }
     }
 
     fun isBlocked(streamName: String?, url: String?, blocked: Set<DebridPlanService> = blockedServices()): Boolean {

@@ -413,10 +413,19 @@ object StreamsRepository {
                 ).firstOrNull() ?: badgeGroup
                 val blocked = DebridPlanGuard.blockedServices()
                 if (blocked.isEmpty()) return presented
-                val allowed = presented.streams.filterNot { DebridPlanGuard.isBlocked(it, blocked) }
-                if (allowed.size == presented.streams.size) return presented
-                log.i { "Debrid sem plano: ${presented.streams.size - allowed.size} fontes de ${group.addonName} ficaram de fora" }
-                return presented.copy(streams = allowed)
+                // Como a TV: a fonte fica na lista, apagada e com o selo, mas não toca.
+                var marked = 0
+                val streams = presented.streams.map { stream ->
+                    if (DebridPlanGuard.isBlocked(stream, blocked)) {
+                        marked++
+                        stream.copy(debridNoPlan = true)
+                    } else {
+                        stream
+                    }
+                }
+                if (marked == 0) return presented
+                log.i { "Debrid sem plano: $marked fontes de ${group.addonName} marcadas" }
+                return presented.copy(streams = streams)
             }
 
             fun publishAddonGroup(group: AddonStreamGroup) {

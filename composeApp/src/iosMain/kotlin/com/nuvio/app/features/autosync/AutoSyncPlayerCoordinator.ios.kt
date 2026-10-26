@@ -2,6 +2,8 @@ package com.nuvio.app.features.autosync
 
 import com.nuvio.app.core.logging.InAppLogger
 import com.nuvio.app.features.player.PlayerEngineController
+import com.nuvio.app.features.player.PlayerSystemControlHandler
+import com.nuvio.app.features.player.PlayerSystemControlSource
 import com.nuvio.app.features.player.SUBTITLE_DELAY_MAX_MS
 import com.nuvio.app.features.player.SUBTITLE_DELAY_MIN_MS
 import com.nuvio.app.features.player.SubtitleSyncCue
@@ -10,6 +12,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.currentCoroutineContext
@@ -54,6 +57,8 @@ internal class AutoSyncIosCoordinator(
     private var manualDelayThisSession = false
     private var reference: Deferred<MatroskaSubtitleCueIndex.Index>? = null
     private var referenceUrl = ""
+    // Subtitles the current run attached or may attach: re-attaching one of them is not a change.
+    private var runUrls: Set<String> = emptySet()
 
     fun setSource(url: String, headers: Map<String, String>, subtitleHeadersFor: (String) -> Map<String, String>) {
         subtitleHeaders = subtitleHeadersFor
@@ -84,6 +89,7 @@ internal class AutoSyncIosCoordinator(
         operationToken++
         job?.cancel()
         job = null
+        runUrls = emptySet()
     }
 
     fun dispose() {
@@ -102,21 +108,36 @@ internal class AutoSyncIosCoordinator(
 
     /** Any subtitle change that is not an AutoSync start: the previous result no longer applies. */
     fun onSubtitleChangedWithoutAutoSync() {
+        if (job != null) InAppLogger.info(LOG, "subtitle changed: AutoSync run cancelled")
         cancel()
         AutoSyncSyncedSubtitle.clear()
     }
 
     fun attachWithoutAutoSync(url: String) {
+        // MPV lists the attached add-on subtitle as a track, and the runtime may pick the same
+        // subtitle again while the run waits for the network: that must not cancel the run.
+        if (job?.isActive == true && url in runUrls) {
+            InAppLogger.info(LOG, "same subtitle attached again: AutoSync run kept")
+            return
+        }
         onSubtitleChangedWithoutAutoSync()
         attachSubtitle(url)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun referenceIndex(): Deferred<MatroskaSubtitleCueIndex.Index>? {
         val url = sourceUrl
         if (url.isBlank()) return null
-        reference?.takeIf { referenceUrl == url && !it.isCancelled }?.let { return it }
+        // A failed index (network, timeout) is asked again on the next subtitle, not kept for the session.
+        reference?.takeIf {
+            referenceUrl == url && !it.isCancelled &&
+                !(it.isCompleted && it.getCompleted().outcome == MatroskaSubtitleCueIndex.Outcome.NETWORK)
+        }?.let { return it }
         reference?.cancel()
-        val reader = rangeReaderFor(url, sourceHeaders) ?: return null
+        val reader = rangeReaderFor(url, sourceHeaders) ?: run {
+            InAppLogger.info(LOG, "no range reader for this source (HLS or not http): AutoSync off")
+            return null
+        }
         referenceUrl = url
         return scope.async(Dispatchers.Default) {
             val index = try {
@@ -145,7 +166,10 @@ internal class AutoSyncIosCoordinator(
         AutoSyncPreferencesRepository.ensureLoaded()
         if (decideAutoSyncStart(AutoSyncPreferencesRepository.preferredSubtitleAutoSyncOnStart.value) ==
             AutoSyncStartAction.ATTACH_ORIGINAL
-        ) return
+        ) {
+            InAppLogger.info(LOG, "skipped: AutoSync is off in the settings")
+            return
+        }
         if (manualDelayThisSession) {
             InAppLogger.info(LOG, "skipped: the user set the subtitle delay in this session")
             return
@@ -159,6 +183,8 @@ internal class AutoSyncIosCoordinator(
                 .filter { it.url != url && language.isNotBlank() && languageMatchesPreference(it.language, language) }
                 .forEach { add(it.url) }
         }.take(MAX_ATTEMPTS)
+        runUrls = attempts.toSet()
+        InAppLogger.info(LOG, "started with ${attempts.size} subtitle(s)")
 
         job = scope.launch {
             try {
@@ -171,7 +197,10 @@ internal class AutoSyncIosCoordinator(
                 for (attemptUrl in attempts) {
                     currentCoroutineContext().ensureActive()
                     if (token != operationToken) return@launch
-                    val body = downloadSubtitle(attemptUrl, subtitleHeaders(attemptUrl)) ?: continue
+                    val body = downloadSubtitle(attemptUrl, subtitleHeaders(attemptUrl)) ?: run {
+                        InAppLogger.info(LOG, "could not download ${InAppLogger.redactUrl(attemptUrl)}")
+                        null
+                    } ?: continue
                     val fit = withContext(Dispatchers.Default) { alignAgainst(body, attemptUrl, references) }
                         ?: continue
                     if (token != operationToken) return@launch
@@ -184,7 +213,10 @@ internal class AutoSyncIosCoordinator(
             } catch (error: Exception) {
                 InAppLogger.warn(LOG, "AutoSync failed: ${error.message}")
             } finally {
-                if (token == operationToken) job = null
+                if (token == operationToken) {
+                    job = null
+                    runUrls = emptySet()
+                }
             }
         }
     }
@@ -241,6 +273,7 @@ internal class AutoSyncIosCoordinator(
                 return
             }
             if (token != operationToken) return
+            runUrls = runUrls + path
             attachSubtitle(path)
             if (delayFits) result.offsetMs else 0
         }
@@ -284,7 +317,17 @@ internal class AutoSyncIosCoordinator(
 internal class AutoSyncIosPlayerEngineController(
     private val base: PlayerEngineController,
     private val coordinator: AutoSyncIosCoordinator,
-) : PlayerEngineController by base, AutoSyncPlayerController {
+) : PlayerEngineController by base, AutoSyncPlayerController, PlayerSystemControlSource {
+
+    // The MPV controller is also the lock-screen / Now Playing source; keep that visible through the wrapper.
+    private val systemControls = base as? PlayerSystemControlSource
+
+    override val keepsPlaybackInBackground: Boolean
+        get() = systemControls?.keepsPlaybackInBackground ?: false
+
+    override fun setSystemControlHandler(handler: PlayerSystemControlHandler?) {
+        systemControls?.setSystemControlHandler(handler)
+    }
 
     override fun setAutoSyncSubtitleCandidates(candidates: List<AutoSyncSubtitleCandidate>) =
         coordinator.setCandidates(candidates)

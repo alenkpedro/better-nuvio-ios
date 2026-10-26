@@ -2997,9 +2997,9 @@
     <string name="bn_episode_date_short_year">%2$s %1$d, %3$d</string>
     <string name="bn_months_short">JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC</string>
     <string name="bn_date_long">%1$s %2$d, %3$d</string>
-    <string name="bn_debrid_inactive_badge">Debrid subscription inactive</string>
+    <string name="bn_debrid_inactive_badge">Debrid not active</string>
     <string name="bn_debrid_inactive_title">Debrid subscription is not active</string>
     <string name="bn_debrid_inactive_message">Renew your debrid subscription or pick a direct source.</string>
-    <string name="bn_debrid_no_plan_one">Your %1$s account is free and doesn't allow API use, so %1$s torrent sources are left out</string>
-    <string name="bn_debrid_no_plan_many">Your debrid accounts are free and don't allow API use, so torrent sources are left out</string>
+    <string name="bn_debrid_no_plan_one">Your %1$s account is free and doesn't allow API use, so %1$s sources are blocked</string>
+    <string name="bn_debrid_no_plan_many">Your debrid accounts are free and don't allow API use, so their sources are blocked</string>
 </resources>

@@ -1073,15 +1073,19 @@ private fun LazyListScope.streamSection(
                 stream.needsLocalDebridResolve &&
                     !AppFeaturePolicy.p2pEnabled &&
                     !(debridEnabled && stream.isAddonDebridCandidate)
+            val debridNoPlanText = stringResource(Res.string.bn_debrid_inactive_message)
             StreamCard(
                 stream = stream,
-                enabled = isSelectable || isUnsupportedTorrentStream,
+                enabled = isSelectable || isUnsupportedTorrentStream || stream.debridNoPlan,
                 appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
                 showFileSizeBadges = showFileSizeBadges,
                 showAddonLogo = showAddonLogo,
                 badgePlacement = badgePlacement,
                 onClick = {
-                    if (isSelectable) {
+                    if (stream.debridNoPlan) {
+                        // Como a TV: fonte de debrid sem plano não abre, só avisa.
+                        NuvioToastController.show(debridNoPlanText)
+                    } else if (isSelectable) {
                         onStreamSelected(stream, resumePositionMs, resumeProgressFraction)
                     } else if (isUnsupportedTorrentStream) {
                         NuvioToastController.show(torrentNotSupportedText)

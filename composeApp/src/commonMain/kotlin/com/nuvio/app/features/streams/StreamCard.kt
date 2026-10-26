@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -41,6 +42,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.bn_debrid_inactive_badge
+import org.jetbrains.compose.resources.stringResource
 import com.nuvio.app.core.ui.SkeletonBlock
 import com.nuvio.app.features.debrid.DebridProviders
 import androidx.compose.ui.graphics.compositeOver
@@ -122,94 +126,103 @@ internal fun StreamCard(
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Como a TV: fonte de debrid sem plano fica apagada (texto a 45%) com o selo embaixo.
+        val contentAlpha = if (stream.debridNoPlan) 0.45f else 1f
         Column(modifier = Modifier.weight(1f)) {
-            if (!bnLayout && hasBadges && badgePlacement == StreamBadgePlacement.TOP) {
-                StreamCardBadgeRow(
-                    badgeImages = badgeImages,
-                    stream = stream,
-                    showFileSizeBadges = showFileSizeBadges,
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-            }
-
-            StreamNameWithInstantService(
-                stream = stream,
-                appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
-                label = if (bnLayout) stream.bnNameLine() else stream.streamLabel,
-            ) {
-                if (isCurrent && !currentLabel.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    CurrentStreamBadge(label = currentLabel)
+            Column(modifier = Modifier.alpha(contentAlpha)) {
+                if (!bnLayout && hasBadges && badgePlacement == StreamBadgePlacement.TOP) {
+                    StreamCardBadgeRow(
+                        badgeImages = badgeImages,
+                        stream = stream,
+                        showFileSizeBadges = showFileSizeBadges,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
-                if (partyLabel != null) {
-                    Spacer(modifier = Modifier.width(8.dp))
+
+                StreamNameWithInstantService(
+                    stream = stream,
+                    appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
+                    label = if (bnLayout) stream.bnNameLine() else stream.streamLabel,
+                ) {
+                    if (isCurrent && !currentLabel.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        CurrentStreamBadge(label = currentLabel)
+                    }
+                    if (partyLabel != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = partyLabel,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+
+                // Better Nuvio: nome e resolução, tamanho e velocidade, depois os selos (ordem da TV).
+                val sizeAndBitrate = if (bnLayout) stream.bnSizeAndBitrate() else null
+                if (sizeAndBitrate != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = partyLabel,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        text = sizeAndBitrate,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 12.5.sp,
+                            shadow = streamGlassTextShadow(),
+                        ),
+                        color = Color.White.copy(alpha = 0.62f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
 
-            // Better Nuvio: nome e resolução, tamanho e velocidade, depois os selos (ordem da TV).
-            val sizeAndBitrate = if (bnLayout) stream.bnSizeAndBitrate() else null
-            if (sizeAndBitrate != null) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = sizeAndBitrate,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 12.5.sp,
-                        shadow = streamGlassTextShadow(),
-                    ),
-                    color = Color.White.copy(alpha = 0.62f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            val subtitle = stream.streamSubtitle
-            if (!subtitle.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp,
-                        shadow = streamGlassTextShadow(),
-                    ),
-                    color = Color.White,
-                )
-            }
-
-            if (bnLayout) {
-                val qualityTags = if (badgeImages.isEmpty()) stream.bnQualityTags() else emptyList()
-                if (badgeImages.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    StreamCardBadgeRow(badgeImages = badgeImages, stream = stream, showFileSizeBadges = false)
-                } else if (qualityTags.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    QualityTagRow(
-                        tags = qualityTags,
-                        background = Color.White.copy(alpha = 0.1f),
-                        contentColor = Color.White.copy(alpha = 0.9f),
+                val subtitle = stream.streamSubtitle
+                if (!subtitle.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            shadow = streamGlassTextShadow(),
+                        ),
+                        color = Color.White,
                     )
                 }
-            } else if (hasBadges && badgePlacement == StreamBadgePlacement.BOTTOM) {
-                Spacer(modifier = Modifier.height(5.dp))
-                StreamCardBadgeRow(
-                    badgeImages = badgeImages,
-                    stream = stream,
-                    showFileSizeBadges = showFileSizeBadges,
-                )
+
+                if (bnLayout) {
+                    val qualityTags = if (badgeImages.isEmpty()) stream.bnQualityTags() else emptyList()
+                    if (badgeImages.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        StreamCardBadgeRow(badgeImages = badgeImages, stream = stream, showFileSizeBadges = false)
+                    } else if (qualityTags.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        QualityTagRow(
+                            tags = qualityTags,
+                            background = Color.White.copy(alpha = 0.1f),
+                            contentColor = Color.White.copy(alpha = 0.9f),
+                        )
+                    }
+                } else if (hasBadges && badgePlacement == StreamBadgePlacement.BOTTOM) {
+                    Spacer(modifier = Modifier.height(5.dp))
+                    StreamCardBadgeRow(
+                        badgeImages = badgeImages,
+                        stream = stream,
+                        showFileSizeBadges = showFileSizeBadges,
+                    )
+                }
+            }
+            if (stream.debridNoPlan) {
+                Spacer(modifier = Modifier.height(8.dp))
+                DebridNoPlanBadge()
             }
         }
 
         if (showAddonLogo) {
             Spacer(modifier = Modifier.width(12.dp))
             Column(
+                modifier = Modifier.alpha(contentAlpha),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (!stream.addonLogo.isNullOrBlank()) {
@@ -233,6 +246,21 @@ internal fun StreamCard(
             }
         }
     }
+}
+
+/** Pílula cheia "Debrid sem assinatura", como o selo da TV (streams.c). */
+@Composable
+private fun DebridNoPlanBadge() {
+    Text(
+        text = stringResource(Res.string.bn_debrid_inactive_badge),
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(Color(0xFFE5484D))
+            .padding(horizontal = 9.dp, vertical = 3.dp),
+        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
+        color = Color.White,
+        maxLines = 1,
+    )
 }
 
 @Composable
