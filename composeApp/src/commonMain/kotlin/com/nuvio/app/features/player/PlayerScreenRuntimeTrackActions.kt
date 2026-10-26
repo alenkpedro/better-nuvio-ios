@@ -1,5 +1,7 @@
 package com.nuvio.app.features.player
 
+import kotlin.time.Clock
+
 internal val PlayerScreenRuntime.subtitleStyle: SubtitleStyleState
     get() = playerSettingsUiState.subtitleStyle
 
@@ -32,12 +34,25 @@ internal val PlayerScreenRuntime.selectedAddonSubtitle: AddonSubtitle?
             ?: visibleAddonSubtitles.findSelectedAddon(selectedId)
     }
 
+// Better Nuvio: a preferencia de faixas e da SERIE (ou do filme), como legpref.c na TV.
+internal val PlayerScreenRuntime.trackPreferenceKey: String
+    get() = trackPreferenceBaseId(parentMetaId)
+
+/** Video name and fps used to rank addon subtitles by release, as the tracks panel does. */
+private val PlayerScreenRuntime.subtitleMatchSourceForRestore: String?
+    get() = subtitleMatchVideoSource(
+        fileName = currentStreamFilename,
+        streamTitle = activeStreamTitle,
+        sourceUrl = activeSourceUrl,
+    )
+
 internal fun PlayerScreenRuntime.updateTrackPreference(
     update: (PersistedPlayerTrackPreference) -> PersistedPlayerTrackPreference,
 ) {
-    if (parentMetaId.isBlank()) return
-    val current = PlayerTrackPreferenceStorage.load(parentMetaId) ?: PersistedPlayerTrackPreference()
-    PlayerTrackPreferenceStorage.save(parentMetaId, update(current))
+    val key = trackPreferenceKey
+    if (key.isBlank()) return
+    val current = PlayerTrackPreferenceStorage.load(key) ?: PersistedPlayerTrackPreference()
+    PlayerTrackPreferenceStorage.save(key, update(current))
 }
 
 internal fun PlayerScreenRuntime.persistAudioPreference(track: AudioTrack?) {
@@ -64,6 +79,7 @@ internal fun PlayerScreenRuntime.persistInternalSubtitlePreference(track: Subtit
             subtitleName = track?.label,
             subtitleTrackId = track?.id,
             subtitleIsForced = track?.isForced,
+            subtitleSavedAtMs = Clock.System.now().toEpochMilliseconds(),
             addonSubtitleId = null,
             addonSubtitleUrl = null,
             addonSubtitleAddonName = null,
@@ -81,22 +97,32 @@ internal fun PlayerScreenRuntime.persistAddonSubtitlePreference(subtitle: AddonS
             addonSubtitleId = subtitle.id,
             addonSubtitleUrl = subtitle.url,
             addonSubtitleAddonName = subtitle.addonName,
-            subtitleIsForced = null,
+            // Better Nuvio: as chaves da TV (idioma, addon, release, forcada), nao a url.
+            subtitleIsForced = addonSubtitleIsForced(subtitle),
+            subtitleSavedAtMs = Clock.System.now().toEpochMilliseconds(),
         )
     }
 }
 
 internal fun PlayerScreenRuntime.restorePersistedTrackPreferenceIfNeeded(): Boolean {
     if (trackPreferenceRestoreApplied) return true
-    val preference = PlayerTrackPreferenceStorage.load(parentMetaId)
+    val preference = PlayerTrackPreferenceStorage.load(trackPreferenceKey)
     if (preference == null) {
         trackPreferenceRestoreApplied = true
         return true
     }
 
-    restorePersistedAudioPreference(preference)
+    if (!isUserExplicitAudioSelection) restorePersistedAudioPreference(preference)
 
-    when (preference.subtitleType) {
+    // Better Nuvio: escolha de legenda com mais de 180 dias nao vale mais (legpref.c);
+    // fica o automatico pelo idioma dos Ajustes.
+    val subtitleType = preference.subtitleType.takeUnless {
+        preference.isSubtitleChoiceExpired(Clock.System.now().toEpochMilliseconds())
+    }
+    // Enquanto a lista de embutidas nao foi lida, a lembrada ainda pode aparecer.
+    var subtitleRestorePending = false
+
+    when (subtitleType) {
         PersistedSubtitleSelectionType.DISABLED -> {
             playerController?.selectSubtitleTrack(-1)
             selectedSubtitleIndex = -1
@@ -106,7 +132,10 @@ internal fun PlayerScreenRuntime.restorePersistedTrackPreferenceIfNeeded(): Bool
             isUserExplicitSubtitleSelection = true
         }
         PersistedSubtitleSelectionType.INTERNAL -> {
-            if (subtitleTracks.isNotEmpty()) {
+            if (!isUserExplicitSubtitleSelection && subtitleTracks.isEmpty() && !hasScannedTextTracksOnce) {
+                subtitleRestorePending = true
+            }
+            if (!isUserExplicitSubtitleSelection && subtitleTracks.isNotEmpty()) {
                 val restoredSubtitleIndex = findPersistedSubtitleTrackIndex(subtitleTracks, preference)
                 if (restoredSubtitleIndex >= 0) {
                     if (useCustomSubtitles) {
@@ -129,7 +158,11 @@ internal fun PlayerScreenRuntime.restorePersistedTrackPreferenceIfNeeded(): Bool
                 }
                 if (fetchKey != null && autoFetchedAddonSubtitlesForKey != fetchKey) return false
 
-                val subtitle = findPersistedAddonSubtitle(addonSubtitles, preference)
+                val subtitle = findPersistedAddonSubtitle(
+                    subtitles = addonSubtitles,
+                    preference = preference,
+                    videoSource = subtitleMatchSourceForRestore,
+                )
                 val canRestoreWhileLoading = subtitle != null && (
                     subtitle.url == preference.addonSubtitleUrl ||
                         preference.addonSubtitleAddonName.isNullOrBlank() ||
@@ -150,6 +183,7 @@ internal fun PlayerScreenRuntime.restorePersistedTrackPreferenceIfNeeded(): Bool
         }
     }
 
+    if (subtitleRestorePending) return false
     trackPreferenceRestoreApplied = audioTracks.isNotEmpty() ||
         (preference.audioTrackId.isNullOrBlank() && preference.audioLanguage.isNullOrBlank() &&
             preference.audioName.isNullOrBlank())

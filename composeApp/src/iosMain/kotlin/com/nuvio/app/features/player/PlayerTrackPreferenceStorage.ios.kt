@@ -16,6 +16,7 @@ internal actual object PlayerTrackPreferenceStorage {
     private const val audioTrackIdKey = "audio_track_id"
     private const val subtitleIsForcedKey = "subtitle_is_forced"
     private const val subtitleDelayMsKey = "subtitle_delay_ms"
+    private const val subtitleSavedAtMsKey = "subtitle_saved_at_ms"
 
     actual fun load(contentId: String): PersistedPlayerTrackPreference? {
         val id = contentId.normalizedStorageId() ?: return null
@@ -31,6 +32,7 @@ internal actual object PlayerTrackPreferenceStorage {
             audioName = loadString(audioNameKey, id),
             audioTrackId = loadString(audioTrackIdKey, id),
             subtitleIsForced = loadBoolean(subtitleIsForcedKey, id),
+            subtitleSavedAtMs = loadLong(subtitleSavedAtMsKey, id),
         )
         return preference.takeIf {
             listOf(
@@ -61,6 +63,7 @@ internal actual object PlayerTrackPreferenceStorage {
         saveOptionalString(audioNameKey, id, preference.audioName)
         saveOptionalString(audioTrackIdKey, id, preference.audioTrackId)
         saveOptionalBoolean(subtitleIsForcedKey, id, preference.subtitleIsForced)
+        saveOptionalLong(subtitleSavedAtMsKey, id, preference.subtitleSavedAtMs)
     }
 
     actual fun loadSubtitleDelayMs(videoId: String): Int? {
@@ -92,6 +95,24 @@ internal actual object PlayerTrackPreferenceStorage {
         val key = scopedKey(field, contentId)
         if (defaults.objectForKey(key) == null) return null
         return defaults.boolForKey(key)
+    }
+
+    private fun loadLong(field: String, contentId: String): Long? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = scopedKey(field, contentId)
+        if (defaults.objectForKey(key) == null) return null
+        // Better Nuvio: gravado como texto para nao depender do tamanho de NSInteger.
+        return defaults.stringForKey(key)?.toLongOrNull()
+    }
+
+    private fun saveOptionalLong(field: String, contentId: String, value: Long?) {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = scopedKey(field, contentId)
+        if (value == null) {
+            defaults.removeObjectForKey(key)
+        } else {
+            defaults.setObject(value.toString(), forKey = key)
+        }
     }
 
     private fun saveOptionalBoolean(field: String, contentId: String, value: Boolean?) {
