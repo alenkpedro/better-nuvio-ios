@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Better Nuvio: restrição do perfil (restricao.c na TV) -->
+    <string name="bn_profile_restriction_title">Restrição de conteúdo</string>
+    <string name="bn_profile_kids">Perfil infantil</string>
+    <string name="bn_profile_kids_description">Só mostra títulos com classificação até 10 anos; sem classificação, só animação, família e infantil.</string>
+    <string name="bn_profile_max_rating">Classificação máxima</string>
+    <string name="bn_profile_max_rating_description">Títulos acima dela somem da Home, dos catálogos, da Busca e do Explorar, e não abrem. Fica salvo neste aparelho.</string>
+    <string name="bn_profile_rating_free">Livre</string>
+    <string name="bn_profile_rating_no_limit">Sem limite</string>
+    <string name="bn_restriction_blocked_title">Indisponível neste perfil</string>
+    <string name="bn_restriction_blocked_message">A classificação deste título passa do limite deste perfil.</string>
+    <string name="bn_restriction_blocked_message_rating">Este título é %1$s, acima do que este perfil permite.</string>
+</resources>

@@ -200,6 +200,7 @@ object ProfileRepository {
         com.nuvio.app.features.artwork.ArtworkChoiceRepository.onProfileChanged()
         com.nuvio.app.features.notifications.SeriesReminderRepository.onProfileChanged()
         com.nuvio.app.features.follow.FollowedPeopleRepository.onProfileChanged()
+        ProfileRestrictionRepository.onProfileChanged()
         com.nuvio.app.features.library.WatchStatsRepository.onProfileChanged()
         ContinueWatchingPreferencesRepository.onProfileChanged()
         com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentCache.onProfileChanged()

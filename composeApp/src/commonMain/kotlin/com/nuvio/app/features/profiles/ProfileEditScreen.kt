@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.core.ui.Chip
 import com.nuvio.app.core.ui.NuvioInputField
 import com.nuvio.app.core.ui.NuvioPrimaryButton
 import com.nuvio.app.core.ui.NuvioScreen
@@ -87,6 +90,12 @@ fun ProfileEditScreen(
     var selectedBackgroundUrl by rememberSaveable { mutableStateOf(currentProfile?.profileBackgroundUrl) }
     var customBackgroundUrlInput by rememberSaveable { mutableStateOf(currentProfile?.profileBackgroundUrl.orEmpty()) }
     var usesPrimaryAddons by rememberSaveable { mutableStateOf(currentProfile?.usesPrimaryAddons ?: false) }
+    // Better Nuvio: restrição do perfil (restricao.c), guardada neste aparelho por perfil.
+    val initialRestriction = remember(currentProfile?.profileIndex) {
+        currentProfile?.let { ProfileRestrictionRepository.load(it.profileIndex) } ?: ProfileRestriction()
+    }
+    var kidsProfile by rememberSaveable(currentProfile?.profileIndex) { mutableStateOf(initialRestriction.kids) }
+    var maxAgeRating by rememberSaveable(currentProfile?.profileIndex) { mutableStateOf(initialRestriction.maxAge) }
     var isSaving by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showPinSetup by remember { mutableStateOf(false) }
@@ -157,7 +166,12 @@ fun ProfileEditScreen(
         scope.launch {
             try {
                 val avatarColorHex = visibleAvatarItem?.bgColor ?: fallbackColorHex
+                val restriction = ProfileRestriction(kids = kidsProfile, maxAge = maxAgeRating)
                 if (isNew) {
+                    val newProfileIndex = (
+                        (1..MAX_PROFILES).toSet() - profileState.profiles.map { it.profileIndex }.toSet()
+                    ).minOrNull()
+                    newProfileIndex?.let { ProfileRestrictionRepository.save(it, restriction) }
                     ProfileRepository.createProfile(
                         name = name,
                         avatarColorHex = avatarColorHex,
@@ -176,6 +190,7 @@ fun ProfileEditScreen(
                         profileBackgroundUrl = selectedBackgroundUrl,
                         usesPrimaryAddons = usesPrimaryAddons,
                     )
+                    ProfileRestrictionRepository.save(currentProfile.profileIndex, restriction)
                 }
                 onSaved()
             } finally {
@@ -347,6 +362,21 @@ fun ProfileEditScreen(
                     )
                 }
             }
+        }
+
+        item {
+            ProfileRestrictionCard(
+                kidsProfile = kidsProfile,
+                maxAgeRating = maxAgeRating,
+                onKidsProfileChange = { enabled ->
+                    kidsProfile = enabled
+                    // Como na TV: ligar o perfil infantil desce a classificação para 10.
+                    if (enabled && maxAgeRating > ProfileRestriction.KIDS_MAX_AGE) {
+                        maxAgeRating = ProfileRestriction.KIDS_MAX_AGE
+                    }
+                },
+                onMaxAgeRatingChange = { maxAgeRating = it },
+            )
         }
 
         if (!isNew) {
@@ -901,5 +931,67 @@ fun PinSetupDialog(
             },
             onDismiss = onDismiss,
         )
+    }
+}
+
+/** Better Nuvio: "Perfil infantil" e "Classificação máxima", como o editor de perfil da TV (perfilsel.c). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ProfileRestrictionCard(
+    kidsProfile: Boolean,
+    maxAgeRating: Int,
+    onKidsProfileChange: (Boolean) -> Unit,
+    onMaxAgeRatingChange: (Int) -> Unit,
+) {
+    NuvioSurfaceCard {
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text(
+                text = stringResource(Res.string.bn_profile_restriction_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            ProfileOptionRow(
+                title = stringResource(Res.string.bn_profile_kids),
+                description = stringResource(Res.string.bn_profile_kids_description),
+                checked = kidsProfile,
+                onCheckedChange = onKidsProfileChange,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = stringResource(Res.string.bn_profile_max_rating),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = stringResource(Res.string.bn_profile_max_rating_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val effective = if (kidsProfile) {
+                        minOf(maxAgeRating, ProfileRestriction.KIDS_MAX_AGE)
+                    } else {
+                        maxAgeRating
+                    }
+                    ProfileRestriction.AGE_STEPS.forEach { step ->
+                        val label = when (step) {
+                            0 -> stringResource(Res.string.bn_profile_rating_free)
+                            ProfileRestriction.NO_LIMIT -> stringResource(Res.string.bn_profile_rating_no_limit)
+                            else -> step.toString()
+                        }
+                        Chip(
+                            label = label,
+                            selected = effective == step,
+                            enabled = !kidsProfile || step <= ProfileRestriction.KIDS_MAX_AGE,
+                            onClick = { onMaxAgeRatingChange(step) },
+                        )
+                    }
+                }
+            }
+        }
     }
 }
