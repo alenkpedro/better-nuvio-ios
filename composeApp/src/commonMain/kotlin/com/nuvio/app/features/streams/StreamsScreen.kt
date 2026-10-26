@@ -178,6 +178,7 @@ fun StreamsScreen(
     var streamActionsTarget by remember(videoId) { mutableStateOf<StreamItem?>(null) }
     var streamSearchQuery by rememberSaveable(videoId) { mutableStateOf("") }
     var resolutionFilter by rememberSaveable(videoId) { mutableStateOf<String?>(null) }
+    var typeFilter by rememberSaveable(videoId) { mutableStateOf(BnTypeAll) }
     val downloadScope = rememberCoroutineScope()
     var preferredFilterApplied by remember(videoId) { mutableStateOf(false) }
     val episodeProgress = watchProgressUiState.progressForVideo(
@@ -376,6 +377,8 @@ fun StreamsScreen(
                 onRefresh = reloadStreams,
                 resolutionFilter = resolutionFilter,
                 onResolutionFilterChange = { resolutionFilter = it },
+                typeFilter = typeFilter,
+                onTypeFilterChange = { typeFilter = it },
                 recommended = recommendedStream,
             )
         } else {
@@ -410,6 +413,8 @@ fun StreamsScreen(
                 onRefresh = reloadStreams,
                 resolutionFilter = resolutionFilter,
                 onResolutionFilterChange = { resolutionFilter = it },
+                typeFilter = typeFilter,
+                onTypeFilterChange = { typeFilter = it },
                 recommended = recommendedStream,
             )
         }
@@ -510,6 +515,8 @@ private fun MobileStreamsLayout(
     onRefresh: () -> Unit,
     resolutionFilter: String?,
     onResolutionFilterChange: (String?) -> Unit,
+    typeFilter: Int,
+    onTypeFilterChange: (Int) -> Unit,
     recommended: RecommendedStream?,
     modifier: Modifier = Modifier,
 ) {
@@ -609,6 +616,12 @@ private fun MobileStreamsLayout(
                                 onSelected = onResolutionFilterChange,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                             )
+                            // Better Nuvio: Todas / Torrent / Diretas, como a folha da TV.
+                            StreamTypeFilterRow(
+                                selected = typeFilter,
+                                onSelected = onTypeFilterChange,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            )
                         }
 
                         ProviderFilterRow(
@@ -620,7 +633,7 @@ private fun MobileStreamsLayout(
 
                         // Better Nuvio: filtro sem fonte vira uma linha na lista, e as linhas
                         // "Addon · buscando" continuam aparecendo embaixo dela.
-                        val listUiState = rememberStreamSearchResult(uiState, searchQuery, showSearchField, resolutionFilter)
+                        val listUiState = rememberStreamSearchResult(uiState, searchQuery, showSearchField, resolutionFilter, typeFilter)
 
                         StreamList(
                             uiState = listUiState.uiState,
@@ -896,6 +909,10 @@ internal fun StreamList(
     val pinnedFirst = remember(filteredGroups, pinnedSourceIds) {
         splitPinnedSources(filteredGroups, pinnedSourceIds)
     }
+    val qualitySections = remember(pinnedFirst) {
+        bnQualitySections(pinnedFirst.remainingGroups.flatMap { it.streams }.distinct())
+    }
+    var collapsedQualityGroups by remember { mutableStateOf(emptySet<Int>()) }
 
     CompositionLocalProvider(LocalStreamSizeLabelFormat provides formatStreamSize) {
     LazyColumn(
@@ -996,23 +1013,51 @@ internal fun StreamList(
                         resumeProgressFraction = resumeProgressFraction,
                     )
                 }
-                pinnedFirst.remainingGroups.forEachIndexed { groupIndex, group ->
-                    streamSection(
-                        sectionKey = streamSectionRenderKey(groupIndex = groupIndex, group = group),
-                        group = group,
-                        showHeader = uiState.selectedFilter == null,
-                        debridEnabled = debridEnabled,
-                        appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
-                        showFileSizeBadges = streamBadgeSettings.showFileSizeBadges,
-                        showAddonLogo = streamBadgeSettings.showAddonLogo,
-                        badgePlacement = streamBadgeSettings.badgePlacement,
-                        torrentNotSupportedText = torrentNotSupportedText,
-                        fetchingText = fetchingText,
-                        onStreamSelected = onStreamSelected,
-                        onStreamLongPress = onStreamLongPress,
-                        resumePositionMs = resumePositionMs,
-                        resumeProgressFraction = resumeProgressFraction,
-                    )
+                // Better Nuvio (streams.c): o resto vem em grupos de resolução × imagem
+                // ("4K · Dolby Vision 12"), cada um recolhível; o addon fica na linha.
+                qualitySections.forEach { section ->
+                    val collapsed = section.group in collapsedQualityGroups
+                    item(key = "bn_quality_${section.group}") {
+                        QualitySectionHeader(
+                            group = section.group,
+                            count = section.streams.size,
+                            collapsed = collapsed,
+                            onToggle = {
+                                collapsedQualityGroups = if (collapsed) {
+                                    collapsedQualityGroups - section.group
+                                } else {
+                                    collapsedQualityGroups + section.group
+                                }
+                            },
+                        )
+                    }
+                    if (!collapsed) {
+                        itemsIndexed(
+                            items = section.streams,
+                            key = { index, stream ->
+                                streamCardRenderKey(
+                                    sectionKey = "bn_q${section.group}",
+                                    sourceIndex = 0,
+                                    itemIndex = index,
+                                    stream = stream,
+                                )
+                            },
+                        ) { _, stream ->
+                            BnStreamListRow(
+                                stream = stream,
+                                debridEnabled = debridEnabled,
+                                appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
+                                showFileSizeBadges = streamBadgeSettings.showFileSizeBadges,
+                                showAddonLogo = streamBadgeSettings.showAddonLogo,
+                                badgePlacement = streamBadgeSettings.badgePlacement,
+                                torrentNotSupportedText = torrentNotSupportedText,
+                                onStreamSelected = onStreamSelected,
+                                onStreamLongPress = onStreamLongPress,
+                                resumePositionMs = resumePositionMs,
+                                resumeProgressFraction = resumeProgressFraction,
+                            )
+                        }
+                    }
                 }
                 // Better Nuvio: o carregamento por addon no fim ("Comet · buscando").
                 filteredGroups.filter { it.isLoading }.forEachIndexed { index, group ->
@@ -1095,38 +1140,69 @@ private fun LazyListScope.streamSection(
                 )
             },
         ) { _, stream ->
-            val isSelectable = stream.isSelectableForPlayback(debridEnabled)
-            val isUnsupportedTorrentStream =
-                stream.needsLocalDebridResolve &&
-                    !AppFeaturePolicy.p2pEnabled &&
-                    !(debridEnabled && stream.isAddonDebridCandidate)
-            val debridNoPlanText = stringResource(Res.string.bn_debrid_inactive_message)
-            StreamCard(
+            BnStreamListRow(
                 stream = stream,
-                enabled = isSelectable || isUnsupportedTorrentStream || stream.debridNoPlan,
+                debridEnabled = debridEnabled,
                 appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
                 showFileSizeBadges = showFileSizeBadges,
                 showAddonLogo = showAddonLogo,
                 badgePlacement = badgePlacement,
-                onClick = {
-                    if (stream.debridNoPlan) {
-                        // Como a TV: fonte de debrid sem plano não abre, só avisa.
-                        NuvioToastController.show(debridNoPlanText)
-                    } else if (isSelectable) {
-                        onStreamSelected(stream, resumePositionMs, resumeProgressFraction)
-                    } else if (isUnsupportedTorrentStream) {
-                        NuvioToastController.show(torrentNotSupportedText)
-                    }
-                },
-                onLongClick = {
-                    if (stream.playableDirectUrl != null || stream.shouldOpenExternally || stream.isAddonDebridCandidate) {
-                        onStreamLongPress(stream)
-                    }
-                },
-                bnLayout = true,
+                torrentNotSupportedText = torrentNotSupportedText,
+                onStreamSelected = onStreamSelected,
+                onStreamLongPress = onStreamLongPress,
+                resumePositionMs = resumePositionMs,
+                resumeProgressFraction = resumeProgressFraction,
             )
-            Spacer(modifier = Modifier.height(10.dp))
         }
+    }
+}
+
+@Composable
+private fun BnStreamListRow(
+    stream: StreamItem,
+    debridEnabled: Boolean,
+    appendInstantServiceToDefaultName: Boolean,
+    showFileSizeBadges: Boolean,
+    showAddonLogo: Boolean,
+    badgePlacement: StreamBadgePlacement,
+    torrentNotSupportedText: String,
+    onStreamSelected: (stream: StreamItem, resumePositionMs: Long?, resumeProgressFraction: Float?) -> Unit,
+    onStreamLongPress: (StreamItem) -> Unit,
+    resumePositionMs: Long?,
+    resumeProgressFraction: Float?,
+) {
+    Column {
+        val isSelectable = stream.isSelectableForPlayback(debridEnabled)
+        val isUnsupportedTorrentStream =
+            stream.needsLocalDebridResolve &&
+                !AppFeaturePolicy.p2pEnabled &&
+                !(debridEnabled && stream.isAddonDebridCandidate)
+        val debridNoPlanText = stringResource(Res.string.bn_debrid_inactive_message)
+        StreamCard(
+            stream = stream,
+            enabled = isSelectable || isUnsupportedTorrentStream || stream.debridNoPlan,
+            appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
+            showFileSizeBadges = showFileSizeBadges,
+            showAddonLogo = showAddonLogo,
+            badgePlacement = badgePlacement,
+            onClick = {
+                if (stream.debridNoPlan) {
+                    // Como a TV: fonte de debrid sem plano não abre, só avisa.
+                    NuvioToastController.show(debridNoPlanText)
+                } else if (isSelectable) {
+                    onStreamSelected(stream, resumePositionMs, resumeProgressFraction)
+                } else if (isUnsupportedTorrentStream) {
+                    NuvioToastController.show(torrentNotSupportedText)
+                }
+            },
+            onLongClick = {
+                if (stream.playableDirectUrl != null || stream.shouldOpenExternally || stream.isAddonDebridCandidate) {
+                    onStreamLongPress(stream)
+                }
+            },
+            bnLayout = true,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
     }
 }
 
@@ -1593,10 +1669,13 @@ internal fun rememberStreamSearchResult(
     query: String,
     enabled: Boolean,
     resolution: String? = null,
-): StreamSearchResult = remember(uiState, query, enabled, resolution) {
+    type: Int = BnTypeAll,
+): StreamSearchResult = remember(uiState, query, enabled, resolution, type) {
     val terms = if (enabled) query.trim().lowercase().split(' ').filter { it.isNotEmpty() } else emptyList()
-    if (terms.isEmpty() && resolution == null) return@remember StreamSearchResult(uiState, isEmptyBecauseOfSearch = false)
-    val byResolution = uiState.withResolutionFilter(resolution)
+    if (terms.isEmpty() && resolution == null && type == BnTypeAll) {
+        return@remember StreamSearchResult(uiState, isEmptyBecauseOfSearch = false)
+    }
+    val byResolution = uiState.withResolutionFilter(resolution).withTypeFilter(type)
     val groups = byResolution.groups.map { group ->
         group.copy(streams = group.streams.filter { it.matchesSearchTerms(terms) })
     }
@@ -1604,7 +1683,8 @@ internal fun rememberStreamSearchResult(
     StreamSearchResult(
         uiState = filtered,
         isEmptyBecauseOfSearch = uiState.hasAnyStreams && !filtered.hasAnyStreams,
-        isEmptyBecauseOfResolution = resolution != null && uiState.hasAnyStreams && !byResolution.hasAnyStreams,
+        isEmptyBecauseOfResolution = (resolution != null || type != BnTypeAll) &&
+            uiState.hasAnyStreams && !byResolution.hasAnyStreams,
     )
 }
 

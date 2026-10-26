@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bn_streams_type_torrent">Torrent</string>
+    <string name="bn_streams_type_direct">Direct</string>
+    <string name="bn_streams_section_sd">SD</string>
+    <string name="bn_streams_section_other">Other</string>
+</resources>

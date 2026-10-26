@@ -75,6 +75,8 @@ internal fun TabletStreamsLayout(
     onRefresh: () -> Unit,
     resolutionFilter: String? = null,
     onResolutionFilterChange: (String?) -> Unit = {},
+    typeFilter: Int = BnTypeAll,
+    onTypeFilterChange: (Int) -> Unit = {},
     recommended: RecommendedStream? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -241,9 +243,14 @@ internal fun TabletStreamsLayout(
                                     onSelected = onResolutionFilterChange,
                                     modifier = Modifier.padding(bottom = 8.dp),
                                 )
+                                StreamTypeFilterRow(
+                                    selected = typeFilter,
+                                    onSelected = onTypeFilterChange,
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                )
                             }
 
-                            val listUiState = rememberStreamSearchResult(uiState, searchQuery, showSearchField, resolutionFilter)
+                            val listUiState = rememberStreamSearchResult(uiState, searchQuery, showSearchField, resolutionFilter, typeFilter)
 
                             StreamList(
                                 uiState = listUiState.uiState,
