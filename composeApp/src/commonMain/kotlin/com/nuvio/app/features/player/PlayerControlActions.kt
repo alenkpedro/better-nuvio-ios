@@ -87,6 +87,8 @@ internal fun PlayerToolbar(
     isPortraitPlayback: Boolean = false,
     onPictureInPictureClick: (() -> Unit)? = null,
     moreActions: List<PlayerMoreAction> = emptyList(),
+    moreMenuExpanded: Boolean = false,
+    onMoreMenuExpandedChange: (Boolean) -> Unit = {},
     onInteraction: () -> Unit = {},
 ) {
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -138,7 +140,12 @@ internal fun PlayerToolbar(
                 icon = if (isLocked) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
                 onClick = onLockToggle,
             )
-            PlayerMoreButton(actions = moreActions, onInteraction = onInteraction)
+            PlayerMoreButton(
+                actions = moreActions,
+                expanded = moreMenuExpanded,
+                onExpandedChange = onMoreMenuExpandedChange,
+                onInteraction = onInteraction,
+            )
         }
         Spacer(Modifier.width(8.dp))
         NuvioBackButton(

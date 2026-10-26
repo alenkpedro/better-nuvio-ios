@@ -57,6 +57,7 @@ import com.nuvio.app.core.ui.appIconPainter
 import com.nuvio.app.core.ui.nuvioTypeScale
 import com.nuvio.app.features.livetv.formatLiveTvEpgTime
 import com.nuvio.app.features.livetv.rememberLiveTvEpgNowMillis
+import com.nuvio.app.features.streams.StreamBadge
 import kotlinx.coroutines.delay
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -94,6 +95,7 @@ internal fun PlayerBottomBar(
     onInteraction: () -> Unit,
     onSourceLineHeightChanged: (Int) -> Unit,
     timeline: @Composable (Modifier) -> Unit,
+    badges: List<StreamBadge> = emptyList(),
 ) {
     val typeScale = MaterialTheme.nuvioTypeScale
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
@@ -123,6 +125,9 @@ internal fun PlayerBottomBar(
                                         } else Modifier,
                                     ),
                             )
+                        }
+                        if (badges.isNotEmpty()) {
+                            PlayerBadges(badges = badges, modifier = Modifier.padding(top = 6.dp))
                         }
                         if (!sourceLine.isNullOrBlank() && !playbackSnapshot.isPlaying) {
                             androidx.compose.runtime.DisposableEffect(Unit) {
@@ -352,7 +357,7 @@ internal fun playerRoundActions(
         PlayerRoundAction(stringResource(Res.string.player_chapters), it, icon = Icons.AutoMirrored.Rounded.ListAlt)
     },
     onQualityClick?.let {
-        PlayerRoundAction(qualityLabel?.takeIf { label -> label.isNotBlank() } ?: "Quality", it, icon = Icons.Rounded.HighQuality)
+        PlayerRoundAction(qualityLabel?.takeIf { label -> label.isNotBlank() } ?: stringResource(Res.string.bn_player_quality), it, icon = Icons.Rounded.HighQuality)
     },
     onSpeedClick?.let {
         PlayerRoundAction(

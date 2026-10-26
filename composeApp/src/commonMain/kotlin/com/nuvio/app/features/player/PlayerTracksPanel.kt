@@ -77,6 +77,7 @@ import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.addon_title
 import nuvio.composeapp.generated.resources.bn_back
 import nuvio.composeapp.generated.resources.bn_decimal_separator
+import nuvio.composeapp.generated.resources.bn_sync_auto_now
 import nuvio.composeapp.generated.resources.bn_player_subtitle_synced
 import nuvio.composeapp.generated.resources.bn_subtitle_background
 import nuvio.composeapp.generated.resources.bn_subtitle_background_full
@@ -183,6 +184,7 @@ internal fun PlayerTracksPanel(
     onAutoSyncReload: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    onAutoSyncNow: ((AddonSubtitle) -> Unit)? = null,
 ) {
     var page by remember(visible) { mutableStateOf(TracksPanelPage.Main) }
     // Na página de estilo, voltar leva à principal; só na principal o painel fecha.
@@ -281,6 +283,7 @@ internal fun PlayerTracksPanel(
                                         onSyncByEarClick()
                                         onDismiss()
                                     },
+                                    onAutoSyncNow = onAutoSyncNow,
                                     onStyleClick = { page = TracksPanelPage.Style },
                                     modifier = Modifier.weight(1.1f),
                                 )
@@ -534,10 +537,15 @@ private fun SubtitleGroupsColumn(
     // Better Nuvio: Embutidas é só o que vem dentro do arquivo, como na TV. As legendas do
     // stream e dos addons o player carrega como faixas externas (com o nome do link, às vezes
     // em base64); elas já aparecem no grupo do idioma, e a tocando é marcada lá.
-    val playingExternal = allSubtitleTracks.firstOrNull {
-        it.externalUrl != null && (it.index == selectedSubtitleIndex || (selectedSubtitleIndex < 0 && it.isSelected))
+    // As legendas locais salvas com o download não têm par nos addons: ficam em Embutidas.
+    val subtitleTracks = allSubtitleTracks.filter { track ->
+        val url = track.externalUrl ?: return@filter true
+        url.isLocalSubtitleUri() && addonSubtitles.none { it.url == url }
     }
-    val subtitleTracks = allSubtitleTracks.filter { it.externalUrl == null }
+    val playingExternal = allSubtitleTracks.firstOrNull {
+        it.externalUrl != null && it !in subtitleTracks &&
+            (it.index == selectedSubtitleIndex || (selectedSubtitleIndex < 0 && it.isSelected))
+    }
     val effectiveSelectedAddon = selectedAddonSubtitle
         ?: addonSubtitles.findSelectedAddon(selectedAddonSubtitleId)
         ?: playingExternal?.let { track -> addonSubtitles.firstOrNull { it.url == track.externalUrl } }
@@ -915,6 +923,7 @@ private fun SyncColumn(
     onSubtitleDelayChanged: (Int) -> Unit,
     onSubtitleDelayReset: () -> Unit,
     onSyncByEarClick: () -> Unit,
+    onAutoSyncNow: ((AddonSubtitle) -> Unit)?,
     onStyleClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -962,6 +971,13 @@ private fun SyncColumn(
                             else Res.string.bn_sync_auto_hint,
                         ),
                     )
+                    if (selectedAddonSubtitle != null && onAutoSyncNow != null) {
+                        PanelButton(
+                            text = stringResource(Res.string.bn_sync_auto_now),
+                            filled = !isAutoSynced,
+                            onClick = { onAutoSyncNow(selectedAddonSubtitle) },
+                        )
+                    }
                 }
 
                 SubtitleSyncMode.Ear -> {

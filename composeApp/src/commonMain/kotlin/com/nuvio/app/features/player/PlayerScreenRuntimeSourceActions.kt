@@ -369,6 +369,7 @@ private fun PlayerScreenRuntime.switchToPreparedLiveChannel(channel: LiveTvChann
     showEpisodesPanel = false
     showQualityPanel = false
     showSpeedPanel = false
+    showMoreMenu = false
     showLiveChannelsPanel = false
     controlsVisible = true
     initialLoadCompleted = false
@@ -791,6 +792,7 @@ internal fun PlayerScreenRuntime.selectPlayerQuality(qualityId: String?) {
     shouldPlay = true
     showQualityPanel = false
     showSpeedPanel = false
+    showMoreMenu = false
     controlsVisible = true
     InAppLogger.info(
         "Player/Quality",
