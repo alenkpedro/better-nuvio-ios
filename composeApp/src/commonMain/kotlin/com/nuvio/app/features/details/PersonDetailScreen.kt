@@ -1,5 +1,9 @@
 package com.nuvio.app.features.details
 
+import com.nuvio.app.features.follow.FollowedPeopleRow
+import com.nuvio.app.features.follow.FollowedPerson
+import com.nuvio.app.features.follow.PersonFollowButton
+
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -98,6 +102,7 @@ fun PersonDetailScreen(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     modifier: Modifier = Modifier,
+    onOpenPerson: ((FollowedPerson) -> Unit)? = null,
 ) {
     var uiState by remember(personId) { mutableStateOf<PersonDetailUiState>(PersonDetailUiState.Loading) }
     val watchedUiState by remember {
@@ -150,6 +155,7 @@ fun PersonDetailScreen(
                 watchedKeys = watchedUiState.watchedKeys,
                 fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
                 onOpenMeta = onOpenMeta,
+                onOpenPerson = onOpenPerson,
                 initialProfilePhoto = initialProfilePhoto,
                 avatarTransitionKey = resolvedAvatarTransitionKey,
                 sharedTransitionScope = sharedTransitionScope,
@@ -182,6 +188,7 @@ private fun PersonDetailContent(
     watchedKeys: Set<String>,
     fullyWatchedSeriesKeys: Set<String> = emptySet(),
     onOpenMeta: (MetaPreview) -> Unit,
+    onOpenPerson: ((FollowedPerson) -> Unit)? = null,
     initialProfilePhoto: String? = null,
     avatarTransitionKey: String,
     sharedTransitionScope: SharedTransitionScope? = null,
@@ -289,6 +296,7 @@ private fun PersonDetailContent(
                         watchedKeys = watchedKeys,
                         fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
                         onOpenMeta = onOpenMeta,
+                        onOpenPerson = onOpenPerson,
                         fallbackProfilePhoto = initialProfilePhoto,
                         avatarTransitionKey = avatarTransitionKey,
                         sharedTransitionScope = sharedTransitionScope,
@@ -347,6 +355,12 @@ private fun PersonDetailContent(
                             )
                         }
 
+                        // Better Nuvio: quem mais o perfil segue (seguir.c), para ir de uma pessoa a outra.
+                        onOpenPerson?.let { open ->
+                            Spacer(modifier = Modifier.height(24.dp))
+                            FollowedPeopleRow(currentTmdbId = person.tmdbId, onOpenPerson = open, horizontalPadding = 20.dp)
+                        }
+
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
@@ -371,6 +385,7 @@ private fun WidePersonDetailContent(
     watchedKeys: Set<String>,
     fullyWatchedSeriesKeys: Set<String> = emptySet(),
     onOpenMeta: (MetaPreview) -> Unit,
+    onOpenPerson: ((FollowedPerson) -> Unit)?,
     fallbackProfilePhoto: String?,
     avatarTransitionKey: String,
     sharedTransitionScope: SharedTransitionScope?,
@@ -438,6 +453,10 @@ private fun WidePersonDetailContent(
                     headerHorizontalPadding = 0.dp,
                     onPosterClick = onOpenMeta,
                 )
+            }
+
+            onOpenPerson?.let { open ->
+                FollowedPeopleRow(currentTmdbId = person.tmdbId, onOpenPerson = open, horizontalPadding = 0.dp)
             }
         }
     }
@@ -539,6 +558,7 @@ private fun PersonIdentitySidebar(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
+            PersonFollowButton(tmdbId = person.tmdbId, name = person.name, photo = avatarUrl)
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(15.dp)) {
@@ -699,7 +719,9 @@ private fun HeroSection(
             overflow = TextOverflow.Ellipsis,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
+        PersonFollowButton(tmdbId = person.tmdbId, name = person.name, photo = avatarUrl)
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Personal info
         val infoItems = buildList {

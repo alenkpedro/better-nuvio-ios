@@ -184,6 +184,15 @@ internal fun PersonDestination(
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         modifier = Modifier.fillMaxSize(),
+        onOpenPerson = { person ->
+            navController.navigate(
+                PersonDetailRoute(
+                    personId = person.tmdbId,
+                    personName = person.name,
+                    personPhoto = person.photo,
+                ),
+            )
+        },
     )
     }
 }
