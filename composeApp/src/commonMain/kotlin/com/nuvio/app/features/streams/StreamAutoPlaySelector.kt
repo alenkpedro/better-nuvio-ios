@@ -50,6 +50,8 @@ object StreamAutoPlaySelector {
         bingeGroupOnly: Boolean = false,
         debridEnabled: Boolean = true,
         activeResolverProviderId: String? = null,
+        rememberedSource: RememberedSource? = null,
+        maxQualityHeight: Int = 0,
     ): StreamItem? =
         evaluateAutoPlayStream(
             streams = streams,
@@ -64,6 +66,8 @@ object StreamAutoPlaySelector {
             bingeGroupOnly = bingeGroupOnly,
             debridEnabled = debridEnabled,
             activeResolverProviderId = activeResolverProviderId,
+            rememberedSource = rememberedSource,
+            maxQualityHeight = maxQualityHeight,
         ).stream
 
     fun evaluateAutoPlayStream(
@@ -79,6 +83,8 @@ object StreamAutoPlaySelector {
         bingeGroupOnly: Boolean = false,
         debridEnabled: Boolean = true,
         activeResolverProviderId: String? = null,
+        rememberedSource: RememberedSource? = null,
+        maxQualityHeight: Int = 0,
     ): StreamAutoPlayEvaluation {
         if (streams.isEmpty()) return StreamAutoPlayEvaluation()
 
@@ -125,6 +131,14 @@ object StreamAutoPlaySelector {
         if (mode == StreamAutoPlayMode.MANUAL) {
             return StreamAutoPlayEvaluation()
         }
+        // Better Nuvio: a fonte que a pessoa escolheu neste título vence (fontepref.c):
+        // bingeGroup, depois addon + trilha de áudio. Entra primeiro em qualquer modo.
+        val rememberedStream = rememberedSource?.let { remembered ->
+            RememberedSourceMatcher.pick(
+                streams.filter { it.isAutoPlayable(debridEnabled, activeResolverProviderId) },
+                remembered,
+            )
+        }
         val preferredStream = if (preferBingeGroupInSelection && targetBingeGroup.isNotEmpty()) {
             candidateStreams.firstOrNull { stream ->
                 stream.behaviorHints.bingeGroup == targetBingeGroup &&
@@ -135,7 +149,8 @@ object StreamAutoPlaySelector {
         }
         val matchingStreams = when (mode) {
             StreamAutoPlayMode.MANUAL -> emptyList()
-            StreamAutoPlayMode.FIRST_STREAM -> candidateStreams
+            StreamAutoPlayMode.FIRST_STREAM -> StreamQualityRanking.preferenceOrder(candidateStreams, maxQualityHeight)
+            StreamAutoPlayMode.BEST_QUALITY -> StreamQualityRanking.rankByScore(candidateStreams, maxQualityHeight)
             StreamAutoPlayMode.REGEX_MATCH -> {
                 val pattern = regexPattern.trim()
 
@@ -157,7 +172,7 @@ object StreamAutoPlaySelector {
                     )
                 } else null
 
-                candidateStreams.filter { stream ->
+                StreamQualityRanking.preferenceOrder(candidateStreams, maxQualityHeight).filter { stream ->
                     val url = stream.playableDirectUrl.orEmpty()
 
                     val searchableText = buildString {
@@ -178,13 +193,16 @@ object StreamAutoPlaySelector {
                 }
             }
         }
-        if (matchingStreams.isEmpty() && preferredStream == null) return StreamAutoPlayEvaluation()
+        if (matchingStreams.isEmpty() && preferredStream == null && rememberedStream == null) {
+            return StreamAutoPlayEvaluation()
+        }
 
         val readyStreams = buildList {
-            preferredStream?.let(::add)
+            rememberedStream?.let(::add)
+            preferredStream?.takeIf { it != rememberedStream }?.let(::add)
             matchingStreams
                 .filter { it.isAutoPlayable(debridEnabled, activeResolverProviderId) }
-                .filterNot { it == preferredStream }
+                .filterNot { it == preferredStream || it == rememberedStream }
                 .forEach(::add)
         }
         val selected = readyStreams.firstOrNull()
@@ -206,7 +224,9 @@ object StreamAutoPlaySelector {
     private fun StreamItem.isAutoPlayable(
         debridEnabled: Boolean,
         activeResolverProviderId: String?,
-    ): Boolean = !debridNoPlan && (
+    ): Boolean = !debridNoPlan &&
+        // Better Nuvio: link de aviso (slate, downloading.mp4, sem assinatura) não toca sozinho.
+        !StreamWarnings.isWarningUrl(playableDirectUrl) && (
         playableDirectUrl != null ||
             serverTarget != null ||
             (

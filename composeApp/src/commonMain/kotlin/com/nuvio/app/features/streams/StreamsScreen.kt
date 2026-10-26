@@ -226,6 +226,7 @@ fun StreamsScreen(
     val usualBingeGroup = remember(parentMetaId, uiState.groups) { BingeGroupCacheRepository.get(parentMetaId) }
     val usualFilename = remember(parentMetaId, usualBingeGroup) { usualBingeGroup?.let { BingeGroupCacheRepository.getFilename(parentMetaId) } }
     val usualInfoHash = remember(parentMetaId, usualBingeGroup) { usualBingeGroup?.let { BingeGroupCacheRepository.getInfoHash(parentMetaId) } }
+    val rememberedSource = remember(parentMetaId, uiState.groups) { RememberedSourceRepository.get(parentMetaId) }
     val recommendedStream = remember(
         uiState.groups,
         uiState.autoPlayStream,
@@ -233,6 +234,8 @@ fun StreamsScreen(
         playerSettings,
         debridSettings,
         usualBingeGroup,
+        rememberedSource,
+        streamDisplaySettings.maxQuality,
     ) {
         val ordered = splitPinnedSources(uiState.groups, pinnedSourceIdsForPick)
         pickRecommendedStream(
@@ -244,6 +247,8 @@ fun StreamsScreen(
             usualBingeGroup = usualBingeGroup,
             usualFilename = usualFilename,
             usualInfoHash = usualInfoHash,
+            rememberedSource = rememberedSource,
+            maxQualityHeight = streamDisplaySettings.maxQuality.height,
         )
     }
 
@@ -362,11 +367,16 @@ fun StreamsScreen(
                     if (downloadMode) {
                         startStreamDownload(stream)
                     } else {
+                        // Better Nuvio: a escolha manual vira a fonte lembrada do título (fontepref.c).
+                        RememberedSourceRepository.save(parentMetaId, stream)
                         onStreamSelected(stream, positionMs, progressFraction)
                     }
                 },
                 onStreamLongPress = { stream -> streamActionsTarget = stream },
                 onRefresh = reloadStreams,
+                resolutionFilter = resolutionFilter,
+                onResolutionFilterChange = { resolutionFilter = it },
+                recommended = recommendedStream,
             )
         } else {
             MobileStreamsLayout(
@@ -391,6 +401,8 @@ fun StreamsScreen(
                     if (downloadMode) {
                         startStreamDownload(stream)
                     } else {
+                        // Better Nuvio: a escolha manual vira a fonte lembrada do título (fontepref.c).
+                        RememberedSourceRepository.save(parentMetaId, stream)
                         onStreamSelected(stream, positionMs, progressFraction)
                     }
                 },
@@ -606,11 +618,9 @@ private fun MobileStreamsLayout(
                             onRefresh = onRefresh,
                         )
 
+                        // Better Nuvio: filtro sem fonte vira uma linha na lista, e as linhas
+                        // "Addon · buscando" continuam aparecendo embaixo dela.
                         val listUiState = rememberStreamSearchResult(uiState, searchQuery, showSearchField, resolutionFilter)
-                        if (listUiState.isEmptyBecauseOfSearch) {
-                            StreamSearchEmptyBlock(modifier = Modifier.weight(1f))
-                            return@Column
-                        }
 
                         StreamList(
                             uiState = listUiState.uiState,
@@ -622,6 +632,7 @@ private fun MobileStreamsLayout(
                             resumeProgressFraction = resumeProgressFraction,
                             modifier = Modifier.weight(1f),
                             recommended = recommended,
+                            filterEmptyMessage = listUiState.emptyMessage(),
                         )
                     }
                 }
@@ -853,6 +864,8 @@ internal fun StreamList(
     resumeProgressFraction: Float?,
     modifier: Modifier = Modifier,
     recommended: RecommendedStream? = null,
+    /** Better Nuvio: o filtro (resolução ou busca) não deixou nenhuma fonte; a frase entra no lugar da lista. */
+    filterEmptyMessage: String? = null,
 ) {
     // A recomendada sobe para o topo só quando ela passa pelos filtros em vigor,
     // e sai da lista de baixo para não aparecer duas vezes.
@@ -919,6 +932,20 @@ internal fun StreamList(
             }
         }
         when {
+            filterEmptyMessage != null && !hasAnyStreams -> {
+                item(key = "bn_filter_empty") {
+                    StreamFilterEmptyLine(message = filterEmptyMessage)
+                }
+                filteredGroups.filter { it.isLoading }.forEachIndexed { index, group ->
+                    item(key = "bn_loading_${index}_${group.addonId}") {
+                        AddonLoadingRow(addonName = group.addonName)
+                    }
+                }
+                item {
+                    Spacer(modifier = Modifier.height(nuvioSafeBottomPadding(80.dp)))
+                }
+            }
+
             hasGroups && anyLoading && !hasAnyStreams -> {
                 item {
                     LoadingStateBlock(findingStreamsText = findingStreamsText)
@@ -1548,7 +1575,17 @@ private fun FooterLoadingBlock(
 internal data class StreamSearchResult(
     val uiState: StreamsUiState,
     val isEmptyBecauseOfSearch: Boolean,
+    /** Better Nuvio: há fontes, mas nenhuma na resolução escolhida (antes de olhar a busca). */
+    val isEmptyBecauseOfResolution: Boolean = false,
 )
+
+/** A frase que entra no lugar da lista quando o filtro esvaziou tudo, ou null. */
+@Composable
+internal fun StreamSearchResult.emptyMessage(): String? = when {
+    isEmptyBecauseOfResolution -> stringResource(Res.string.bn_streams_resolution_empty)
+    isEmptyBecauseOfSearch -> stringResource(Res.string.streams_search_no_results)
+    else -> null
+}
 
 @Composable
 internal fun rememberStreamSearchResult(
@@ -1559,13 +1596,15 @@ internal fun rememberStreamSearchResult(
 ): StreamSearchResult = remember(uiState, query, enabled, resolution) {
     val terms = if (enabled) query.trim().lowercase().split(' ').filter { it.isNotEmpty() } else emptyList()
     if (terms.isEmpty() && resolution == null) return@remember StreamSearchResult(uiState, isEmptyBecauseOfSearch = false)
-    val groups = uiState.withResolutionFilter(resolution).groups.map { group ->
+    val byResolution = uiState.withResolutionFilter(resolution)
+    val groups = byResolution.groups.map { group ->
         group.copy(streams = group.streams.filter { it.matchesSearchTerms(terms) })
     }
     val filtered = uiState.copy(groups = groups)
     StreamSearchResult(
         uiState = filtered,
         isEmptyBecauseOfSearch = uiState.hasAnyStreams && !filtered.hasAnyStreams,
+        isEmptyBecauseOfResolution = resolution != null && uiState.hasAnyStreams && !byResolution.hasAnyStreams,
     )
 }
 
@@ -1647,6 +1686,19 @@ internal fun StreamSearchField(
             ),
         )
     }
+}
+
+@Composable
+internal fun StreamFilterEmptyLine(message: String, modifier: Modifier = Modifier) {
+    Text(
+        text = message,
+        color = MaterialTheme.nuvio.colors.textMuted,
+        style = MaterialTheme.typography.bodyMedium,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 20.dp),
+    )
 }
 
 @Composable

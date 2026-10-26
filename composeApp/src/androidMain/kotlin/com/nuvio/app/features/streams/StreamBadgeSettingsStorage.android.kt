@@ -21,10 +21,11 @@ actual object StreamBadgeSettingsStorage {
     private const val showInPlayerKey = "show_badges_in_player"
     private const val streamBackgroundModeKey = "stream_background_mode"
     private const val streamBadgePlacementKey = "stream_badge_placement"
+    private const val streamMaxQualityKey = "stream_max_quality"
     private const val pinnedStreamSourcesKey = "pinned_stream_sources"
     private const val legacyDebridStreamBadgeRulesKey = "debrid_stream_badge_rules"
 
-    private val syncKeys = listOf(streamBadgeRulesKey, showFileSizeBadgesKey, showInPlayerKey, streamBadgePlacementKey, streamBackgroundModeKey, pinnedStreamSourcesKey)
+    private val syncKeys = listOf(streamBadgeRulesKey, showFileSizeBadgesKey, showInPlayerKey, streamBadgePlacementKey, streamBackgroundModeKey, pinnedStreamSourcesKey, streamMaxQualityKey)
 
     private var preferences: SharedPreferences? = null
     private var legacyDebridPreferences: SharedPreferences? = null
@@ -74,6 +75,12 @@ actual object StreamBadgeSettingsStorage {
 
     actual fun saveStreamBadgePlacement(placement: String) {
         saveString(streamBadgePlacementKey, placement)
+    }
+
+    actual fun loadStreamMaxQuality(): String? = loadString(streamMaxQualityKey)
+
+    actual fun saveStreamMaxQuality(quality: String) {
+        saveString(streamMaxQualityKey, quality)
     }
 
     actual fun loadPinnedStreamSources(): String? = loadString(pinnedStreamSourcesKey)
@@ -126,6 +133,7 @@ actual object StreamBadgeSettingsStorage {
         loadStreamBadgePlacement()?.let { put(streamBadgePlacementKey, encodeSyncString(it)) }
         loadStreamBackgroundMode()?.let { put(streamBackgroundModeKey, encodeSyncString(it)) }
         loadPinnedStreamSources()?.let { put(pinnedStreamSourcesKey, encodeSyncString(it)) }
+        loadStreamMaxQuality()?.let { put(streamMaxQualityKey, encodeSyncString(it)) }
     }
 
     actual fun replaceFromSyncPayload(payload: JsonObject) {
@@ -139,5 +147,6 @@ actual object StreamBadgeSettingsStorage {
         payload.decodeSyncString(streamBadgePlacementKey)?.let(::saveStreamBadgePlacement)
         payload.decodeSyncString(streamBackgroundModeKey)?.let(::saveStreamBackgroundMode)
         payload.decodeSyncString(pinnedStreamSourcesKey)?.let(::savePinnedStreamSources)
+        payload.decodeSyncString(streamMaxQualityKey)?.let(::saveStreamMaxQuality)
     }
 }

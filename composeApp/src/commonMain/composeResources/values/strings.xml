@@ -1932,6 +1932,12 @@
     <string name="bn_streams_recommended_usual">Recommended · your usual</string>
     <string name="bn_streams_resolution_all">All</string>
     <string name="bn_streams_addon_loading">%1$s · searching</string>
+    <string name="bn_streams_resolution_empty">No sources at this resolution</string>
+    <string name="settings_playback_stream_selection_mode_best_quality">Best quality (like on TV)</string>
+    <string name="settings_playback_stream_selection_mode_best_quality_description">Plays the best source: MP4 4K Dolby Vision, then 4K, MP4, Atmos and resolution. The source you picked last time for the title comes first.</string>
+    <string name="bn_settings_max_quality">Maximum quality</string>
+    <string name="bn_settings_max_quality_description">Sources above it go to the end of the list and are only played when nothing else is available.</string>
+    <string name="bn_settings_max_quality_auto">Automatic</string>
     <plurals name="bn_streams_found_count">
         <item quantity="one">%1$d found</item>
         <item quantity="other">%1$d found</item>

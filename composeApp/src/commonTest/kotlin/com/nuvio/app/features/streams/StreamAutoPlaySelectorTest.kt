@@ -292,6 +292,115 @@ class StreamAutoPlaySelectorTest {
         assertEquals(stream, selected)
     }
 
+    // --- Better Nuvio: melhor qualidade (pontos() da TV) ---------------------
+
+    private fun bestQuality(
+        streams: List<StreamItem>,
+        maxQualityHeight: Int = 0,
+        remembered: RememberedSource? = null,
+    ): StreamAutoPlayEvaluation = StreamAutoPlaySelector.evaluateAutoPlayStream(
+        streams = streams,
+        mode = StreamAutoPlayMode.BEST_QUALITY,
+        regexPattern = "",
+        source = StreamAutoPlaySource.ALL_SOURCES,
+        installedAddonNames = streams.mapTo(mutableSetOf()) { it.addonName },
+        selectedAddons = emptySet(),
+        selectedPlugins = emptySet(),
+        rememberedSource = remembered,
+        maxQualityHeight = maxQualityHeight,
+    )
+
+    @Test
+    fun `best quality orders mp4 4k dv then 4k then mp4 then atmos then height`() {
+        val hd = stream(addonName = "A", url = "https://example.com/a.mkv", name = "720p")
+        val atmos = stream(addonName = "A", url = "https://example.com/b.mkv", name = "1080p Atmos")
+        val mp4 = stream(addonName = "A", url = "https://example.com/c.mp4", name = "1080p")
+        val uhd = stream(addonName = "A", url = "https://example.com/d.mkv", name = "2160p DV")
+        val uhdMp4Dv = stream(addonName = "A", url = "https://example.com/e.mp4", name = "4K DV")
+        val fullHd = stream(addonName = "A", url = "https://example.com/f.mkv", name = "1080p")
+
+        val evaluation = bestQuality(listOf(hd, atmos, mp4, uhd, uhdMp4Dv, fullHd))
+
+        assertEquals(listOf(uhdMp4Dv, uhd, mp4, atmos, fullHd, hd), evaluation.readyStreams)
+    }
+
+    @Test
+    fun `best quality keeps addon order on ties`() {
+        val first = stream(addonName = "A", url = "https://example.com/1.mkv", name = "1080p")
+        val second = stream(addonName = "B", url = "https://example.com/2.mkv", name = "1080p")
+
+        assertEquals(first, bestQuality(listOf(first, second)).stream)
+        assertEquals(second, bestQuality(listOf(second, first)).stream)
+    }
+
+    @Test
+    fun `max quality moves sources above it to the end without dropping them`() {
+        val uhd = stream(addonName = "A", url = "https://example.com/uhd.mp4", name = "4K DV")
+        val fullHd = stream(addonName = "A", url = "https://example.com/fhd.mkv", name = "1080p")
+
+        assertEquals(listOf(fullHd, uhd), bestQuality(listOf(uhd, fullHd), maxQualityHeight = 1080).readyStreams)
+        assertEquals(uhd, bestQuality(listOf(uhd), maxQualityHeight = 1080).stream)
+    }
+
+    @Test
+    fun `uncached debrid sources rank below cached ones`() {
+        val uncached = stream(addonName = "A", url = "https://example.com/u.mp4", name = "⏳ 4K DV")
+        val cached = stream(addonName = "A", url = "https://example.com/c.mkv", name = "⚡ 720p")
+
+        assertEquals(cached, bestQuality(listOf(uncached, cached)).stream)
+    }
+
+    @Test
+    fun `warning urls are never auto played`() {
+        val slate = stream(addonName = "A", url = "https://example.com/static/downloading.mp4", name = "4K")
+        val real = stream(addonName = "A", url = "https://example.com/movie.mkv", name = "720p")
+
+        assertEquals(real, bestQuality(listOf(slate, real)).stream)
+    }
+
+    @Test
+    fun `remembered source wins by binge group then by provider and audio`() {
+        val best = stream(addonName = "A", url = "https://example.com/best.mp4", name = "4K DV")
+        val chosen = stream(addonName = "B", url = "https://example.com/dub.mkv", name = "720p Dublado", bingeGroup = "b-720")
+        val remembered = RememberedSource(provider = "B", audio = "DUB", bingeGroup = "b-720", height = 720, label = "720p Dublado")
+
+        assertEquals(chosen, bestQuality(listOf(best, chosen), remembered = remembered).stream)
+
+        // O addon trocou o bingeGroup: casa por provedor + trilha de áudio.
+        val renamed = chosen.copy(behaviorHints = StreamBehaviorHints(bingeGroup = "b-new"))
+        val subbed = stream(addonName = "B", url = "https://example.com/leg.mkv", name = "1080p Legendado")
+        assertEquals(renamed, bestQuality(listOf(best, subbed, renamed), remembered = remembered).stream)
+
+        // Nada casou: a melhor qualidade assume.
+        val other = RememberedSource(provider = "C", audio = "DUB")
+        assertEquals(best, bestQuality(listOf(best, chosen), remembered = other).stream)
+    }
+
+    @Test
+    fun `audio signature decodes flags and terms in a stable order`() {
+        val a = stream(addonName = "A", name = "🇺🇸 / 🇧🇷 Dual Audio")
+        val b = stream(addonName = "A", name = "Dual Áudio 🇧🇷 🇺🇸")
+        assertEquals("BR+DUAL+US", RememberedSourceMatcher.audioSignature(a))
+        assertEquals(RememberedSourceMatcher.audioSignature(a), RememberedSourceMatcher.audioSignature(b))
+    }
+
+    @Test
+    fun `no subscription warnings are detected like on the TV`() {
+        val torrentio = stream(
+            addonName = "Torrentio",
+            url = "https://torrentio.strem.fun/videos/failed_access_v3.mp4",
+            name = "Torrentio\nRD error",
+        )
+        val comet = stream(addonName = "Comet", name = "[❌] realdebrid").copy(description = "realdebrid: No active subscription.")
+        val movie = stream(addonName = "A", url = "https://example.com/m.mkv", name = "Expired subscription 1080p")
+
+        assertTrue(StreamWarnings.isNoSubscriptionWarning(torrentio))
+        assertTrue(StreamWarnings.isNoSubscriptionWarning(comet))
+        assertTrue(StreamWarnings.isPureWarning(comet))
+        assertFalse(StreamWarnings.isPureWarning(torrentio))
+        assertFalse(StreamWarnings.isNoSubscriptionWarning(movie))
+    }
+
     private fun stream(
         addonName: String,
         url: String? = null,

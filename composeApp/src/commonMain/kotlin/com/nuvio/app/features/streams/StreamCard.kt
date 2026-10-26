@@ -130,6 +130,14 @@ internal fun StreamCard(
         val contentAlpha = if (stream.debridNoPlan) 0.45f else 1f
         Column(modifier = Modifier.weight(1f)) {
             Column(modifier = Modifier.alpha(contentAlpha)) {
+                // Better Nuvio: os selos da linha nova (imagens do addon ou os de qualidade)
+                // respeitam o "em cima / embaixo" dos ajustes de selos.
+                val bnQualityTags = if (bnLayout && badgeImages.isEmpty()) stream.bnQualityTags() else emptyList()
+                val bnHasTags = badgeImages.isNotEmpty() || bnQualityTags.isNotEmpty()
+                if (bnLayout && bnHasTags && badgePlacement == StreamBadgePlacement.TOP) {
+                    BnStreamTagRow(badgeImages = badgeImages, stream = stream, qualityTags = bnQualityTags)
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
                 if (!bnLayout && hasBadges && badgePlacement == StreamBadgePlacement.TOP) {
                     StreamCardBadgeRow(
                         badgeImages = badgeImages,
@@ -162,7 +170,7 @@ internal fun StreamCard(
                 }
 
                 // Better Nuvio: nome e resolução, tamanho e velocidade, depois os selos (ordem da TV).
-                val sizeAndBitrate = if (bnLayout) stream.bnSizeAndBitrate() else null
+                val sizeAndBitrate = if (bnLayout) stream.bnSizeAndBitrate(includeSize = showFileSizeBadges) else null
                 if (sizeAndBitrate != null) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -192,17 +200,9 @@ internal fun StreamCard(
                 }
 
                 if (bnLayout) {
-                    val qualityTags = if (badgeImages.isEmpty()) stream.bnQualityTags() else emptyList()
-                    if (badgeImages.isNotEmpty()) {
+                    if (bnHasTags && badgePlacement == StreamBadgePlacement.BOTTOM) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        StreamCardBadgeRow(badgeImages = badgeImages, stream = stream, showFileSizeBadges = false)
-                    } else if (qualityTags.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        QualityTagRow(
-                            tags = qualityTags,
-                            background = Color.White.copy(alpha = 0.1f),
-                            contentColor = Color.White.copy(alpha = 0.9f),
-                        )
+                        BnStreamTagRow(badgeImages = badgeImages, stream = stream, qualityTags = bnQualityTags)
                     }
                 } else if (hasBadges && badgePlacement == StreamBadgePlacement.BOTTOM) {
                     Spacer(modifier = Modifier.height(5.dp))
@@ -397,4 +397,23 @@ private fun StreamItem.instantServiceLabel(): String? {
         .ifBlank { status.providerName.trim() }
         .ifBlank { DebridProviders.displayName(status.providerId) }
     return "- $providerLabel Instant"
+}
+
+/** Better Nuvio: selos de imagem do addon, ou na falta deles os selos de qualidade da TV. */
+@Composable
+private fun BnStreamTagRow(
+    badgeImages: List<StreamBadge>,
+    stream: StreamItem,
+    qualityTags: List<String>,
+) {
+    if (badgeImages.isNotEmpty()) {
+        // O tamanho já vai na linha de tamanho e velocidade.
+        StreamCardBadgeRow(badgeImages = badgeImages, stream = stream, showFileSizeBadges = false)
+    } else if (qualityTags.isNotEmpty()) {
+        QualityTagRow(
+            tags = qualityTags,
+            background = Color.White.copy(alpha = 0.1f),
+            contentColor = Color.White.copy(alpha = 0.9f),
+        )
+    }
 }

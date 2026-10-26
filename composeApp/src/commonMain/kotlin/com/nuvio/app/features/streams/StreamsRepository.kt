@@ -112,6 +112,9 @@ object StreamsRepository {
         val playerSettings = PlayerSettingsRepository.uiState.value
         val debridSettings = DebridSettingsRepository.snapshot()
         val streamBadgeRules = StreamBadgeSettingsRepository.snapshot()
+        // Better Nuvio: teto de qualidade e fonte lembrada do título (TV: alturaMax, fontepref.c).
+        val maxQualityHeight = StreamBadgeSettingsRepository.maxQualitySnapshot().height
+        val rememberedSource = if (manualSelection) null else RememberedSourceRepository.get(parentMetaId)
         InAppLogger.info(
             "Streams/StreamsRepository",
             "Loading streams type=$type id=$videoId season=${season ?: -1} episode=${episode ?: -1} " +
@@ -316,6 +319,8 @@ object StreamsRepository {
                     bingeGroupOnly = bingeGroupOnly,
                     debridEnabled = debridSettings.canResolvePlayableLinks,
                     activeResolverProviderId = debridSettings.activeResolverProviderId,
+                    rememberedSource = rememberedSource,
+                    maxQualityHeight = maxQualityHeight,
                 )
 
             fun settleAutoPlay(evaluation: StreamAutoPlayEvaluation) {
@@ -376,6 +381,18 @@ object StreamsRepository {
                     }
                 }
 
+                // Better Nuvio: a fonte escolhida neste título apareceu e toca: não precisa esperar o resto.
+                if (rememberedSource != null && autoPlayMode != StreamAutoPlayMode.MANUAL) {
+                    val evaluation = evaluateAutoPlay()
+                    val remembered = evaluation.stream
+                    if (remembered != null &&
+                        RememberedSourceMatcher.pick(listOf(remembered), rememberedSource) != null
+                    ) {
+                        settleAutoPlay(evaluation)
+                        return
+                    }
+                }
+
                 val earlyEvaluation = when {
                     timeoutElapsed -> evaluateAutoPlay()
                     persistedBingeGroup != null -> evaluateAutoPlay(bingeGroupOnly = true)
@@ -402,7 +419,24 @@ object StreamsRepository {
                 }
             }
 
-            fun presentStreamGroup(group: AddonStreamGroup): AddonStreamGroup {
+            fun presentStreamGroup(rawGroup: AddonStreamGroup): AddonStreamGroup {
+                // Better Nuvio: aviso de debrid sem assinatura (stream_aviso_sem_assinatura). O aviso
+                // puro, sem nada que toque, sai da lista; o que tem link fica apagado com o selo.
+                // E acima da "Qualidade máxima" vai para o fim do grupo, sem sair.
+                val group = rawGroup.copy(
+                    streams = StreamQualityRanking.moveAboveCeilingToEnd(
+                        rawGroup.streams
+                            .filterNot(StreamWarnings::isPureWarning)
+                            .map { stream ->
+                                if (!stream.debridNoPlan && StreamWarnings.isNoSubscriptionWarning(stream)) {
+                                    stream.copy(debridNoPlan = true)
+                                } else {
+                                    stream
+                                }
+                            },
+                        maxQualityHeight,
+                    ),
+                )
                 val badgeGroup = StreamBadgePresentation.apply(
                     groups = listOf(group),
                     rules = streamBadgeRules,
@@ -651,7 +685,10 @@ object StreamsRepository {
                                         val mergedStreams = if (completion.streams.isEmpty()) {
                                             group.streams
                                         } else {
-                                            (group.streams + completion.streams).sortedForGroupedDisplay()
+                                            StreamQualityRanking.moveAboveCeilingToEnd(
+                                                (group.streams + completion.streams).sortedForGroupedDisplay(),
+                                                maxQualityHeight,
+                                            )
                                         }
                                         val stillLoading = remaining > 0
                                         val finalError = if (mergedStreams.isEmpty() && !stillLoading) {

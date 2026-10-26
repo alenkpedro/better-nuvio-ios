@@ -155,14 +155,16 @@ internal fun StreamItem.bnQualityTags(): List<String> {
 private val BitrateRegex = Regex("(\\d+(?:[.,]\\d+)?)\\s*(mbps|mb/s|mbit/s|kbps)", RegexOption.IGNORE_CASE)
 private val SizeRegex = Regex("(\\d+(?:[.,]\\d+)?)\\s*(tb|gb|gib|mb|mib)(?![a-z/])", RegexOption.IGNORE_CASE)
 
-/** Tamanho e velocidade, a segunda linha de cada fonte. */
-internal fun StreamItem.bnSizeAndBitrate(): String? {
+/** Tamanho e velocidade, a segunda linha de cada fonte. [includeSize] segue o ajuste "mostrar tamanho". */
+internal fun StreamItem.bnSizeAndBitrate(includeSize: Boolean = true): String? {
     val text = listOfNotNull(name, title, description).joinToString(" ")
     val bitrate = BitrateRegex.find(text)?.let { match ->
         "${match.groupValues[1]} ${if (match.groupValues[2].lowercase() == "kbps") "kbps" else "Mbps"}"
     }
     val bytes = behaviorHints.videoSize ?: clientResolve?.stream?.raw?.size
-    val size = if (bytes != null && bytes > 0) {
+    val size = if (!includeSize) {
+        null
+    } else if (bytes != null && bytes > 0) {
         val gib = bytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
         if (gib >= 1.0) {
             "${round(gib * 10.0) / 10.0} ${localizedByteUnit("GB")}"
@@ -202,9 +204,10 @@ internal data class RecommendedStream(
 
 /**
  * A fonte em destaque. Como na TV (fontepref.c + fonteauto.c): primeiro a que a
- * pessoa já usou neste título (mesmo bingeGroup, desempatando por arquivo e
- * infoHash); senão a que o auto-play escolheria com os ajustes atuais; senão a
- * primeira da lista (fixadas primeiro).
+ * pessoa escolheu a mão neste título (bingeGroup, depois addon + áudio); senão a
+ * que tocou da última vez (mesmo bingeGroup, desempatando por arquivo e infoHash);
+ * senão a que o auto-play escolheria com os ajustes atuais (no modo manual, a
+ * melhor qualidade da TV); senão a primeira da lista (fixadas primeiro).
  */
 internal fun pickRecommendedStream(
     orderedStreams: List<StreamItem>,
@@ -215,9 +218,15 @@ internal fun pickRecommendedStream(
     usualBingeGroup: String?,
     usualFilename: String?,
     usualInfoHash: String?,
+    rememberedSource: RememberedSource? = null,
+    maxQualityHeight: Int = 0,
 ): RecommendedStream? {
     val selectable = orderedStreams.filter { it.isSelectableForPlayback(debridEnabled) }
     if (selectable.isEmpty()) return null
+
+    // A que a pessoa escolheu a mão neste título (fontepref.c) vem antes de tudo.
+    rememberedSource?.let { RememberedSourceMatcher.pick(selectable, it) }
+        ?.let { return RecommendedStream(it, isUsual = true) }
 
     val bingeGroup = usualBingeGroup?.trim()?.takeIf { it.isNotEmpty() }
     if (bingeGroup != null) {
@@ -234,7 +243,7 @@ internal fun pickRecommendedStream(
         it != StreamAutoPlayMode.MANUAL &&
             !(it == StreamAutoPlayMode.REGEX_MATCH &&
                 !StreamAutoPlayPolicy.isRegexSelectionConfigured(playerSettings.streamAutoPlayRegex))
-    } ?: StreamAutoPlayMode.FIRST_STREAM
+    } ?: StreamAutoPlayMode.BEST_QUALITY
     val installedAddonNames = orderedStreams.filter { it.isInstalledAddonStream }.mapTo(mutableSetOf()) { it.addonName }
     val auto = StreamAutoPlaySelector.selectAutoPlayStream(
         streams = selectable,
@@ -246,6 +255,7 @@ internal fun pickRecommendedStream(
         selectedPlugins = playerSettings.streamAutoPlaySelectedPlugins,
         debridEnabled = debridEnabled,
         activeResolverProviderId = activeResolverProviderId,
+        maxQualityHeight = maxQualityHeight,
     )
     return RecommendedStream(auto ?: selectable.first(), isUsual = false)
 }

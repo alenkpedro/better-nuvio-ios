@@ -73,6 +73,9 @@ internal fun TabletStreamsLayout(
     onStreamSelected: (stream: StreamItem, resumePositionMs: Long?, resumeProgressFraction: Float?) -> Unit,
     onStreamLongPress: (StreamItem) -> Unit,
     onRefresh: () -> Unit,
+    resolutionFilter: String? = null,
+    onResolutionFilterChange: (String?) -> Unit = {},
+    recommended: RecommendedStream? = null,
     modifier: Modifier = Modifier,
 ) {
     val streamsPanelBackdrop = rememberNuvioBackdrop()
@@ -204,6 +207,14 @@ internal fun TabletStreamsLayout(
                                 )
                             }
 
+                            // Better Nuvio: o mesmo cabeçalho, filtro de resolução e recomendada do iPhone.
+                            val streamsWithContent = uiState.groups.filter { it.streams.isNotEmpty() }
+                            FontesHeader(
+                                streamCount = streamsWithContent.sumOf { it.streams.size },
+                                addonCount = streamsWithContent.size,
+                                modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 6.dp),
+                            )
+
                             ProviderFilterRow(
                                 groups = uiState.groups,
                                 selectedFilter = uiState.selectedFilter,
@@ -224,11 +235,15 @@ internal fun TabletStreamsLayout(
                                 )
                             }
 
-                            val listUiState = rememberStreamSearchResult(uiState, searchQuery, showSearchField)
-                            if (listUiState.isEmptyBecauseOfSearch) {
-                                StreamSearchEmptyBlock(modifier = Modifier.weight(1f))
-                                return@Column
+                            if (uiState.hasAnyStreams) {
+                                ResolutionFilterRow(
+                                    selected = resolutionFilter,
+                                    onSelected = onResolutionFilterChange,
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                )
                             }
+
+                            val listUiState = rememberStreamSearchResult(uiState, searchQuery, showSearchField, resolutionFilter)
 
                             StreamList(
                                 uiState = listUiState.uiState,
@@ -239,6 +254,8 @@ internal fun TabletStreamsLayout(
                                 resumePositionMs = resumePositionMs,
                                 resumeProgressFraction = resumeProgressFraction,
                                 modifier = Modifier.weight(1f),
+                                recommended = recommended,
+                                filterEmptyMessage = listUiState.emptyMessage(),
                             )
                         }
                     }
