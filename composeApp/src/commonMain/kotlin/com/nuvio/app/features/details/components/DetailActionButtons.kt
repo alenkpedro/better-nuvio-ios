@@ -51,7 +51,24 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.rounded.Alarm
+import androidx.compose.material.icons.rounded.AlarmOn
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Wallpaper
+import com.nuvio.app.core.ui.NuvioToastController
+import com.nuvio.app.features.notifications.canRemindNewEpisodes
+import nuvio.composeapp.generated.resources.bn_action_artwork
+import nuvio.composeapp.generated.resources.bn_action_recommend
+import nuvio.composeapp.generated.resources.bn_action_remind
+import nuvio.composeapp.generated.resources.bn_artwork_title
+import nuvio.composeapp.generated.resources.bn_recommend_label
+import nuvio.composeapp.generated.resources.bn_recommend_share_text
+import nuvio.composeapp.generated.resources.bn_remind_disabled
+import nuvio.composeapp.generated.resources.bn_remind_enabled
+import nuvio.composeapp.generated.resources.bn_remind_off
+import nuvio.composeapp.generated.resources.bn_remind_on
+import nuvio.composeapp.generated.resources.bn_remind_permission_denied
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.ThumbDown
@@ -455,6 +472,103 @@ private fun rememberQueueAction(meta: com.nuvio.app.features.details.MetaDetails
     )
 }
 
+/**
+ * Better Nuvio: os circulares da TV que faltavam (detail.c): "Lembrar-me" (agenda.c),
+ * "Recomendar a um amigo" (aqui a folha de compartilhar do sistema, porque o serviço
+ * de recomenda.c só existe em build com URL própria) e "Trocar arte" (trocaarte.c).
+ */
+private class BnTitleActions(
+    val remind: DetailSecondaryAction?,
+    val trailing: List<DetailSecondaryAction>,
+    val artworkSheetOpen: Boolean,
+    val closeArtworkSheet: () -> Unit,
+)
+
+@Composable
+private fun rememberBnTitleActions(meta: com.nuvio.app.features.details.MetaDetails?): BnTitleActions {
+    var artworkSheetOpen by remember(meta?.id) { mutableStateOf(false) }
+    if (meta == null) return BnTitleActions(null, emptyList(), false) {}
+    val reminders by remember {
+        com.nuvio.app.features.notifications.SeriesReminderRepository.ensureLoaded()
+        com.nuvio.app.features.notifications.SeriesReminderRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val reminderActive = remember(reminders, meta.id) {
+        com.nuvio.app.features.notifications.SeriesReminderRepository.isActive(meta.id)
+    }
+    val canRemind = remember(meta, reminderActive) { meta.canRemindNewEpisodes() }
+    val enabledText = stringResource(Res.string.bn_remind_enabled)
+    val disabledText = stringResource(Res.string.bn_remind_disabled)
+    val deniedText = stringResource(Res.string.bn_remind_permission_denied)
+    val remind = if (canRemind) {
+        DetailSecondaryAction(
+            label = stringResource(if (reminderActive) Res.string.bn_remind_on else Res.string.bn_remind_off),
+            icon = if (reminderActive) Icons.Rounded.AlarmOn else Icons.Rounded.Alarm,
+            isActive = reminderActive,
+            onClick = {
+                com.nuvio.app.features.notifications.SeriesReminderRepository.toggle(meta) { active, denied ->
+                    NuvioToastController.show(
+                        when {
+                            denied -> deniedText
+                            active -> enabledText
+                            else -> disabledText
+                        },
+                    )
+                }
+            },
+            shortLabel = stringResource(Res.string.bn_action_remind),
+        )
+    } else {
+        null
+    }
+    val isTitle = meta.type == "movie" || meta.type == "series" || meta.type == "tv"
+    val shareText = stringResource(Res.string.bn_recommend_share_text, meta.name)
+    val trailing = buildList {
+        if (isTitle) {
+            add(
+                DetailSecondaryAction(
+                    label = stringResource(Res.string.bn_recommend_label),
+                    icon = Icons.Rounded.Share,
+                    onClick = { com.nuvio.app.core.share.PlatformShare.shareText(recommendationText(shareText, meta)) },
+                    shortLabel = stringResource(Res.string.bn_action_recommend),
+                ),
+            )
+            add(
+                DetailSecondaryAction(
+                    label = stringResource(Res.string.bn_artwork_title),
+                    icon = Icons.Rounded.Wallpaper,
+                    onClick = { artworkSheetOpen = true },
+                    shortLabel = stringResource(Res.string.bn_action_artwork),
+                ),
+            )
+        }
+    }
+    return BnTitleActions(remind, trailing, artworkSheetOpen) { artworkSheetOpen = false }
+}
+
+/** "Recomendo X (2024)", o link do IMDb quando há, e o link que abre o título no app. */
+private fun recommendationText(headline: String, meta: com.nuvio.app.features.details.MetaDetails): String =
+    buildString {
+        append(headline)
+        meta.releaseInfo?.take(4)?.takeIf { it.all(Char::isDigit) }?.let { append(" (").append(it).append(')') }
+        val imdbId = meta.id.substringBefore(':').takeIf { it.startsWith("tt") }
+        imdbId?.let { append("\nhttps://www.imdb.com/title/").append(it).append('/') }
+        append("\n").append(com.nuvio.app.core.deeplink.buildMetaDeepLinkUrl(type = meta.type, id = meta.id))
+    }
+
+@Composable
+private fun BnArtworkSheetHost(
+    meta: com.nuvio.app.features.details.MetaDetails?,
+    actions: BnTitleActions,
+) {
+    if (meta == null || !actions.artworkSheetOpen) return
+    com.nuvio.app.features.artwork.ArtworkPickerSheet(
+        id = meta.id,
+        type = meta.type,
+        title = meta.name,
+        onDismiss = actions.closeArtworkSheet,
+    )
+}
+
 @Composable
 private fun rememberUsualSource(metaId: String?): LastUsedSource? {
     val progressState by WatchProgressRepository.uiState.collectAsStateWithLifecycle()
@@ -492,6 +606,8 @@ fun DetailActions(
     usualSourceMetaId: String? = null,
     queueMeta: com.nuvio.app.features.details.MetaDetails? = null,
 ) {
+    val bnActions = rememberBnTitleActions(queueMeta)
+    BnArtworkSheetHost(queueMeta, bnActions)
     val actionSet = detailActionSet(
         isSaved = isSaved,
         isWatched = isWatched,
@@ -505,6 +621,7 @@ fun DetailActions(
         onPlayExternallyClick = onPlayExternallyClick,
         onSourcesClick = onSourcesClick,
         queueAction = rememberQueueAction(queueMeta),
+        bnActions = bnActions,
     )
     val shuffleAction = actionSet.shuffle
     val watchedAction = actionSet.watched
@@ -521,6 +638,8 @@ fun DetailActions(
             add(watchedAction)
             add(saveAction)
             actionSet.queue?.let(::add)
+            bnActions.remind?.let(::add)
+            addAll(bnActions.trailing)
         },
         isTablet = isTablet,
         onPlayClick = onPlayClick,
@@ -556,6 +675,7 @@ private fun detailActionSet(
     onPlayExternallyClick: (() -> Unit)?,
     onSourcesClick: (() -> Unit)? = null,
     queueAction: DetailSecondaryAction? = null,
+    bnActions: BnTitleActions? = null,
 ): DetailActionSet {
     val shuffleAction = onShuffleClick?.let { onClick ->
         DetailSecondaryAction(
@@ -601,6 +721,7 @@ private fun detailActionSet(
                 ),
             )
         }
+        bnActions?.remind?.let(::add)
         add(saveAction)
         queueAction?.let(::add)
         onSourcesClick?.let { sources ->
@@ -628,6 +749,7 @@ private fun detailActionSet(
                 ),
             )
         }
+        bnActions?.trailing?.let(::addAll)
     }
     return DetailActionSet(shuffleAction, watchedAction, saveAction, iconActions, queueAction)
 }
@@ -658,6 +780,8 @@ fun TabletDetailHeroActions(
     usualSourceMetaId: String? = null,
     queueMeta: com.nuvio.app.features.details.MetaDetails? = null,
 ) {
+    val bnActions = rememberBnTitleActions(queueMeta)
+    BnArtworkSheetHost(queueMeta, bnActions)
     val actionSet = detailActionSet(
         isSaved = isSaved,
         isWatched = isWatched,
@@ -671,6 +795,7 @@ fun TabletDetailHeroActions(
         onPlayExternallyClick = onPlayExternallyClick,
         onSourcesClick = onSourcesClick,
         queueAction = rememberQueueAction(queueMeta),
+        bnActions = bnActions,
     )
     val playPainter = appIconPainter(AppIconResource.PlayerPlay)
     val buttonHeight = 56.dp

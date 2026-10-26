@@ -166,6 +166,7 @@ import com.nuvio.app.features.watched.releasedPlayableEpisodes
 import com.nuvio.app.features.watched.releasedEpisodesForSeason
 import com.nuvio.app.features.watched.watchedItemKey
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
+import com.nuvio.app.features.artwork.withArtworkChoice
 import com.nuvio.app.features.watchprogress.WatchProgressEntry
 import com.nuvio.app.features.watchprogress.WatchProgressClock
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
@@ -218,8 +219,15 @@ fun MetaDetailsScreen(
         shuffleWasInactive = !active
     }
     val uiState by MetaDetailsRepository.uiState.collectAsStateWithLifecycle()
-    val displayedMeta = uiState.meta?.takeIf { it.type == type && it.id == id }
-        ?: MetaDetailsRepository.peek(type, id)
+    // Better Nuvio: o fundo e o logo escolhidos em "Trocar arte" entram no lugar dos automáticos.
+    val artworkChoices by remember {
+        com.nuvio.app.features.artwork.ArtworkChoiceRepository.ensureLoaded()
+        com.nuvio.app.features.artwork.ArtworkChoiceRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val displayedMeta = (
+        uiState.meta?.takeIf { it.type == type && it.id == id }
+            ?: MetaDetailsRepository.peek(type, id)
+        )?.withArtworkChoice(artworkChoices)
     val metaScreenSettingsUiState by remember {
         MetaScreenSettingsRepository.ensureLoaded()
         MetaScreenSettingsRepository.uiState

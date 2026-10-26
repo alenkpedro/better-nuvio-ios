@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bn_action_remind">Remind</string>
+    <string name="bn_remind_on">Reminder on</string>
+    <string name="bn_remind_off">Remind me</string>
+    <string name="bn_remind_enabled">We will notify you when new episodes air</string>
+    <string name="bn_remind_disabled">Reminder off</string>
+    <string name="bn_remind_permission_denied">Turn on notifications in Settings to get reminders</string>
+    <string name="bn_action_recommend">Recommend</string>
+    <string name="bn_recommend_label">Recommend to a friend</string>
+    <string name="bn_recommend_share_text">I recommend %1$s</string>
+    <string name="bn_action_artwork">Artwork</string>
+    <string name="bn_artwork_title">Change artwork</string>
+    <string name="bn_artwork_backgrounds">Backgrounds</string>
+    <string name="bn_artwork_logos">Logos</string>
+    <string name="bn_artwork_automatic">Automatic</string>
+    <string name="bn_artwork_empty">TMDB has no other images for this title</string>
+    <string name="bn_person_follow">Follow</string>
+    <string name="bn_person_following">Following</string>
+    <string name="bn_person_followed_people">People you follow</string>
+</resources>
