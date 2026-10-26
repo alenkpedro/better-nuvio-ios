@@ -1,0 +1,19 @@
+<resources>
+    <!-- Better Nuvio: fila e modo maratona (fila.c / aseguir.c / posplay.c na TV) -->
+    <string name="bn_action_queue">Fila</string>
+    <string name="bn_queue_add">Adicionar à fila</string>
+    <string name="bn_queue_remove">Remover da fila</string>
+    <string name="bn_library_queue">Fila</string>
+    <string name="bn_queue_empty_title">Sua fila está vazia</string>
+    <string name="bn_queue_empty_message">Segure qualquer título, ou toque em Fila na página dele, e escolha “Adicionar à fila”.</string>
+    <string name="bn_queue_binge_title">Modo maratona</string>
+    <string name="bn_queue_binge_sub">Pula créditos e resumos; o próximo começa sozinho</string>
+    <string name="bn_queue_clear">Limpar fila</string>
+    <string name="bn_queue_move_up">Subir</string>
+    <string name="bn_queue_move_down">Descer</string>
+    <string name="bn_queue_play">Tocar</string>
+    <string name="bn_queue_up_next">A seguir</string>
+    <string name="bn_queue_up_next_sub">Sua fila e o modo maratona</string>
+    <string name="bn_queue_from_your_queue">Da sua fila</string>
+    <string name="bn_queue_starts_in">Da sua fila · começa em %1$d s</string>
+</resources>

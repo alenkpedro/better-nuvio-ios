@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.RecentActors
+import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
@@ -165,6 +166,7 @@ internal fun playerMoreActions(
     onStreamInfoClick: (() -> Unit)?,
     onSubmitIntroClick: (() -> Unit)?,
     onCastPanelClick: (() -> Unit)? = null,
+    onQueuePanelClick: (() -> Unit)? = null,
 ): List<PlayerMoreAction> = listOfNotNull(
     onRateClick?.let {
         PlayerMoreAction(
@@ -210,6 +212,15 @@ internal fun playerMoreActions(
         )
     },
     // Better Nuvio: o elenco do título durante a reprodução (elencopl.c na TV).
+    // Better Nuvio: o painel "A seguir" da TV (aseguir.c): a fila e o modo maratona.
+    onQueuePanelClick?.let {
+        PlayerMoreAction(
+            title = stringResource(Res.string.bn_queue_up_next),
+            subtitle = stringResource(Res.string.bn_queue_up_next_sub),
+            onClick = it,
+            icon = Icons.AutoMirrored.Rounded.PlaylistPlay,
+        )
+    },
     onCastPanelClick?.let {
         PlayerMoreAction(
             title = stringResource(Res.string.bn_more_cast),

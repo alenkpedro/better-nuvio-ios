@@ -14,7 +14,11 @@ import com.nuvio.app.features.player.PlayerLaunch
 import com.nuvio.app.features.player.PlayerLaunchStore
 import com.nuvio.app.features.player.PlayerScreen
 import com.nuvio.app.features.watchprogress.ResumePromptRepository
+import com.nuvio.app.features.queue.isSeriesType
+import com.nuvio.app.features.streams.StreamLaunch
+import com.nuvio.app.features.streams.StreamLaunchStore
 import com.nuvio.app.navigation.DetailRoute
+import com.nuvio.app.navigation.StreamRoute
 import com.nuvio.app.navigation.NuvioNavigator
 import com.nuvio.app.navigation.PlayerRoute
 
@@ -140,6 +144,30 @@ internal fun PlayerDestination(
                     title = preview.name,
                 ),
             )
+        },
+        // Better Nuvio: o próximo da fila (posplay.c). Filme vai direto para as fontes, que
+        // tocam sozinhas quando a reprodução automática está ligada; série abre a página do
+        // título, que sabe qual episódio continuar.
+        onPlayQueueItem = { item ->
+            onBack()
+            if (item.isSeriesType()) {
+                navController.navigate(DetailRoute(type = item.type, id = item.id, title = item.name))
+            } else {
+                val streamLaunchId = StreamLaunchStore.put(
+                    StreamLaunch(
+                        profileId = launch.profileId,
+                        type = item.type,
+                        videoId = item.id,
+                        parentMetaId = item.id,
+                        parentMetaType = item.type,
+                        title = item.name,
+                        logo = item.logo,
+                        poster = item.poster,
+                        background = item.banner,
+                    ),
+                )
+                navController.navigate(StreamRoute(launchId = streamLaunchId, title = item.name))
+            }
         },
         onOpenPartyMedia = onOpenPartyMedia,
         modifier = Modifier.fillMaxSize(),

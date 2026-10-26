@@ -1,0 +1,19 @@
+<resources>
+    <!-- Better Nuvio: fila e modo maratona (fila.c / aseguir.c / posplay.c na TV) -->
+    <string name="bn_action_queue">Queue</string>
+    <string name="bn_queue_add">Add to queue</string>
+    <string name="bn_queue_remove">Remove from queue</string>
+    <string name="bn_library_queue">Queue</string>
+    <string name="bn_queue_empty_title">Your queue is empty</string>
+    <string name="bn_queue_empty_message">Long-press any title, or tap Queue on its page, and choose “Add to queue”.</string>
+    <string name="bn_queue_binge_title">Binge mode</string>
+    <string name="bn_queue_binge_sub">Skips credits and recaps; the next one starts by itself</string>
+    <string name="bn_queue_clear">Clear queue</string>
+    <string name="bn_queue_move_up">Move up</string>
+    <string name="bn_queue_move_down">Move down</string>
+    <string name="bn_queue_play">Play</string>
+    <string name="bn_queue_up_next">Up next</string>
+    <string name="bn_queue_up_next_sub">Your queue and binge mode</string>
+    <string name="bn_queue_from_your_queue">From your queue</string>
+    <string name="bn_queue_starts_in">From your queue · starts in %1$d s</string>
+</resources>

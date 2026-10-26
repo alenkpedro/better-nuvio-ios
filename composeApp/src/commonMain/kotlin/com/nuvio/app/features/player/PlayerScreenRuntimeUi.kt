@@ -666,6 +666,9 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
             onCastPanelClick = if (!isLiveTvPlayback) {
                 { openCastPanel() }
             } else null,
+            onQueuePanelClick = if (!isLiveTvPlayback) {
+                { openQueuePanel() }
+            } else null,
             moreMenuExpanded = showMoreMenu,
             onMoreMenuExpandedChange = { expanded ->
                 showMoreMenu = expanded
@@ -813,7 +816,7 @@ private fun BoxScope.RenderPlaybackOverlays(
             nextEpisodeCardDismissed = true
             showNextEpisodeCard = false
         },
-        movieRecommendations = if (isMoviePlayback && args.onOpenMetaDetails != null) {
+        movieRecommendations = if (isMoviePlayback && args.onOpenMetaDetails != null && !showQueueCard) {
             movieRecommendationCandidates
         } else {
             emptyList()
@@ -831,6 +834,17 @@ private fun BoxScope.RenderPlaybackOverlays(
                 isEnded = playbackSnapshot.isEnded,
             )
             showMovieRecommendationCard = false
+        },
+        queueNextItem = queueNextItem,
+        showQueueCard = showQueueCard,
+        queueCountdown = queueCountdown,
+        onPlayQueueNext = {
+            if (!partyBlocksControl()) queueNextItem?.let { playQueueItem(it, finishedCurrent = true) }
+        },
+        onDismissQueueNext = {
+            queueCardDismissed = true
+            showQueueCard = false
+            queueCountdown = null
         },
         errorMessage = errorMessage,
             onDismissError = {
@@ -1122,6 +1136,15 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
         onCastPanelDismissed = {
             showCastPanel = false
             controlsVisible = true
+        },
+        showQueuePanel = showQueuePanel,
+        onQueuePanelDismissed = {
+            showQueuePanel = false
+            controlsVisible = true
+        },
+        onPlayQueueItem = { item ->
+            showQueuePanel = false
+            playQueueItem(item, finishedCurrent = false)
         },
         showSubmitIntroModal = showSubmitIntroModal,
         activeVideoId = activeVideoId,

@@ -20,6 +20,8 @@ internal data class PlayerScreenArgs(
     val onOpenInExternalPlayer: ((ExternalPlayerPlaybackRequest) -> Unit)?,
     val onOpenExternalUrl: ((String) -> Unit)?,
     val onOpenMetaDetails: ((com.nuvio.app.features.home.MetaPreview) -> Unit)? = null,
+    // Better Nuvio: tocar um título da fila a partir do player (posplay.c / aseguir.c).
+    val onPlayQueueItem: ((com.nuvio.app.features.queue.QueueItem) -> Unit)? = null,
     val modifier: Modifier,
     val logo: String?,
     val poster: String?,

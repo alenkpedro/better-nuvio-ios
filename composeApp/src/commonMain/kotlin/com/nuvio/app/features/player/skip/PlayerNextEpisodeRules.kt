@@ -128,6 +128,31 @@ object PlayerNextEpisodeRules {
         }
     }
 
+    /**
+     * Better Nuvio: modo maratona (posplay.c na TV). O próximo episódio começa 30 s antes
+     * do fim — menos quando há cena depois dos créditos, que esses 30 s cortariam.
+     */
+    fun bingeNextEpisodeDue(
+        positionMs: Long,
+        durationMs: Long,
+        skipIntervals: List<SkipInterval>,
+    ): Boolean {
+        if (durationMs <= 0L || isShortPlaceholderDuration(durationMs)) return false
+        if (hasPostCreditsScene(skipIntervals, durationMs)) return false
+        return durationMs - positionMs <= BINGE_NEXT_EPISODE_LEAD_MS
+    }
+
+    fun hasPostCreditsScene(skipIntervals: List<SkipInterval>, durationMs: Long): Boolean {
+        val latestOutro = skipIntervals.filter { it.type in OUTRO_SEGMENT_TYPES }.maxByOrNull { it.endTime }
+            ?: return skipIntervals.any { it.type.trim().lowercase() == "post-credits" }
+        return latestOutro.findFollowingPostCreditsScene(skipIntervals, durationMs) != null
+    }
+
+    const val BINGE_NEXT_EPISODE_LEAD_MS = 30_000L
+
+    /** "Da sua fila": com a maratona, o próximo da fila começa sozinho depois desta contagem. */
+    const val QUEUE_BINGE_COUNTDOWN_SECONDS = 10
+
     const val MOVIE_RECOMMENDATION_STAGE_ENDED = 3
     private const val MOVIE_RECOMMENDATION_FIRST_MS = 4L * 60_000L
     private const val MOVIE_RECOMMENDATION_FINAL_MS = 30_000L

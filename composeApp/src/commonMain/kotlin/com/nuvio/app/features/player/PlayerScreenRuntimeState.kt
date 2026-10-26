@@ -178,6 +178,8 @@ internal class PlayerScreenRuntime(
         initialPositionMs <= 0L && ((initialProgressFraction ?: 0f) <= 0f),
     )
     var lastProgressPersistEpochMs by mutableStateOf(0L)
+    // Better Nuvio: último passo contado para os minutos por dia do Histórico.
+    var watchStatsLastTickEpochMs = 0L
     var previousIsPlaying by mutableStateOf(false)
     var hasRequestedScrobbleStartForCurrentItem by mutableStateOf(false)
     var scrobbleStartRequestGeneration by mutableStateOf(0L)
@@ -192,6 +194,12 @@ internal class PlayerScreenRuntime(
     var showEpisodesPanel by mutableStateOf(false)
     var showChaptersPanel by mutableStateOf(false)
     var showCastPanel by mutableStateOf(false)
+    // Better Nuvio: fila ("A seguir" e "Da sua fila", aseguir.c / posplay.c na TV).
+    var showQueuePanel by mutableStateOf(false)
+    var queueNextItem by mutableStateOf<com.nuvio.app.features.queue.QueueItem?>(null)
+    var showQueueCard by mutableStateOf(false)
+    var queueCardDismissed by mutableStateOf(false)
+    var queueCountdown by mutableStateOf<Int?>(null)
     var showLiveChannelsPanel by mutableStateOf(false)
     var showSubmitIntroModal by mutableStateOf(false)
     var showSwitchEngineConfirm by mutableStateOf(false)
@@ -288,6 +296,7 @@ internal class PlayerScreenRuntime(
             showEpisodesPanel ||
             showChaptersPanel ||
             showCastPanel ||
+            showQueuePanel ||
             showLiveChannelsPanel ||
             showSubmitIntroModal ||
             showParentalGuide ||

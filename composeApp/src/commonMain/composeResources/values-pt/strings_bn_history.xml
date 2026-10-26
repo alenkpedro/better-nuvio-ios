@@ -1,0 +1,22 @@
+<resources>
+    <!-- Better Nuvio: aba Histórico da Biblioteca (historico.c na TV) -->
+    <string name="bn_library_history">Histórico</string>
+    <string name="bn_history_today">Hoje</string>
+    <string name="bn_history_yesterday">Ontem</string>
+    <string name="bn_history_movie">Filme</string>
+    <string name="bn_history_episode">T%1$dE%2$d</string>
+    <string name="bn_history_episode_named">T%1$dE%2$d · %3$s</string>
+    <string name="bn_history_empty_title">Ainda não viu nada</string>
+    <string name="bn_history_empty_message">O que vir aparece aqui, do mais recente para o mais antigo.</string>
+    <string name="bn_history_minutes_per_day">Minutos por dia · últimos 14 dias</string>
+    <string name="bn_history_this_month">Este mês</string>
+    <string name="bn_history_last_month">Mês passado: %1$s</string>
+    <string name="bn_history_streak">Sequência</string>
+    <string name="bn_history_days">%1$d dias</string>
+    <string name="bn_history_record">Recorde: %1$d dias</string>
+    <string name="bn_history_finished">Concluídos no mês</string>
+    <string name="bn_history_finished_detail">%1$d filmes · %2$d episódios</string>
+    <string name="bn_history_minutes">%1$d min</string>
+    <string name="bn_history_hours_minutes">%1$d h %2$d min</string>
+    <string name="bn_history_day_minutes">%1$s · %2$s</string>
+</resources>

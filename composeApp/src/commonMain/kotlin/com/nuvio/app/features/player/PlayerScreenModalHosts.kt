@@ -107,6 +107,9 @@ internal fun PlayerScreenModalHosts(
     castTitle: String = "",
     cast: List<com.nuvio.app.features.details.MetaPerson> = emptyList(),
     onCastPanelDismissed: () -> Unit = {},
+    showQueuePanel: Boolean = false,
+    onQueuePanelDismissed: () -> Unit = {},
+    onPlayQueueItem: (com.nuvio.app.features.queue.QueueItem) -> Unit = {},
     showSubmitIntroModal: Boolean,
     activeVideoId: String?,
     metaUiState: MetaDetailsUiState,
@@ -273,6 +276,12 @@ internal fun PlayerScreenModalHosts(
         title = castTitle,
         cast = cast,
         onDismiss = onCastPanelDismissed,
+    )
+
+    PlayerQueuePanel(
+        visible = showQueuePanel,
+        onPlay = onPlayQueueItem,
+        onDismiss = onQueuePanelDismissed,
     )
 
     val season = activeSeasonNumber

@@ -1349,6 +1349,7 @@ fun MetaDetailsScreen(
                                                             onSourcesClick = onPrimaryPlayLongClick,
                                                             onQuickRate = onQuickRate,
                                                             usualSourceMetaId = meta.id,
+                                                            queueMeta = meta,
                                                         )
                                                     }
                                                 } else {
@@ -2565,6 +2566,7 @@ private fun ConfiguredMetaSections(
                     onSourcesClick = onPrimaryPlayLongClick,
                     onQuickRate = onQuickRate,
                     usualSourceMetaId = meta.id,
+                    queueMeta = meta,
                 )
             }
             MetaScreenSectionKey.OVERVIEW -> {
