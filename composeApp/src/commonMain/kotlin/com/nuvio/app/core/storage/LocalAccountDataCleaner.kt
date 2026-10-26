@@ -102,6 +102,7 @@ internal object LocalAccountDataCleaner {
         HomeCatalogSettingsRepository.clearLocalState()
         MetaScreenSettingsRepository.clearLocalState()
         com.nuvio.app.features.shuffle.EpisodeShuffleRepository.clearLocalState()
+        com.nuvio.app.features.queue.QueueRepository.clearLocalState()
         LibraryRepository.clearLocalState()
         LibraryDisplaySettingsRepository.clearLocalState()
         ContinueWatchingPreferencesRepository.clearLocalState()

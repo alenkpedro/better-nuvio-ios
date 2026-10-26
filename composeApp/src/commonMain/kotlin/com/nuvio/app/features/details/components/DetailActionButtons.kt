@@ -99,6 +99,12 @@ import nuvio.composeapp.generated.resources.shuffle_stop
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAddCheck
+import com.nuvio.app.features.queue.toQueueItem
+import nuvio.composeapp.generated.resources.bn_action_queue
+import nuvio.composeapp.generated.resources.bn_queue_add
+import nuvio.composeapp.generated.resources.bn_queue_remove
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.rounded.Replay
@@ -428,6 +434,27 @@ private fun UsualSourceLine(source: LastUsedSource) {
     }
 }
 
+/**
+ * Better Nuvio: "Adicionar à fila" da página do título, como no detail.c da TV. O estado
+ * vem do QueueRepository, então a página não precisa guardar nada.
+ */
+@Composable
+private fun rememberQueueAction(meta: com.nuvio.app.features.details.MetaDetails?): DetailSecondaryAction? {
+    if (meta == null) return null
+    val queueState by remember {
+        com.nuvio.app.features.queue.QueueRepository.ensureLoaded()
+        com.nuvio.app.features.queue.QueueRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val queued = remember(queueState, meta.id) { queueState.items.any { it.id == com.nuvio.app.features.queue.QueueRepository.baseId(meta.id) } }
+    return DetailSecondaryAction(
+        label = stringResource(if (queued) Res.string.bn_queue_remove else Res.string.bn_queue_add),
+        icon = if (queued) Icons.AutoMirrored.Rounded.PlaylistAddCheck else Icons.AutoMirrored.Rounded.PlaylistAdd,
+        isActive = queued,
+        onClick = { com.nuvio.app.features.queue.QueueRepository.toggle(meta.toQueueItem()) },
+        shortLabel = stringResource(Res.string.bn_action_queue),
+    )
+}
+
 @Composable
 private fun rememberUsualSource(metaId: String?): LastUsedSource? {
     val progressState by WatchProgressRepository.uiState.collectAsStateWithLifecycle()
@@ -463,6 +490,7 @@ fun DetailActions(
     onSourcesClick: (() -> Unit)? = null,
     onQuickRate: ((Int?) -> Unit)? = null,
     usualSourceMetaId: String? = null,
+    queueMeta: com.nuvio.app.features.details.MetaDetails? = null,
 ) {
     val actionSet = detailActionSet(
         isSaved = isSaved,
@@ -476,6 +504,7 @@ fun DetailActions(
         onPlayFromStartClick = onPlayFromStartClick,
         onPlayExternallyClick = onPlayExternallyClick,
         onSourcesClick = onSourcesClick,
+        queueAction = rememberQueueAction(queueMeta),
     )
     val shuffleAction = actionSet.shuffle
     val watchedAction = actionSet.watched
@@ -491,6 +520,7 @@ fun DetailActions(
             if (!shuffleEnabled) shuffleAction?.let(::add)
             add(watchedAction)
             add(saveAction)
+            actionSet.queue?.let(::add)
         },
         isTablet = isTablet,
         onPlayClick = onPlayClick,
@@ -509,6 +539,7 @@ private class DetailActionSet(
     val watched: DetailSecondaryAction,
     val save: DetailSecondaryAction,
     val icons: List<DetailSecondaryAction>,
+    val queue: DetailSecondaryAction? = null,
 )
 
 @Composable
@@ -524,6 +555,7 @@ private fun detailActionSet(
     onPlayFromStartClick: (() -> Unit)?,
     onPlayExternallyClick: (() -> Unit)?,
     onSourcesClick: (() -> Unit)? = null,
+    queueAction: DetailSecondaryAction? = null,
 ): DetailActionSet {
     val shuffleAction = onShuffleClick?.let { onClick ->
         DetailSecondaryAction(
@@ -570,6 +602,7 @@ private fun detailActionSet(
             )
         }
         add(saveAction)
+        queueAction?.let(::add)
         onSourcesClick?.let { sources ->
             add(DetailSecondaryAction(label = sourcesLabel, icon = Icons.Rounded.Layers, onClick = sources))
         }
@@ -596,7 +629,7 @@ private fun detailActionSet(
             )
         }
     }
-    return DetailActionSet(shuffleAction, watchedAction, saveAction, iconActions)
+    return DetailActionSet(shuffleAction, watchedAction, saveAction, iconActions, queueAction)
 }
 
 @Composable
@@ -623,6 +656,7 @@ fun TabletDetailHeroActions(
     onSourcesClick: (() -> Unit)? = null,
     onQuickRate: ((Int?) -> Unit)? = null,
     usualSourceMetaId: String? = null,
+    queueMeta: com.nuvio.app.features.details.MetaDetails? = null,
 ) {
     val actionSet = detailActionSet(
         isSaved = isSaved,
@@ -636,6 +670,7 @@ fun TabletDetailHeroActions(
         onPlayFromStartClick = onPlayFromStartClick,
         onPlayExternallyClick = onPlayExternallyClick,
         onSourcesClick = onSourcesClick,
+        queueAction = rememberQueueAction(queueMeta),
     )
     val playPainter = appIconPainter(AppIconResource.PlayerPlay)
     val buttonHeight = 56.dp

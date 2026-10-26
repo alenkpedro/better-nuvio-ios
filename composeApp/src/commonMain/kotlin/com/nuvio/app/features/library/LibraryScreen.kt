@@ -167,6 +167,7 @@ import com.nuvio.app.core.poster.CustomPosterUrlRepository
 import com.nuvio.app.core.poster.withCustomPosterUrl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import com.nuvio.app.features.queue.toLibraryItem
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -232,6 +233,10 @@ fun LibraryScreen(
             ?: LibraryViewMode.Saved
     }
     var showReleaseCalendar by rememberSaveable { mutableStateOf(false) }
+    val queueState by remember {
+        com.nuvio.app.features.queue.QueueRepository.ensureLoaded()
+        com.nuvio.app.features.queue.QueueRepository.uiState
+    }.collectAsStateWithLifecycle()
     val releaseCalendarCacheState by LibraryReleaseCalendarCache.state.collectAsStateWithLifecycle()
     val releaseCalendarCacheKey = remember(uiState.items) {
         LibraryReleaseCalendarCache.cacheKeyFor(uiState.items)
@@ -580,6 +585,11 @@ fun LibraryScreen(
                     onConnectTorboxApiKeyClick = if (torboxConnected) null else {
                         { showTorboxConnectDialog = true }
                     },
+                )
+            } else if (sourceMode == LibraryViewMode.Queue) {
+                libraryQueueContent(
+                    queue = queueState,
+                    onItemClick = { item -> onPosterClick?.invoke(item.toLibraryItem()) },
                 )
             } else if (sourceMode == LibraryViewMode.Servers) {
                 serverLibraryContent(
@@ -983,6 +993,14 @@ private fun LibrarySourceSwitch(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Better Nuvio: com Fila e Histórico os chips podem não caber; rolam de lado.
+        Row(
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
         LibraryChip(
             label = stringResource(Res.string.library_source_saved),
             selected = selectedMode == LibraryViewMode.Saved,
@@ -999,6 +1017,13 @@ private fun LibrarySourceSwitch(
                 selected = selectedMode == LibraryViewMode.Servers,
                 onClick = { onModeSelected(LibraryViewMode.Servers) },
             )
+        }
+        // Better Nuvio: a fila por perfil (fila.c na TV).
+        LibraryChip(
+            label = stringResource(Res.string.bn_library_queue),
+            selected = selectedMode == LibraryViewMode.Queue,
+            onClick = { onModeSelected(LibraryViewMode.Queue) },
+        )
         }
         Spacer(modifier = Modifier.weight(1f))
         Row(
@@ -3222,6 +3247,7 @@ private enum class LibraryViewMode {
     Saved,
     Cloud,
     Servers,
+    Queue,
 }
 
 private const val LIBRARY_SECTION_PREVIEW_LIMIT = 18

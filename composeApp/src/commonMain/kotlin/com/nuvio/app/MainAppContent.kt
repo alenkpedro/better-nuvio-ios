@@ -2195,7 +2195,7 @@ internal fun MainAppContent(
                                     }
                                 },
                             ),
-                        ),
+                        ) + com.nuvio.app.features.queue.queuePosterOverlayAction(preview),
                         backdrop = posterOverlayBackdrop,
                         onDismissed = {
                             selectedPosterActionTarget = null

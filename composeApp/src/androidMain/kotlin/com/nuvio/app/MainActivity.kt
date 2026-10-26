@@ -128,6 +128,7 @@ open class MainActivity : AppCompatActivity() {
         WatchedStorage.initialize(applicationContext)
         MetaScreenSettingsStorage.initialize(applicationContext)
         com.nuvio.app.features.shuffle.EpisodeShuffleStorage.initialize(applicationContext)
+        com.nuvio.app.core.storage.ProfileTextStorage.initialize(applicationContext)
         HomeCatalogSettingsStorage.initialize(applicationContext)
         PlayerSettingsStorage.initialize(applicationContext)
         com.nuvio.app.features.player.SubtitleFontFiles.initialize(applicationContext)
