@@ -155,14 +155,16 @@ internal fun StreamItem.bnQualityTags(): List<String> {
 private val BitrateRegex = Regex("(\\d+(?:[.,]\\d+)?)\\s*(mbps|mb/s|mbit/s|kbps)", RegexOption.IGNORE_CASE)
 private val SizeRegex = Regex("(\\d+(?:[.,]\\d+)?)\\s*(tb|gb|gib|mb|mib)(?![a-z/])", RegexOption.IGNORE_CASE)
 
-/** Tamanho e velocidade, a segunda linha de cada fonte. */
-internal fun StreamItem.bnSizeAndBitrate(): String? {
+/** Tamanho e velocidade, a segunda linha de cada fonte. [includeSize] segue o ajuste "mostrar tamanho". */
+internal fun StreamItem.bnSizeAndBitrate(includeSize: Boolean = true): String? {
     val text = listOfNotNull(name, title, description).joinToString(" ")
     val bitrate = BitrateRegex.find(text)?.let { match ->
         "${match.groupValues[1]} ${if (match.groupValues[2].lowercase() == "kbps") "kbps" else "Mbps"}"
     }
     val bytes = behaviorHints.videoSize ?: clientResolve?.stream?.raw?.size
-    val size = if (bytes != null && bytes > 0) {
+    val size = if (!includeSize) {
+        null
+    } else if (bytes != null && bytes > 0) {
         val gib = bytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
         if (gib >= 1.0) {
             "${round(gib * 10.0) / 10.0} ${localizedByteUnit("GB")}"
