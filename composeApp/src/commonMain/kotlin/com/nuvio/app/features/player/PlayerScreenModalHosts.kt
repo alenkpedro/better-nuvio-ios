@@ -103,6 +103,10 @@ internal fun PlayerScreenModalHosts(
     chapters: List<PlayerChapter> = emptyList(),
     onChapterSelected: (PlayerChapter) -> Unit = {},
     onChaptersPanelDismissed: () -> Unit = {},
+    showCastPanel: Boolean = false,
+    castTitle: String = "",
+    cast: List<com.nuvio.app.features.details.MetaPerson> = emptyList(),
+    onCastPanelDismissed: () -> Unit = {},
     showSubmitIntroModal: Boolean,
     activeVideoId: String?,
     metaUiState: MetaDetailsUiState,
@@ -262,6 +266,13 @@ internal fun PlayerScreenModalHosts(
         positionMs = displayedPositionMs,
         onChapterSelected = onChapterSelected,
         onDismiss = onChaptersPanelDismissed,
+    )
+
+    PlayerCastPanel(
+        visible = showCastPanel,
+        title = castTitle,
+        cast = cast,
+        onDismiss = onCastPanelDismissed,
     )
 
     val season = activeSeasonNumber

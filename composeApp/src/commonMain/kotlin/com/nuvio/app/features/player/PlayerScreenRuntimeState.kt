@@ -191,6 +191,7 @@ internal class PlayerScreenRuntime(
     var showMoreMenu by mutableStateOf(false)
     var showEpisodesPanel by mutableStateOf(false)
     var showChaptersPanel by mutableStateOf(false)
+    var showCastPanel by mutableStateOf(false)
     var showLiveChannelsPanel by mutableStateOf(false)
     var showSubmitIntroModal by mutableStateOf(false)
     var showSwitchEngineConfirm by mutableStateOf(false)
@@ -286,6 +287,7 @@ internal class PlayerScreenRuntime(
             showMoreMenu ||
             showEpisodesPanel ||
             showChaptersPanel ||
+            showCastPanel ||
             showLiveChannelsPanel ||
             showSubmitIntroModal ||
             showParentalGuide ||

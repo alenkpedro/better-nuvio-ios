@@ -65,4 +65,7 @@
     <string name="bn_info_section_engine">Motor de reprodução</string>
     <string name="bn_info_section_video">Faixa de vídeo</string>
     <string name="bn_info_section_audio">Faixa de áudio</string>
+    <string name="bn_more_cast">Elenco</string>
+    <string name="bn_more_cast_sub">Quem é quem neste título</string>
+    <string name="bn_cast_panel_empty">O elenco deste título ainda não chegou.</string>
 </resources>
