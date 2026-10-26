@@ -58,4 +58,11 @@
     <string name="bn_player_subtitle_synced">Legenda sincronizada · %1$s</string>
     <string name="bn_player_tracks_hint">Áudio e legendas</string>
     <string name="bn_subtitle_group_embedded">Embutidas</string>
+    <string name="bn_player_quality">Qualidade</string>
+    <string name="bn_more_source_info_sub">Addon, fonte e faixas em uso</string>
+    <string name="bn_sync_auto_now">Sincronizar agora</string>
+    <string name="bn_info_section_quality">Qualidade escolhida</string>
+    <string name="bn_info_section_engine">Motor de reprodução</string>
+    <string name="bn_info_section_video">Faixa de vídeo</string>
+    <string name="bn_info_section_audio">Faixa de áudio</string>
 </resources>

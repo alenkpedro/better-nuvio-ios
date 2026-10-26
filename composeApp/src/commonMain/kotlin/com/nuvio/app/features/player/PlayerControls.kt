@@ -165,6 +165,8 @@ internal fun PlayerControlsShell(
     onSubmitIntroClick: (() -> Unit)? = null,
     onSwitchEngineClick: (() -> Unit)? = null,
     onStreamInfoClick: () -> Unit = {},
+    moreMenuExpanded: Boolean = false,
+    onMoreMenuExpandedChange: (Boolean) -> Unit = {},
     parentalWarnings: List<ParentalWarning> = emptyList(),
     showParentalGuide: Boolean = false,
     onParentalGuideAnimationComplete: () -> Unit = {},
@@ -288,8 +290,11 @@ internal fun PlayerControlsShell(
                             onSwitchEngineClick = onSwitchEngineClick,
                             onVideoSettingsClick = onVideoSettingsClick,
                             onInfoClick = onInfoClick,
+                            onStreamInfoClick = onStreamInfoClick,
                             onSubmitIntroClick = onSubmitIntroClick,
                         ),
+                        moreMenuExpanded = moreMenuExpanded,
+                        onMoreMenuExpandedChange = onMoreMenuExpandedChange,
                         onInteraction = onInteraction,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -441,6 +446,7 @@ internal fun PlayerControlsShell(
                                 skipIntervals = skipIntervals,
                             )
                         },
+                        badges = badges,
                     )
                 }
             }

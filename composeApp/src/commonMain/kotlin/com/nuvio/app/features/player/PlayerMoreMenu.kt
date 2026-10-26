@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Build
+import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Info
@@ -27,10 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,11 +72,12 @@ internal fun PlayerClock(modifier: Modifier = Modifier) {
 @Composable
 internal fun PlayerMoreButton(
     actions: List<PlayerMoreAction>,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
     onInteraction: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (actions.isEmpty()) return
-    var expanded by remember { mutableStateOf(false) }
     val color = corViva()
     val label = stringResource(Res.string.bn_player_more)
     Box(modifier = modifier) {
@@ -90,7 +88,7 @@ internal fun PlayerMoreButton(
                 .clip(CircleShape)
                 .background(color)
                 .clickable(role = Role.Button, onClickLabel = label) {
-                    expanded = true
+                    onExpandedChange(true)
                     onInteraction()
                 },
             contentAlignment = Alignment.Center,
@@ -99,7 +97,7 @@ internal fun PlayerMoreButton(
         }
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
+            onDismissRequest = { onExpandedChange(false) },
             shape = RoundedCornerShape(20.dp),
             containerColor = Color(0xF018181C),
             modifier = Modifier.widthIn(min = 260.dp),
@@ -108,7 +106,7 @@ internal fun PlayerMoreButton(
                 PlayerMoreRow(
                     action = action,
                     onClick = {
-                        expanded = false
+                        onExpandedChange(false)
                         onInteraction()
                         action.onClick()
                     },
@@ -163,6 +161,7 @@ internal fun playerMoreActions(
     onSwitchEngineClick: (() -> Unit)?,
     onVideoSettingsClick: (() -> Unit)?,
     onInfoClick: (() -> Unit)?,
+    onStreamInfoClick: (() -> Unit)?,
     onSubmitIntroClick: (() -> Unit)?,
 ): List<PlayerMoreAction> = listOfNotNull(
     onRateClick?.let {
@@ -214,6 +213,14 @@ internal fun playerMoreActions(
             subtitle = stringResource(Res.string.bn_more_info_sub),
             onClick = it,
             icon = Icons.Rounded.Info,
+        )
+    },
+    onStreamInfoClick?.let {
+        PlayerMoreAction(
+            title = stringResource(Res.string.cd_stream_info),
+            subtitle = stringResource(Res.string.bn_more_source_info_sub),
+            onClick = it,
+            icon = Icons.Rounded.Dns,
         )
     },
     onSubmitIntroClick?.let {

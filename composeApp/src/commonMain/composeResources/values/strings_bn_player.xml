@@ -58,4 +58,11 @@
     <string name="bn_player_subtitle_synced">Subtitle synced · %1$s</string>
     <string name="bn_player_tracks_hint">Audio and subtitles</string>
     <string name="bn_subtitle_group_embedded">Embedded</string>
+    <string name="bn_player_quality">Quality</string>
+    <string name="bn_more_source_info_sub">Add-on, stream and tracks in use</string>
+    <string name="bn_sync_auto_now">Sync now</string>
+    <string name="bn_info_section_quality">Selected quality</string>
+    <string name="bn_info_section_engine">Playback engine</string>
+    <string name="bn_info_section_video">Video stream</string>
+    <string name="bn_info_section_audio">Audio stream</string>
 </resources>

@@ -49,6 +49,10 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.bn_info_section_audio
+import nuvio.composeapp.generated.resources.bn_info_section_engine
+import nuvio.composeapp.generated.resources.bn_info_section_quality
+import nuvio.composeapp.generated.resources.bn_info_section_video
 import nuvio.composeapp.generated.resources.compose_player_playback_info
 import org.jetbrains.compose.resources.stringResource
 import com.nuvio.app.core.ui.glass.ambientLiquidGlass
@@ -188,7 +192,7 @@ private fun PlaybackInfoContent(
 ) {
     Column(modifier = modifier) {
         selectedQualityVariant?.let { variant ->
-            SectionHeader(title = "Selected Quality")
+            SectionHeader(title = stringResource(Res.string.bn_info_section_quality))
 
             val qualityLabel = if (selectedQualityIsAuto) {
                 "Auto (${variant.qualityName})"
@@ -219,13 +223,13 @@ private fun PlaybackInfoContent(
         val playbackInfo = parsed ?: return@Column
         val engine = playbackInfo.stringValue("engine")
         if (engine.isNotBlank()) {
-            SectionHeader(title = "Playback Engine")
+            SectionHeader(title = stringResource(Res.string.bn_info_section_engine))
             InfoRow(label = "Engine", value = engine)
         }
 
         val videoCodec = playbackInfo.stringValue("videoCodec")
         if (videoCodec.isNotBlank()) {
-            SectionHeader(title = "Video Stream")
+            SectionHeader(title = stringResource(Res.string.bn_info_section_video))
 
             val codecProfile = playbackInfo.stringValue("codecProfile")
             val videoFormat = if (codecProfile.isNotBlank()) "$videoCodec ($codecProfile)" else videoCodec
@@ -300,7 +304,7 @@ private fun PlaybackInfoContent(
 
         val audioCodec = playbackInfo.stringValue("audioCodec")
         if (audioCodec.isNotBlank()) {
-            SectionHeader(title = "Audio Stream")
+            SectionHeader(title = stringResource(Res.string.bn_info_section_audio))
             InfoRow(label = "Codec", value = audioCodec)
 
             val audioDecoder = playbackInfo.stringValue("audioDecoder")

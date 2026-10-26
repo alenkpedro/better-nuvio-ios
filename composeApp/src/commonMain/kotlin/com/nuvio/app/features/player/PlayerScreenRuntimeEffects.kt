@@ -437,6 +437,7 @@ private fun PlayerScreenRuntime.BindPlayerUiVisibilityEffects() {
         playbackSnapshot.isLoading,
         showParentalGuide,
         showSpeedPanel,
+        showMoreMenu,
         errorMessage,
     ) {
         if (
@@ -447,6 +448,7 @@ private fun PlayerScreenRuntime.BindPlayerUiVisibilityEffects() {
             playbackSnapshot.isLoading ||
             showParentalGuide ||
             showSpeedPanel ||
+            showMoreMenu ||
             errorMessage != null
         ) {
             return@LaunchedEffect

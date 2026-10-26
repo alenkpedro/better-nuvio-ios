@@ -663,6 +663,11 @@ private fun PlayerScreenRuntime.RenderPlayerControls(isEpisode: Boolean) {
                 null
             },
             onStreamInfoClick = { openStreamInfo() },
+            moreMenuExpanded = showMoreMenu,
+            onMoreMenuExpandedChange = { expanded ->
+                showMoreMenu = expanded
+                controlsActivityTick += 1
+            },
             parentalWarnings = parentalWarnings,
             showParentalGuide = showParentalGuide,
             onParentalGuideAnimationComplete = { showParentalGuide = false },
@@ -966,6 +971,13 @@ private fun PlayerScreenRuntime.RenderPlayerModals() {
         onAutoSyncCapture = { captureSubtitleAutoSyncTime() },
         onAutoSyncCueSelected = { cue -> applySubtitleAutoSyncCue(cue) },
         onAutoSyncReload = { loadSubtitleAutoSyncCues(force = true) },
+        // Better Nuvio: "Sincronizar agora" roda o AutoSync de novo na legenda de addon escolhida.
+        onAutoSyncNow = if (
+            playerController is com.nuvio.app.features.autosync.AutoSyncPlayerController &&
+            com.nuvio.app.features.autosync.AutoSyncPreferencesRepository.preferredSubtitleAutoSyncOnStart.value
+        ) {
+            { addon -> attachSelectedAddonSubtitleWithAutoSync(addon.url) }
+        } else null,
         onSubtitleModalDismissed = { showSubtitleModal = false },
         showVideoSettingsModal = showVideoSettingsModal,
         playerSettings = playerSettingsUiState,
