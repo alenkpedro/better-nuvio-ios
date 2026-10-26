@@ -189,5 +189,5 @@ fun QueueItem.toLibraryItem(): LibraryItem = LibraryItem(
     savedAtEpochMs = addedAtEpochMs,
 )
 
-internal fun QueueItem.isSeriesType(): Boolean =
+fun QueueItem.isSeriesType(): Boolean =
     type.lowercase() in setOf("series", "tv", "show", "tvshow", "anime")

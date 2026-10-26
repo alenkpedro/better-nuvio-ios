@@ -118,6 +118,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         showEpisodesPanel = false
         showChaptersPanel = false
         showCastPanel = false
+        showQueuePanel = false
         episodeStreamsPanelState = EpisodeStreamsPanelState()
         PlayerStreamsRepository.clearEpisodeStreams()
         SubtitleRepository.clear()
@@ -392,6 +393,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
 
     BindPlayerUiVisibilityEffects()
     BindPlayerMetadataAndSkipEffects()
+    BindQueueUpNextEffects()
     BindPartyEffects()
     BindDiscordRpcEffects()
 
@@ -745,14 +747,17 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         nextEpisodeCardDismissed,
     ) {
         val shouldShow = nextEpisodeInfo != null && !nextEpisodeCardDismissed && isAtNextEpisodeThreshold()
+        // Better Nuvio: o modo maratona da fila também toca o próximo episódio sozinho.
+        val autoPlayNext = playerSettingsUiState.streamAutoPlayNextEpisodeEnabled ||
+            com.nuvio.app.features.queue.QueueRepository.bingeMode
         if (nextEpisodeAutoPlayAutomatic &&
-            (!shouldShow || !playerSettingsUiState.streamAutoPlayNextEpisodeEnabled)
+            (!shouldShow || !autoPlayNext)
         ) {
             cancelNextEpisodeAutoPlay()
         }
         if (shouldShow && !showNextEpisodeCard) {
             showNextEpisodeCard = true
-            if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true && !isPartyControlLocked) {
+            if (autoPlayNext && nextEpisodeInfo?.hasAired == true && !isPartyControlLocked) {
                 playNextEpisode(automatic = true)
             }
         } else if (!shouldShow) {

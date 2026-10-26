@@ -594,7 +594,8 @@ internal fun PlayerScreenRuntime.playNextEpisode(automatic: Boolean = false) {
     fun isCurrentRequest(): Boolean = playbackKey == activePlaybackKey &&
         nextEpisodeInfo?.videoId == nextVideoId &&
         (!automatic || (
-            playerSettingsUiState.streamAutoPlayNextEpisodeEnabled &&
+            (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled ||
+                com.nuvio.app.features.queue.QueueRepository.bingeMode) &&
                 !nextEpisodeCardDismissed && isAtNextEpisodeThreshold()
             ))
     if (!isCurrentRequest()) return
@@ -607,7 +608,12 @@ internal fun PlayerScreenRuntime.playNextEpisode(automatic: Boolean = false) {
         parentMetaId = parentMetaId,
         parentMetaType = parentMetaType,
         contentType = contentType,
-        settings = playerSettingsUiState,
+        // Better Nuvio: no modo maratona o próximo episódio sai sem pedir fonte, como na TV.
+        settings = if (com.nuvio.app.features.queue.QueueRepository.bingeMode) {
+            playerSettingsUiState.copy(streamAutoPlayNextEpisodeEnabled = true)
+        } else {
+            playerSettingsUiState
+        },
         currentStreamBingeGroup = currentStreamBingeGroup,
         onDownloadedEpisodeSelected = { item, episode ->
             if (isCurrentRequest()) switchToDownloadedEpisode(item, episode)

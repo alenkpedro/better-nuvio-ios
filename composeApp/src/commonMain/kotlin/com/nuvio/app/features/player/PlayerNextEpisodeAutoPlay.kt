@@ -48,6 +48,14 @@ internal fun PlayerScreenRuntime.isAtNextEpisodeThreshold(): Boolean {
             preloadNextEpisodeSources()
         }
     }
+    // Better Nuvio: com o modo maratona, o próximo episódio entra 30 s antes do fim (posplay.c).
+    if (com.nuvio.app.features.queue.QueueRepository.bingeMode && nextEpisodeInfo != null &&
+        PlayerNextEpisodeRules.bingeNextEpisodeDue(
+            positionMs = playbackSnapshot.positionMs,
+            durationMs = playbackSnapshot.durationMs,
+            skipIntervals = skipIntervals,
+        )
+    ) return true
     return playbackSnapshot.isEnded || PlayerNextEpisodeRules.shouldShowNextEpisodeCard(
         positionMs = playbackSnapshot.positionMs,
         durationMs = playbackSnapshot.durationMs,

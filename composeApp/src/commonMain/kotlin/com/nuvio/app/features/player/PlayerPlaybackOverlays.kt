@@ -66,6 +66,11 @@ internal fun BoxScope.PlayerPlaybackOverlays(
     movieRecommendationStage: Int = 0,
     onOpenMovieRecommendation: (MetaPreview) -> Unit = {},
     onDismissMovieRecommendations: () -> Unit = {},
+    queueNextItem: com.nuvio.app.features.queue.QueueItem? = null,
+    showQueueCard: Boolean = false,
+    queueCountdown: Int? = null,
+    onPlayQueueNext: () -> Unit = {},
+    onDismissQueueNext: () -> Unit = {},
     errorMessage: String?,
     onDismissError: () -> Unit,
 ) {
@@ -160,6 +165,20 @@ internal fun BoxScope.PlayerPlaybackOverlays(
             controlsVisible = controlsVisible,
             onOpen = onOpenMovieRecommendation,
             onDismiss = onDismissMovieRecommendations,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = sliderEdgePadding, bottom = overlayBottomPadding),
+        )
+    }
+
+    // Better Nuvio: "Da sua fila" (posplay.c): no fim do filme ou do último episódio, o próximo da fila.
+    if (!playerControlsLocked) {
+        QueueUpNextCard(
+            item = queueNextItem,
+            visible = showQueueCard,
+            countdownSec = queueCountdown,
+            onPlay = onPlayQueueNext,
+            onDismiss = onDismissQueueNext,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = sliderEdgePadding, bottom = overlayBottomPadding),
