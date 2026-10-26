@@ -17,6 +17,8 @@ internal expect object StreamBadgeSettingsStorage {
     fun saveStreamBackgroundMode(mode: String)
     fun loadStreamBadgePlacement(): String?
     fun saveStreamBadgePlacement(placement: String)
+    fun loadStreamMaxQuality(): String?
+    fun saveStreamMaxQuality(quality: String)
     fun loadPinnedStreamSources(): String?
     fun savePinnedStreamSources(sources: String)
     fun loadLegacyDebridStreamBadgeRules(): String?

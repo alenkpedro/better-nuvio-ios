@@ -91,6 +91,8 @@ import com.nuvio.app.features.plugins.PluginsUiState
 import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.streams.StreamAutoPlayMode
 import com.nuvio.app.features.streams.StreamAutoPlaySource
+import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
+import com.nuvio.app.features.streams.StreamMaxQuality
 import com.nuvio.app.isIos
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -366,6 +368,11 @@ private fun PlaybackSettingsSection(
     var showIosTargetTransferDialog by remember { mutableStateOf(false) }
     var showLibassRenderTypeDialog by remember { mutableStateOf(false) }
     var showAutoPlayModeDialog by remember { mutableStateOf(false) }
+    var showMaxQualityDialog by remember { mutableStateOf(false) }
+    val streamDisplaySettings by remember {
+        StreamBadgeSettingsRepository.ensureLoaded()
+        StreamBadgeSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
     var showAutoPlaySourceDialog by remember { mutableStateOf(false) }
     var showAutoPlayAddonSelectionDialog by remember { mutableStateOf(false) }
     var showAutoPlayPluginSelectionDialog by remember { mutableStateOf(false) }
@@ -436,6 +443,15 @@ private fun PlaybackSettingsSection(
                     description = stringResource(autoPlayPlayerSettings.streamAutoPlayMode.labelRes),
                     isTablet = isTablet,
                     onClick = { showAutoPlayModeDialog = true },
+                )
+                // Better Nuvio: teto de qualidade da TV (alturaMax): acima dele vai para o fim.
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.bn_settings_max_quality),
+                    description = streamDisplaySettings.maxQuality.label
+                        ?: stringResource(Res.string.bn_settings_max_quality_auto),
+                    isTablet = isTablet,
+                    onClick = { showMaxQualityDialog = true },
                 )
                 if (autoPlayPlayerSettings.streamAutoPlayMode == StreamAutoPlayMode.REGEX_MATCH) {
                     SettingsGroupDivider(isTablet = isTablet)
@@ -1997,6 +2013,17 @@ private fun PlaybackSettingsSection(
         )
     }
 
+    if (showMaxQualityDialog) {
+        StreamMaxQualityDialog(
+            selected = streamDisplaySettings.maxQuality,
+            onSelected = {
+                StreamBadgeSettingsRepository.setMaxQuality(it)
+                showMaxQualityDialog = false
+            },
+            onDismiss = { showMaxQualityDialog = false },
+        )
+    }
+
     if (showAutoPlayModeDialog) {
         StreamAutoPlayModeDialog(
             selectedMode = autoPlayPlayerSettings.streamAutoPlayMode,
@@ -2655,6 +2682,36 @@ private fun SubtitleBackgroundColorDialog(
 }
 
 @Composable
+private fun StreamMaxQualityDialog(
+    selected: StreamMaxQuality,
+    onSelected: (StreamMaxQuality) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    DialogSurface(
+        onDismissRequest = onDismiss,
+        title = stringResource(Res.string.bn_settings_max_quality),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(Res.string.bn_settings_max_quality_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            StreamMaxQuality.entries.forEach { quality ->
+                DialogOption(
+                    text = quality.label ?: stringResource(Res.string.bn_settings_max_quality_auto),
+                    selected = quality == selected,
+                    onClick = { onSelected(quality) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun StreamAutoPlayModeDialog(
     selectedMode: StreamAutoPlayMode,
@@ -2662,6 +2719,11 @@ private fun StreamAutoPlayModeDialog(
     onDismiss: () -> Unit,
 ) {
     val options = listOf(
+        Triple(
+            StreamAutoPlayMode.BEST_QUALITY,
+            Res.string.settings_playback_stream_selection_mode_best_quality,
+            Res.string.settings_playback_stream_selection_mode_best_quality_description,
+        ),
         Triple(
             StreamAutoPlayMode.MANUAL,
             Res.string.settings_playback_stream_selection_mode_manual,
@@ -3171,6 +3233,7 @@ private val StreamAutoPlayMode.labelRes: StringResource
         StreamAutoPlayMode.MANUAL -> Res.string.settings_playback_stream_selection_mode_manual
         StreamAutoPlayMode.FIRST_STREAM -> Res.string.settings_playback_stream_selection_mode_first_stream
         StreamAutoPlayMode.REGEX_MATCH -> Res.string.settings_playback_stream_selection_mode_regex
+        StreamAutoPlayMode.BEST_QUALITY -> Res.string.settings_playback_stream_selection_mode_best_quality
     }
 
 private val com.nuvio.app.features.player.skip.NextEpisodeThresholdMode.labelRes: StringResource

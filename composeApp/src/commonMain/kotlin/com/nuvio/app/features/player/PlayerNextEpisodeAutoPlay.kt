@@ -12,7 +12,9 @@ import com.nuvio.app.features.downloads.DownloadItem
 import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.player.skip.NextEpisodeInfo
 import com.nuvio.app.features.player.skip.PlayerNextEpisodeRules
+import com.nuvio.app.features.streams.RememberedSourceRepository
 import com.nuvio.app.features.streams.StreamAutoPlayMode
+import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
 import com.nuvio.app.features.streams.StreamAutoPlaySelector
 import com.nuvio.app.features.streams.StreamAutoPlaySource
 import com.nuvio.app.features.streams.StreamItem
@@ -211,6 +213,9 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
                 bingeGroupOnly = bingeGroupOnlyManualMode,
                 debridEnabled = debridSettings.canResolvePlayableLinks,
                 activeResolverProviderId = debridSettings.activeResolverProviderId,
+                // Better Nuvio: a fonte escolhida neste título e o teto de qualidade, como na TV.
+                rememberedSource = RememberedSourceRepository.get(parentMetaId),
+                maxQualityHeight = StreamBadgeSettingsRepository.maxQualitySnapshot().height,
             )
 
         fun tryBingeGroupOnly(streams: List<StreamItem>): StreamItem? {

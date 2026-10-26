@@ -226,6 +226,7 @@ fun StreamsScreen(
     val usualBingeGroup = remember(parentMetaId, uiState.groups) { BingeGroupCacheRepository.get(parentMetaId) }
     val usualFilename = remember(parentMetaId, usualBingeGroup) { usualBingeGroup?.let { BingeGroupCacheRepository.getFilename(parentMetaId) } }
     val usualInfoHash = remember(parentMetaId, usualBingeGroup) { usualBingeGroup?.let { BingeGroupCacheRepository.getInfoHash(parentMetaId) } }
+    val rememberedSource = remember(parentMetaId, uiState.groups) { RememberedSourceRepository.get(parentMetaId) }
     val recommendedStream = remember(
         uiState.groups,
         uiState.autoPlayStream,
@@ -233,6 +234,8 @@ fun StreamsScreen(
         playerSettings,
         debridSettings,
         usualBingeGroup,
+        rememberedSource,
+        streamDisplaySettings.maxQuality,
     ) {
         val ordered = splitPinnedSources(uiState.groups, pinnedSourceIdsForPick)
         pickRecommendedStream(
@@ -244,6 +247,8 @@ fun StreamsScreen(
             usualBingeGroup = usualBingeGroup,
             usualFilename = usualFilename,
             usualInfoHash = usualInfoHash,
+            rememberedSource = rememberedSource,
+            maxQualityHeight = streamDisplaySettings.maxQuality.height,
         )
     }
 
@@ -362,6 +367,8 @@ fun StreamsScreen(
                     if (downloadMode) {
                         startStreamDownload(stream)
                     } else {
+                        // Better Nuvio: a escolha manual vira a fonte lembrada do título (fontepref.c).
+                        RememberedSourceRepository.save(parentMetaId, stream)
                         onStreamSelected(stream, positionMs, progressFraction)
                     }
                 },
@@ -394,6 +401,8 @@ fun StreamsScreen(
                     if (downloadMode) {
                         startStreamDownload(stream)
                     } else {
+                        // Better Nuvio: a escolha manual vira a fonte lembrada do título (fontepref.c).
+                        RememberedSourceRepository.save(parentMetaId, stream)
                         onStreamSelected(stream, positionMs, progressFraction)
                     }
                 },

@@ -204,9 +204,10 @@ internal data class RecommendedStream(
 
 /**
  * A fonte em destaque. Como na TV (fontepref.c + fonteauto.c): primeiro a que a
- * pessoa já usou neste título (mesmo bingeGroup, desempatando por arquivo e
- * infoHash); senão a que o auto-play escolheria com os ajustes atuais; senão a
- * primeira da lista (fixadas primeiro).
+ * pessoa escolheu a mão neste título (bingeGroup, depois addon + áudio); senão a
+ * que tocou da última vez (mesmo bingeGroup, desempatando por arquivo e infoHash);
+ * senão a que o auto-play escolheria com os ajustes atuais (no modo manual, a
+ * melhor qualidade da TV); senão a primeira da lista (fixadas primeiro).
  */
 internal fun pickRecommendedStream(
     orderedStreams: List<StreamItem>,
@@ -217,9 +218,15 @@ internal fun pickRecommendedStream(
     usualBingeGroup: String?,
     usualFilename: String?,
     usualInfoHash: String?,
+    rememberedSource: RememberedSource? = null,
+    maxQualityHeight: Int = 0,
 ): RecommendedStream? {
     val selectable = orderedStreams.filter { it.isSelectableForPlayback(debridEnabled) }
     if (selectable.isEmpty()) return null
+
+    // A que a pessoa escolheu a mão neste título (fontepref.c) vem antes de tudo.
+    rememberedSource?.let { RememberedSourceMatcher.pick(selectable, it) }
+        ?.let { return RecommendedStream(it, isUsual = true) }
 
     val bingeGroup = usualBingeGroup?.trim()?.takeIf { it.isNotEmpty() }
     if (bingeGroup != null) {
@@ -236,7 +243,7 @@ internal fun pickRecommendedStream(
         it != StreamAutoPlayMode.MANUAL &&
             !(it == StreamAutoPlayMode.REGEX_MATCH &&
                 !StreamAutoPlayPolicy.isRegexSelectionConfigured(playerSettings.streamAutoPlayRegex))
-    } ?: StreamAutoPlayMode.FIRST_STREAM
+    } ?: StreamAutoPlayMode.BEST_QUALITY
     val installedAddonNames = orderedStreams.filter { it.isInstalledAddonStream }.mapTo(mutableSetOf()) { it.addonName }
     val auto = StreamAutoPlaySelector.selectAutoPlayStream(
         streams = selectable,
@@ -248,6 +255,7 @@ internal fun pickRecommendedStream(
         selectedPlugins = playerSettings.streamAutoPlaySelectedPlugins,
         debridEnabled = debridEnabled,
         activeResolverProviderId = activeResolverProviderId,
+        maxQualityHeight = maxQualityHeight,
     )
     return RecommendedStream(auto ?: selectable.first(), isUsual = false)
 }

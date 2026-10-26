@@ -172,7 +172,8 @@ object PlayerSettingsRepository {
     private var playbackBackBufferSeconds = 10
     private var playbackTargetBufferMb = 256
     private var vodDiskCacheSizeMb = 2048
-    private var streamAutoPlayMode = StreamAutoPlayMode.MANUAL
+    // Better Nuvio: quem nunca escolheu um modo fica com a escolha da TV (melhor qualidade).
+    private var streamAutoPlayMode = StreamAutoPlayMode.BEST_QUALITY
     private var streamAutoPlaySource = StreamAutoPlaySource.ALL_SOURCES
     private var streamAutoPlaySelectedAddons: Set<String> = emptySet()
     private var streamAutoPlaySelectedPlugins: Set<String> = emptySet()
@@ -270,7 +271,7 @@ object PlayerSettingsRepository {
         playbackBackBufferSeconds = 10
         playbackTargetBufferMb = 256
         vodDiskCacheSizeMb = 2048
-        streamAutoPlayMode = StreamAutoPlayMode.MANUAL
+        streamAutoPlayMode = StreamAutoPlayMode.BEST_QUALITY
         streamAutoPlaySource = StreamAutoPlaySource.ALL_SOURCES
         streamAutoPlaySelectedAddons = emptySet()
         streamAutoPlaySelectedPlugins = emptySet()
@@ -417,7 +418,7 @@ object PlayerSettingsRepository {
         vodDiskCacheSizeMb = PlayerSettingsStorage.loadVodDiskCacheSizeMb() ?: 2048
         streamAutoPlayMode = PlayerSettingsStorage.loadStreamAutoPlayMode()
             ?.let { runCatching { StreamAutoPlayMode.valueOf(it) }.getOrNull() }
-            ?: StreamAutoPlayMode.MANUAL
+            ?: StreamAutoPlayMode.BEST_QUALITY
         streamAutoPlaySource = PlayerSettingsStorage.loadStreamAutoPlaySource()
             ?.let { runCatching { StreamAutoPlaySource.valueOf(it) }.getOrNull() }
             ?: StreamAutoPlaySource.ALL_SOURCES

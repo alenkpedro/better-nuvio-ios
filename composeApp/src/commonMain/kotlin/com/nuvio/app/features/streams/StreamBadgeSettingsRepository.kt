@@ -24,6 +24,8 @@ data class StreamBadgeSettingsUiState(
     val showInPlayer: Boolean = false,
     val badgePlacement: StreamBadgePlacement = StreamBadgePlacement.BOTTOM,
     val backgroundMode: StreamBackgroundMode = StreamBackgroundMode.Normal,
+    /** Better Nuvio: "Qualidade máxima"; as fontes acima dela vão para o fim da lista. */
+    val maxQuality: StreamMaxQuality = StreamMaxQuality.AUTO,
 )
 
 enum class StreamBackgroundMode {
@@ -54,6 +56,7 @@ object StreamBadgeSettingsRepository {
     private var showInPlayer = false
     private var badgePlacement = StreamBadgePlacement.BOTTOM
     private var backgroundMode = StreamBackgroundMode.Normal
+    private var maxQuality = StreamMaxQuality.AUTO
 
     fun ensureLoaded() {
         if (hasLoaded) return
@@ -73,6 +76,7 @@ object StreamBadgeSettingsRepository {
         showInPlayer = false
         badgePlacement = StreamBadgePlacement.BOTTOM
         backgroundMode = StreamBackgroundMode.Normal
+        maxQuality = StreamMaxQuality.AUTO
         _uiState.value = StreamBadgeSettingsUiState()
     }
 
@@ -84,6 +88,11 @@ object StreamBadgeSettingsRepository {
     fun showFileSizeBadgesSnapshot(): Boolean {
         ensureLoaded()
         return _uiState.value.showFileSizeBadges
+    }
+
+    fun maxQualitySnapshot(): StreamMaxQuality {
+        ensureLoaded()
+        return _uiState.value.maxQuality
     }
 
     fun badgePlacementSnapshot(): StreamBadgePlacement {
@@ -194,6 +203,14 @@ object StreamBadgeSettingsRepository {
         StreamBadgeSettingsStorage.saveStreamBackgroundMode(mode.name.lowercase())
     }
 
+    fun setMaxQuality(quality: StreamMaxQuality) {
+        ensureLoaded()
+        if (maxQuality == quality) return
+        maxQuality = quality
+        publish()
+        StreamBadgeSettingsStorage.saveStreamMaxQuality(quality.name)
+    }
+
     private fun loadFromDisk() {
         hasLoaded = true
         val storedRules = parseStreamBadgeRules(StreamBadgeSettingsStorage.loadStreamBadgeRules())
@@ -217,6 +234,9 @@ object StreamBadgeSettingsRepository {
                 }
             }
             ?: StreamBadgePlacement.BOTTOM
+        maxQuality = StreamBadgeSettingsStorage.loadStreamMaxQuality()
+            ?.let { stored -> StreamMaxQuality.entries.firstOrNull { it.name.equals(stored, ignoreCase = true) } }
+            ?: StreamMaxQuality.AUTO
         if (legacyRules != null) {
             saveStreamBadgeRules()
             StreamBadgeSettingsStorage.clearLegacyDebridStreamBadgeRules()
@@ -233,6 +253,7 @@ object StreamBadgeSettingsRepository {
             showInPlayer = showInPlayer,
             badgePlacement = badgePlacement,
             backgroundMode = backgroundMode,
+            maxQuality = maxQuality,
         )
     }
 
