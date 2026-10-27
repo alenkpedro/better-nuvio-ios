@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "1.0.0",
+          "buildVersion": "151",
+          "date": "2026-10-27T03:28:48Z",
+          "localizedDescription": "- Visual novo 1.0: cor viva do título no destaque e no detalhe, Fontes redesenhada, player com painel Áudio | Legendas | Sincronia\n- Ajustes abrem pelo avatar da Início e fecham no X\n- Fontes: Melhor qualidade como na TV (MP4 4K DV primeiro), fonte lembrada no play automático e no próximo episódio, Qualidade máxima, seções 4K/1080p/720p × DV/HDR e filtro Torrent/Diretas\n- Debrid sem assinatura: a fonte fica apagada com o selo e não abre\n- Sincronia automática de legenda mais confiável, com \"Sincronizar agora\"\n- Legenda lembrada por série, marcas de abertura e créditos pelo TheIntroDB (também em filmes) e elenco no menu Mais\n- Fila com modo maratona, \"A seguir\" e \"Da sua fila\" no fim do filme\n- Biblioteca: Histórico com minutos por dia, sequência e concluídos no mês\n- Título: Lembrar (aviso de episódio novo), Recomendar, Trocar arte e Seguir pessoa\n- Perfil infantil com classificação máxima\n- Avisos do app\n- Live TV saiu, como na TV\n",
+          "downloadURL": "https://github.com/alenkpedro/better-nuvio-ios/releases/download/1.0.0/better-nuvio-1.0.0-151.ipa",
+          "size": 78384703,
+          "sha256": "067deb4f3b7bb18c402c714263ed7969976eb3ead5db8ca367f4634ba70053de",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.7.1",
           "buildVersion": "150",
           "date": "2026-10-15T00:47:41Z",
@@ -73,7 +83,8 @@
       "appPermissions": {
         "entitlements": [],
         "privacy": {
-          "NSLocalNetworkUsageDescription": "Nuvio connects to media servers on your local network."
+          "NSFaceIDUsageDescription": "Use biometric authentication to unlock your primary Better Nuvio profile.",
+          "NSLocalNetworkUsageDescription": "Better Nuvio connects to media servers on your local network."
         }
       }
     }
